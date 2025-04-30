@@ -15,8 +15,8 @@ import Testing
         print("x = \(solution[0])")
         print("y = \(solution[1])")
     }
-    catch LinAlgError.malformedProblem(let message) { print("Problem malformed: \(message)") }
-    catch LinAlgError.singularMatrix(let message) { print("Singular matrix: \(message)") }
-    catch LinAlgError.lapackError(let code) { print("LAPACK error: \(code)") }
+    catch LAPACKError.malformedProblem(let message) { print("Problem malformed: \(message)") }
+    catch LAPACKError.singularMatrix(let message) { print("Singular matrix: \(message)") }
+    catch LAPACKError.lapackError(let code) { print("LAPACK error: \(code)") }
     catch { print("Unexpected error: \(error)") }
 }
