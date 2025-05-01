@@ -1,5 +1,5 @@
 import Testing
-@testable import plumeria_mathematics
+@testable import LinearSolvers
 
 @Test func example() async throws {
     let A = [
