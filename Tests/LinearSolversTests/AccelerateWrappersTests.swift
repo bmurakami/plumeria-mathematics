@@ -1,7 +1,7 @@
 import Testing
 @testable import LinearSolvers
 
-@Test func example() async throws {
+@Test func accelerateTest() async throws {
     let A = [
         [2.0, 3.0],
         [5.0, 1.0]

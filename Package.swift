@@ -5,16 +5,19 @@ import PackageDescription
 let package = Package(
     name: "PlumeriaMathematics",
     products: [
-        .library(
-            name: "LinearSolvers",
-            targets: ["LinearSolvers"]),
+        .library(name: "LinearSolvers", targets: ["LinearSolvers"]),
     ],
     targets: [
+        .systemLibrary(name: "COpenBLAS", path: "Sources/COpenBLAS"),
         .target(
-            name: "LinearSolvers"),
+            name: "LinearSolvers",
+            dependencies: ["COpenBLAS"],
+            linkerSettings: [.unsafeFlags(["-L/Users/murakami1/.local/spack/opt/spack/darwin-m1/openblas-0.3.29-urtlqs4wcu3shs6ryfazhsk7rknmjklu"])]
+        ),
         .testTarget(
             name: "LinearSolversTests",
-            dependencies: ["LinearSolvers"]
+            dependencies: ["LinearSolvers", "COpenBLAS"],
+            linkerSettings: [.unsafeFlags(["-L/Users/murakami1/.local/spack/opt/spack/darwin-m1/openblas-0.3.29-urtlqs4wcu3shs6ryfazhsk7rknmjklu"])]
         ),
     ]
 )
