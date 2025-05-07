@@ -4,8 +4,8 @@ struct Matrix<T> {
     var rows: Int { _implementation.rows }
     var columns: Int { _implementation.columns }
     
-    init(_ values: [[T]]) where T == Double {
-        self._implementation = RealDenseMatrix(values)
+    init(_ values: [[T]]) throws where T == Double {
+        self._implementation = try RealDenseMatrix(values)
     }
         
     init(implementation: any MatrixImplementation<T>) {
@@ -36,4 +36,8 @@ protocol MatrixImplementation<Scalar> {
     var columns: Int { get }
     
     subscript(row: Int, column: Int) -> Scalar { get set }
+}
+
+enum MatrixError: Error {
+    case malformedMatrix(reason: String)
 }

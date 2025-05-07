@@ -11,19 +11,19 @@ struct RealDenseMatrix: MatrixImplementation {
         self.data = Array(repeating: Array(repeating: initialValue, count: columns), count: rows)
     }
     
-    init(_ values: [[Double]]) {
-        func validate() {
+    init(_ values: [[Double]]) throws {
+        func validate() throws {
             if values.isEmpty || (values.count > 0 && values[0].isEmpty) {
-                fatalError("The matrix cannot be empty or partially empty")
+                throw MatrixError.malformedMatrix(reason: "The matrix cannot be empty or partially empty")
             }
             for row in values {
                 if row.count != values[0].count {
-                    fatalError("All rows must have the same number of columns")
+                    throw MatrixError.malformedMatrix(reason: "All rows must have the same number of columns")
                 }
             }
         }
         
-        validate()
+        try validate()
         self.rows = values.count
         self.columns = values[0].count
         self.data = values
