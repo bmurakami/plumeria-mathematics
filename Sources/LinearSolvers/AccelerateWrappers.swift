@@ -7,7 +7,7 @@ struct DenseRealLinearSolver_Accelerate: DenseRealLinearSolver_LAPACK {
         var AT = Self.convertToColumnMajor(A: A, n: n)
         var bCopy = Array(b)
         
-        try Self.lapack_dgesv(a: &AT, b: &bCopy, n: n) { n, nrhs, a, lda, ipiv, b, ldb, info in
+        try Self.lapack_dgesv(A: &AT, b: &bCopy, n: n) { n, nrhs, a, lda, ipiv, b, ldb, info in
             Accelerate.dgesv_(n, nrhs, a, lda, ipiv, b, ldb, info)
         }
         

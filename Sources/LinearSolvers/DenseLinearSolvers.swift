@@ -1,23 +1,40 @@
+struct DenseRealLinearSolver {
+    private var solver: LinearSolver.Type
+    
+    @MainActor
+    init() {
+        self.solver = DenseRealLinearSolverDefault.solver
+    }
+    
+    init(solver: LinearSolver.Type) {
+        self.solver = solver
+    }
+    
+    mutating func setSolver(_ solver: any LinearSolver.Type) {
+        self.solver = solver
+    }
+    
+    func solve(A: [[Double]], b: [Double]) throws -> [Double] {
+        return try solver.solve(A: A, b: b)
+    }
+}
+
 enum DenseRealLinearSolverDefault {
     @MainActor
-    static var solver: DenseRealLinearSolver.Type = DenseRealLinearSolver_Accelerate.self
+    static var solver: LinearSolver.Type = DenseRealLinearSolver_Accelerate.self
 }
 
-protocol DenseRealLinearSolver {
-    static func solve(A: [[Double]], b: [Double]) throws -> [Double]
-}
-
-protocol DenseRealLinearSolver_LAPACK: DenseRealLinearSolver {}
+protocol DenseRealLinearSolver_LAPACK: LinearSolver {}
 
 extension DenseRealLinearSolver_LAPACK {
     static func lapack_dgesv(
-        a: inout [Double],
+        A: inout [Double],
         b: inout [Double],
         n: Int,
         solver: (
             _ n: UnsafeMutablePointer<Int32>,
             _ nrhs: UnsafeMutablePointer<Int32>,
-            _ a: UnsafeMutablePointer<Double>,
+            _ A: UnsafeMutablePointer<Double>,
             _ lda: UnsafeMutablePointer<Int32>,
             _ ipiv: UnsafeMutablePointer<Int32>,
             _ b: UnsafeMutablePointer<Double>,
@@ -32,7 +49,7 @@ extension DenseRealLinearSolver_LAPACK {
         var info: Int32 = 0
         var ipiv = [Int32](repeating: 0, count: Int(n))
         
-        solver(&n32, &nrhs, &a, &lda, &ipiv, &b, &ldb, &info)
+        solver(&n32, &nrhs, &A, &lda, &ipiv, &b, &ldb, &info)
         try checkLAPACKError(info: info)
         
         func checkLAPACKError(info: Int32) throws {

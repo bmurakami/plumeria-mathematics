@@ -10,7 +10,9 @@ import Testing
     let b = [8.0, 7.0]
 
     do {
-        let solution = try DenseRealLinearSolver_Accelerate.solve(A: A, b: b)
+        var solver = await DenseRealLinearSolver()
+        solver.setSolver(DenseRealLinearSolver_Accelerate.self)
+        let solution = try solver.solve(A: A, b: b)
         print("Solution:")
         print("x = \(solution[0])")
         print("y = \(solution[1])")
