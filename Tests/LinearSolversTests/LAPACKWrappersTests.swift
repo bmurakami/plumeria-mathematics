@@ -10,7 +10,7 @@ import Testing
     let b = [8.0, 7.0]
 
     do {
-        var solver = await DenseRealLinearSolver()
+        var solver = DenseRealLinearSolver()
         solver.setSolver(DenseRealLinearSolver_OpenBLAS.self)
         let solution = try solver.solve(A: A, b: b)
         print("Solution:")

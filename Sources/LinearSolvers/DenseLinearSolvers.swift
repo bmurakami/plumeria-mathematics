@@ -1,7 +1,6 @@
 struct DenseRealLinearSolver {
     private var solver: LinearSolver.Type
     
-    @MainActor
     init() {
         self.solver = DenseRealLinearSolverDefault.solver
     }
@@ -20,8 +19,7 @@ struct DenseRealLinearSolver {
 }
 
 enum DenseRealLinearSolverDefault {
-    @MainActor
-    static var solver: LinearSolver.Type = DenseRealLinearSolver_Accelerate.self
+    static let solver: LinearSolver.Type = DenseRealLinearSolver_Accelerate.self
 }
 
 protocol DenseRealLinearSolver_LAPACK: LinearSolver {}
