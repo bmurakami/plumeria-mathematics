@@ -17,13 +17,13 @@ struct Matrix<T> {
         set { _implementation = newValue }
     }
     
-    subscript(row: Int, column: Int) -> T {
+    subscript(i: Int, j: Int) -> T {
         get {
-            return _implementation[row, column]
+            return _implementation[i, j]
         }
         set {
             var mutableImplementation = _implementation
-            mutableImplementation[row, column] = newValue
+            mutableImplementation[i, j] = newValue
             _implementation = mutableImplementation
         }
     }

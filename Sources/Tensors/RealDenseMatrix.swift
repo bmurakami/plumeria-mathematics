@@ -1,14 +1,14 @@
 struct RealDenseMatrix: MatrixImplementation {
     typealias Scalar = Double
     
-    private var data: [[Double]]
+    private var values: [[Double]]
     let rows: Int
     let columns: Int
     
     init(rows: Int, columns: Int, initialValue: Double = 0.0) {
         self.rows = rows
         self.columns = columns
-        self.data = Array(repeating: Array(repeating: initialValue, count: columns), count: rows)
+        self.values = Array(repeating: Array(repeating: initialValue, count: columns), count: rows)
     }
     
     init(_ values: [[Double]]) throws {
@@ -26,11 +26,11 @@ struct RealDenseMatrix: MatrixImplementation {
         try validate()
         self.rows = values.count
         self.columns = values[0].count
-        self.data = values
+        self.values = values
     }
     
-    subscript(row: Int, column: Int) -> Double {
-        get { return data[row][column] }
-        set { data[row][column] = newValue }
+    subscript(i: Int, j: Int) -> Double {
+        get { return values[i][j] }
+        set { values[i][j] = newValue }
     }
 }
