@@ -5,8 +5,8 @@ import PackageDescription
 let package = Package(
     name: "PlumeriaMathematics",
     products: [
-        .library(name: "Tensors", targets: ["Tensors"]),
-        .library(name: "LinearSolvers", targets: ["LinearSolvers"]),
+        .library(name: "PlumeriaTensors", targets: ["Tensors"]),
+        .library(name: "PlumeriaLinearSolvers", targets: ["LinearSolvers"]),
     ],
     targets: [
         .systemLibrary(name: "COpenBLAS", path: "Sources/COpenBLAS"),
