@@ -1,5 +1,5 @@
 import Testing
-@testable import Matrices
+@testable import Tensors
 
 @Test
 func RealDenseMatrix_initializerWithValues() async throws {
