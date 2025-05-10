@@ -1,37 +1,24 @@
-struct Vector<T> {
-    private var _implementation: any VectorImplementation<T>
-    
-    var size: Int { _implementation.size }
-    
-    init(_ values: [T]) throws where T == Double {
-        self._implementation = try RealDenseVector(values)
-    }
-        
-    init(implementation: any VectorImplementation<T>) {
-        self._implementation = implementation
-    }
-    
-    var implementation: any VectorImplementation<T> {
-        get { _implementation }
-        set { _implementation = newValue }
-    }
-    
-    subscript(i: Int) -> T {
-        get {
-            return _implementation[i]
-        }
-        set {
-            var mutableImplementation = _implementation
-            mutableImplementation[i] = newValue
-            _implementation = mutableImplementation
-        }
-    }
+public protocol Vector {
+    associatedtype Value
+    var count: Int { get }
+    subscript(i: Int) -> Value { get set }
 }
 
-protocol VectorImplementation<Scalar> {
-    associatedtype Scalar
+public struct RealDenseVector: Vector {
+    public typealias Value = Double
     
-    var size: Int { get }
-
-    subscript(i: Int) -> Scalar { get set }
+    public private(set) var values: [Double]
+    
+    public init(_ values: [Double]) {
+        self.values = values
+    }
+    
+    public var count: Int {
+        return values.count
+    }
+    
+    public subscript(i: Int) -> Double {
+        get { return values[i] }
+        set { values[i] = newValue }
+    }
 }
