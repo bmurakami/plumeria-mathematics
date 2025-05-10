@@ -3,7 +3,7 @@ import Testing
 
 @Test
 func RealDenseMatrix_initializerWithValues() throws {
-    var m = try Matrix([[1, 2], [3, 4]])
+    var m = try RealDenseMatrix([[1, 2], [3, 4]])
     #expect(m[0, 0] == 1)
     #expect(m[1, 0] == 3)
     #expect(m[0, 1] == 2)
@@ -15,7 +15,7 @@ func RealDenseMatrix_initializerWithValues() throws {
 
 @Test
 func RealDenseMatrix_initializerWithRowsAndColumns() throws {
-    var m = Matrix(implementation: RealDenseMatrix(rows: 2, columns: 3))
+    var m = RealDenseMatrix(rows: 2, columns: 3)
     for i in 0..<m.rows {
         for j in 0..<m.columns {
             #expect(m[i, j] == 0)
@@ -38,7 +38,7 @@ func RealDenseMatrix_initializerValidation() {
     ]
     for badArray in testCases {
         #expect(throws: MatrixError.self) {
-            try Matrix(badArray)
+            try RealDenseMatrix(badArray)
         }
     }
 }
