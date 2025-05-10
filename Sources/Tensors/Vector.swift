@@ -5,12 +5,10 @@ public protocol Vector {
     subscript(i: Int) -> Value { get set }
 }
 
-public struct RealDenseVector: Vector {
-    public typealias Value = Double
+public struct DenseVector<T>: Vector {
+    public private(set) var values: [T]
     
-    public private(set) var values: [Double]
-    
-    public init(_ values: [Double]) {
+    public init(_ values: [T]) {
         self.values = values
     }
     
@@ -18,7 +16,7 @@ public struct RealDenseVector: Vector {
         return values.count
     }
     
-    public subscript(i: Int) -> Double {
+    public subscript(i: Int) -> T {
         get { return values[i] }
         set { values[i] = newValue }
     }
