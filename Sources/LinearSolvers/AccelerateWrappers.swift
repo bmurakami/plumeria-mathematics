@@ -1,16 +1,20 @@
 import Accelerate
+import Tensors
 
-struct DenseRealLinearSolver_Accelerate: DenseRealLinearSolver_LAPACK {
-    static func solve(A: [[Double]], b: [Double]) throws -> [Double] {
-        let n = b.count
-        try Self.validate(A: A, n: n)
-        var AT = Self.convertToColumnMajor(A: A, n: n)
-        var bCopy = Array(b)
-        
-        try Self.lapack_dgesv(A: &AT, b: &bCopy, n: n) { n, nrhs, a, lda, ipiv, b, ldb, info in
-            Accelerate.dgesv_(n, nrhs, a, lda, ipiv, b, ldb, info)
-        }
-        
-        return bCopy
-    }
+func solveDenseRealLinear_Accelerate(_ A: DenseMatrix<Double>, _ b: DenseVector<Double>) -> DenseVector<Double> {
+    precondition(A.rows == A.columns, "Matrix A must be square")
+    precondition(A.rows == b.count, "Matrix A and vector b must have compatible dimensions")
+    
+    var n = Int32(A.rows)
+    var nrhs = Int32(1)
+    var matrixA = (A.t as! DenseMatrix<Double>).flatten()
+    var bCopy = Array(b.values)
+    var lda = Int32(A.rows)
+    var ldb = Int32(A.rows)
+    var ipiv = [Int32](repeating: 0, count: A.rows)
+    var info = Int32(0)
+    
+    Accelerate.dgesv_(&n, &nrhs, &matrixA, &lda, &ipiv, &bCopy, &ldb, &info)
+    
+    return DenseVector(bCopy)
 }

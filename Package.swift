@@ -14,7 +14,7 @@ let package = Package(
         .target(name: "Tensors"),
         .target(
             name: "LinearSolvers",
-            dependencies: ["COpenBLAS"],
+            dependencies: ["Tensors","COpenBLAS"],
             cSettings: [.define("ACCELERATE_NEW_LAPACK")],
             linkerSettings: [.unsafeFlags(["-L/Users/murakami1/.local/spack/opt/spack/darwin-m1/openblas-0.3.29-urtlqs4wcu3shs6ryfazhsk7rknmjklu"])]
         ),

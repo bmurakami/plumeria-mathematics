@@ -1,24 +1,17 @@
 import Testing
+import Tensors
 @testable import LinearSolvers
 
-@Test func lapackTest() async throws {
-    let A = [
+@Test func solveDenseRealLinear_OpenBLAS_correctness() async throws {
+    let A = try DenseMatrix([
         [2.0, 3.0],
         [5.0, 1.0]
-    ]
+    ])
 
-    let b = [8.0, 7.0]
+    let b = DenseVector([8.0, 7.0])
 
-    do {
-        var solver = DenseRealLinearSolver()
-        solver.setSolver(DenseRealLinearSolver_OpenBLAS.self)
-        let solution = try solver.solve(A: A, b: b)
+        let solution = solveDenseRealLinear_OpenBLAS(A, b)
         print("Solution:")
         print("x = \(solution[0])")
         print("y = \(solution[1])")
-    }
-    catch LAPACKError.malformedProblem(let message) { print("Problem malformed: \(message)") }
-    catch LAPACKError.singularMatrix(let message) { print("Singular matrix: \(message)") }
-    catch LAPACKError.lapackError(let code) { print("LAPACK error: \(code)") }
-    catch { print("Unexpected error: \(error)") }
 }
