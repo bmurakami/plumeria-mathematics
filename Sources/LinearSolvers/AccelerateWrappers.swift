@@ -1,3 +1,4 @@
+#if os(macOS)
 import Accelerate
 import Tensors
 
@@ -18,3 +19,4 @@ func solveDenseRealLinear_Accelerate(_ A: DenseMatrix<Double>, _ b: DenseVector<
     
     return DenseVector(bCopy)
 }
+#endif

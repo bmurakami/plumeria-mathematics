@@ -1,3 +1,4 @@
+#if os(macOS)
 import Testing
 import Tensors
 @testable import LinearSolvers
@@ -15,3 +16,4 @@ import Tensors
         print("x = \(solution[0])")
         print("y = \(solution[1])")
 }
+#endif
