@@ -29,7 +29,7 @@ public struct DenseMatrix<T>: Matrix {
     public var columns: Int { return values[0].count }
     
     public var t: any Matrix {
-        var At = DenseMatrix<T>(rows: self.rows, columns: self.columns, intialValue: values[0][0])
+        var At = DenseMatrix<T>(rows: self.columns, columns: self.rows, intialValue: values[0][0])
         for i in 0..<self.rows {
             for j in 0..<self.columns {
                 At[j, i] = values[i][j]

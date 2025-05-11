@@ -4,4 +4,3 @@ public protocol Vector {
     var count: Int { get }
     subscript(i: Int) -> Value { get set }
 }
-

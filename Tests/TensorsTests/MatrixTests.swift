@@ -31,6 +31,22 @@ func RealDenseMatrix_initializerWithRowsAndColumns() throws {
 }
 
 @Test
+func RealDenseMatrix_transpose() throws {
+    let m = try DenseMatrix([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    let mt = m.t
+    for i in 0..<mt.rows {
+        for j in 0..<mt.columns {
+            #expect(mt[i, j] as! Double == m[j, i])
+        }
+    }
+}
+
+@Test func RealDenseMatrix_flatten() throws {
+    let m = try DenseMatrix([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    #expect(m.flatten() == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+}
+
+@Test
 func RealDenseMatrix_initializerValidation() {
     let testCases = [
         [],
