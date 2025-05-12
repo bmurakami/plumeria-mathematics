@@ -1,4 +1,4 @@
-public struct DenseVector<T>: Vector {
+public struct DenseVector<T: Numeric>: Vector {
     public private(set) var values: [T]
     
     public init(_ values: [T]) {

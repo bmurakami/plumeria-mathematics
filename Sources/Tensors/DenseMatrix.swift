@@ -1,4 +1,4 @@
-public struct DenseMatrix<T>: Matrix {
+public struct DenseMatrix<T: Numeric>: Matrix {
     public private(set)var values: [[T]]
 
     public init(rows: Int, columns: Int, intialValue: T = 0.0) {
@@ -28,6 +28,24 @@ public struct DenseMatrix<T>: Matrix {
     public var rows: Int { return values.count }
     public var columns: Int { return values[0].count }
     
+    public func times<V: Vector>(_ v: V) throws -> any Vector where V.Scalar == T {
+        if self.columns != v.count {
+            throw MatrixError.malformedMatrix(reason: "Matrix columns don't match vector size")
+        }
+        
+        var sum: [T] = []
+        sum.reserveCapacity(self.rows)
+        for i in 0..<self.rows {
+            var x: T = .zero
+            for j in 0..<self.columns {
+                x += values[i][j] * v[j]
+            }
+            sum.append(x)
+        }
+        
+        return DenseVector(sum)
+    }
+
     public var t: any Matrix {
         var At = DenseMatrix<T>(rows: self.columns, columns: self.rows, intialValue: values[0][0])
         for i in 0..<self.rows {
@@ -43,3 +61,4 @@ public struct DenseMatrix<T>: Matrix {
         set { values[i][j] = newValue }
     }
 }
+
