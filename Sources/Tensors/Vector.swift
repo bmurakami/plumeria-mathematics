@@ -6,11 +6,11 @@ public protocol Vector : Equatable {
 }
 
 extension Vector where Scalar: ApproximatelyEquatable {
-    public func approximatelyEquals(_ other: Self) -> Bool {
+    public func approximatelyEquals(_ other: Self, tolerance: Scalar = Scalar.ulpOfOne) -> Bool {
         guard self.count == other.count else { return false }
         
         for i in 0..<count {
-            if !self[i].approximatelyEquals(other[i]) {
+            if !self[i].approximatelyEquals(other[i], tolerance: tolerance) {
                 return false
             }
         }
