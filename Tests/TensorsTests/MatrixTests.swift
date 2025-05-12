@@ -34,7 +34,6 @@ import Testing
     let v = DenseVector([2.0, 3.0])
     let b = try A • v
 
-    #expect((b as! DenseVector<Double>) == [8.0, 18.0])
     #expect((b as! DenseVector<Double>) == DenseVector([8.0, 18.0]))
 }
 

@@ -1,4 +1,4 @@
-public struct DenseVector<T: Numeric>: Vector {
+public struct DenseVector<T: FloatingPoint & ApproximatelyEquatable>: Vector {
     public private(set) var values: [T]
     
     public init(_ values: [T]) {

@@ -1,4 +1,4 @@
-public struct DenseMatrix<T: Numeric>: Matrix {
+public struct DenseMatrix<T: Numeric & ApproximatelyEquatable>: Matrix {
     public private(set)var values: [[T]]
 
     public init(rows: Int, columns: Int, intialValue: T = 0.0) {
@@ -61,4 +61,3 @@ public struct DenseMatrix<T: Numeric>: Matrix {
         set { values[i][j] = newValue }
     }
 }
-

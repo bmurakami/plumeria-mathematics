@@ -1,10 +1,9 @@
-protocol ApproximatelyEquatable {
-    func approximatelyEquals(_ other: Self) -> Bool
+public protocol ApproximatelyEquatable {
+    func approximatelyEquals(_ other: Self, tolerance: Self) -> Bool
 }
 
 extension FloatingPoint where Self: ApproximatelyEquatable {
-    func approximatelyEquals(_ other: Self) -> Bool {
-        let tolerance: Self = Self.ulpOfOne * Self(10)
+    public func approximatelyEquals(_ other: Self, tolerance: Self = Self.ulpOfOne * Self(10)) -> Bool {
         return abs(self - other) < tolerance * (abs(self) + abs(other))
     }
 }

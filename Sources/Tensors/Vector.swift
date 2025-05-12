@@ -1,16 +1,16 @@
 public protocol Vector : Equatable {
-    associatedtype Scalar : Equatable
+    associatedtype Scalar : FloatingPoint
     
     var count: Int { get }
     subscript(i: Int) -> Scalar { get set }
 }
 
-extension Vector where Scalar: Equatable {
-    public static func == (lhs: Self, rhs: Self) -> Bool {
-        guard lhs.count == rhs.count else { return false }
+extension Vector where Scalar: ApproximatelyEquatable {
+    public func approximatelyEquals(_ other: Self) -> Bool {
+        guard self.count == other.count else { return false }
         
-        for i in 0..<lhs.count {
-            if lhs[i] != rhs[i] {
+        for i in 0..<count {
+            if !self[i].approximatelyEquals(other[i]) {
                 return false
             }
         }
@@ -18,19 +18,3 @@ extension Vector where Scalar: Equatable {
     }
 }
 
-extension DenseVector where T: Equatable {
-    public static func == (lhs: DenseVector<T>, rhs: [T]) -> Bool {
-        guard lhs.count == rhs.count else { return false }
-        
-        for i in 0..<lhs.count {
-            if lhs[i] != rhs[i] {
-                return false
-            }
-        }
-        return true
-    }
-    
-    public static func == (lhs: [T], rhs: DenseVector<T>) -> Bool {
-        return rhs == lhs
-    }
-}
