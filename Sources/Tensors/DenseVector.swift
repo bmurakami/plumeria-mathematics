@@ -13,4 +13,8 @@ public struct DenseVector<T: FloatingPoint & ApproximatelyEquatable>: Vector {
         get { return values[i] }
         set { values[i] = newValue }
     }
+    
+    public func toArray() -> [T] {
+        return values
+    }
 }

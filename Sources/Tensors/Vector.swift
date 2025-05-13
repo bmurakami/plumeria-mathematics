@@ -3,6 +3,8 @@ public protocol Vector : Equatable {
     
     var count: Int { get }
     subscript(i: Int) -> Scalar { get set }
+    
+    func toArray() -> [Scalar]
 }
 
 extension Vector where Scalar: ApproximatelyEquatable {
