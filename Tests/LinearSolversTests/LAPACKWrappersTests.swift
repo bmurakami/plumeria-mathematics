@@ -3,7 +3,7 @@ import Tensors
 @testable import LinearSolvers
 
 @Test func solveDenseRealLinear_OpenBLAS_correctness() async throws {
-    let A = try DenseMatrix([
+    let A = try DenseMatrix_Reference([
         [2.0, 3.0],
         [5.0, 1.0]
     ])

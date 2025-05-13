@@ -1,4 +1,6 @@
-public struct DenseMatrix<T: Numeric & ApproximatelyEquatable>: Matrix {
+
+
+public struct DenseMatrix_Reference<T: Numeric & ApproximatelyEquatable>: Matrix {
     public private(set)var values: [[T]]
 
     public init(rows: Int, columns: Int, intialValue: T = 0.0) {
@@ -47,7 +49,7 @@ public struct DenseMatrix<T: Numeric & ApproximatelyEquatable>: Matrix {
     }
 
     public var t: any Matrix {
-        var At = DenseMatrix<T>(rows: self.columns, columns: self.rows, intialValue: values[0][0])
+        var At = DenseMatrix_Reference<T>(rows: self.columns, columns: self.rows, intialValue: values[0][0])
         for i in 0..<self.rows {
             for j in 0..<self.columns {
                 At[j, i] = values[i][j]

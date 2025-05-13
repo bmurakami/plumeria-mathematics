@@ -2,7 +2,7 @@ import Testing
 @testable import Tensors
 
 @Test func RealDenseMatrix_initializerWithValues() throws {
-    var m = try DenseMatrix([[1.0, 2.0], [3.0, 4.0]])
+    var m = try DenseMatrix_Reference([[1.0, 2.0], [3.0, 4.0]])
     #expect(m[0, 0] == 1.0)
     #expect(m[1, 0] == 3.0)
     #expect(m[0, 1] == 2.0)
@@ -13,7 +13,7 @@ import Testing
 }
 
 @Test func RealDenseMatrix_initializerWithRowsAndColumns() throws {
-    var m = DenseMatrix(rows: 2, columns: 3)
+    var m = DenseMatrix_Reference(rows: 2, columns: 3)
     
     #expect(m.rows == 2)
     #expect(m.columns == 3)
@@ -29,7 +29,7 @@ import Testing
 }
 
 @Test func RealDenseMatrix_vectorMultiplication() throws {
-    let A = try DenseMatrix([[1.0, 2.0],
+    let A = try DenseMatrix_Reference([[1.0, 2.0],
                              [3.0, 4.0]])
     let v = DenseVector([2.0, 3.0])
     let b = try A * v
@@ -38,7 +38,7 @@ import Testing
 }
 
 @Test func RealDenseMatrix_transpose() throws {
-    let m = try DenseMatrix([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    let m = try DenseMatrix_Reference([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
     let mt = m.t
     for i in 0..<mt.rows {
         for j in 0..<mt.columns {
@@ -48,7 +48,7 @@ import Testing
 }
 
 @Test func RealDenseMatrix_flatten() throws {
-    let m = try DenseMatrix([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    let m = try DenseMatrix_Reference([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
     #expect(m.flatten() == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
 }
 
@@ -63,15 +63,15 @@ import Testing
     ]
     for badArray in testCases {
         #expect(throws: MatrixError.self) {
-            try DenseMatrix(badArray)
+            try DenseMatrix_Reference(badArray)
         }
     }
 }
 
 @Test func RealDenseMatrix_toArray() throws {
-    let m1 = try DenseMatrix([[1.0, 2.0], [3.0, 4.0]])
+    let m1 = try DenseMatrix_Reference([[1.0, 2.0], [3.0, 4.0]])
     #expect(m1.toArray() == [[1.0, 2.0], [3.0, 4.0]])
     
-    let m2 = try DenseMatrix<Float>(([[1.0, 2.0], [3.0, 4.0]]))
+    let m2 = try DenseMatrix_Reference<Float>(([[1.0, 2.0], [3.0, 4.0]]))
     #expect(m2.toArray() == [[1.0, 2.0], [3.0, 4.0]])
 }
