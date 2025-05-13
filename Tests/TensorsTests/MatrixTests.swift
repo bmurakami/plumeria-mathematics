@@ -67,3 +67,11 @@ import Testing
         }
     }
 }
+
+@Test func RealDenseMatrix_toArray() throws {
+    let m1 = try DenseMatrix([[1.0, 2.0], [3.0, 4.0]])
+    #expect(m1.toArray() == [[1.0, 2.0], [3.0, 4.0]])
+    
+    let m2 = try DenseMatrix<Float>(([[1.0, 2.0], [3.0, 4.0]]))
+    #expect(m2.toArray() == [[1.0, 2.0], [3.0, 4.0]])
+}

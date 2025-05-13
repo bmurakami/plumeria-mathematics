@@ -60,4 +60,8 @@ public struct DenseMatrix<T: Numeric & ApproximatelyEquatable>: Matrix {
         get { return values[i][j] }
         set { values[i][j] = newValue }
     }
+    
+    public func toArray() -> [[T]] {
+        return values
+    }
 }

@@ -4,9 +4,10 @@ public protocol Matrix {
     var rows: Int { get }
     var columns: Int { get }
     var t: any Matrix { get }
+    subscript(i: Int, j: Int) -> Scalar { get set }
 
     func times<V: Vector>(_ v: V) throws -> any Vector where V.Scalar == Scalar
-    subscript(i: Int, j: Int) -> Scalar { get set }
+    func toArray() -> [[Scalar]]
 }
 
 enum MatrixError: Error {
