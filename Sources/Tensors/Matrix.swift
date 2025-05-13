@@ -14,8 +14,8 @@ enum MatrixError: Error {
     case malformedMatrix(reason: String)
 }
 
-infix operator • : MultiplicationPrecedence
+infix operator * : MultiplicationPrecedence
 
-public func • <M: Matrix, V: Vector>(lhs: M, rhs: V) throws -> any Vector where M.Scalar == V.Scalar {
+public func * <M: Matrix, V: Vector>(lhs: M, rhs: V) throws -> any Vector where M.Scalar == V.Scalar {
     return try lhs.times(rhs)
 }

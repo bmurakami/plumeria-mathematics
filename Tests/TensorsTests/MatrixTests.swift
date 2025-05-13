@@ -32,7 +32,7 @@ import Testing
     let A = try DenseMatrix([[1.0, 2.0],
                              [3.0, 4.0]])
     let v = DenseVector([2.0, 3.0])
-    let b = try A • v
+    let b = try A * v
 
     #expect((b as! DenseVector<Double>) == DenseVector([8.0, 18.0]))
 }
