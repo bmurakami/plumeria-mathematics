@@ -35,15 +35,19 @@ import Tensors
         let b = makeVector(size: n)
         let v = solveDenseRealLinear(A, b)
         
-        // LAPACK's dgesv seems to require more tolerance for large matrices.
-        #expect(try (A • v as! DenseVector<Double>).approximatelyEquals(b, tolerance: 1e-7))
+        #expect(try (A • v as! DenseVector<Double>).approximatelyEquals(b, tolerance: 1e-9))
     }
+}
+
+func randomNumber() -> Double {
+    let sign = Double.random(in: 0..<1) > 0.5 ? 1.0 : -1.0
+    return sign * Double.random(in: 1..<100)  // No small numbers!
 }
 
 func makeVector(size: Int) -> DenseVector<Double> {
     var v = [Double]()
     for _ in 0..<size {
-        v.append(Double.random(in: -100.0...100.0))
+        v.append(randomNumber())
     }
     return DenseVector(v)
 }
@@ -53,7 +57,7 @@ func makeMatrix(size: Int) throws -> DenseMatrix<Double> {
     for _ in 0..<size {
         var row = [Double]()
         for _ in 0..<size {
-            row.append(Double.random(in: -100.0...100.0))
+            row.append(randomNumber())
         }
         matrix.append(row)
     }
