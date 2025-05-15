@@ -30,10 +30,8 @@ public struct DenseMatrix_Reference<T: Numeric & ApproximatelyEquatable>: Matrix
     public var rows: Int { return values.count }
     public var columns: Int { return values[0].count }
     
-    public func times<V: Vector>(_ v: V) throws -> any Vector where V.Scalar == T {
-        if self.columns != v.count {
-            throw MatrixError.malformedMatrix(reason: "Matrix columns don't match vector size")
-        }
+    public func times<V: Vector>(_ v: V) -> V where V.Scalar == T {
+        precondition(self.columns == v.count, "Matrix columns don't match vector size")
         
         var sum: [T] = []
         sum.reserveCapacity(self.rows)
@@ -45,7 +43,7 @@ public struct DenseMatrix_Reference<T: Numeric & ApproximatelyEquatable>: Matrix
             sum.append(x)
         }
         
-        return DenseVector(sum)
+        return v.spawn(with: sum)
     }
 
     public var t: any Matrix {

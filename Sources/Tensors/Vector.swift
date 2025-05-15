@@ -5,6 +5,7 @@ public protocol Vector : Equatable {
     subscript(i: Int) -> Scalar { get set }
     
     func toArray() -> [Scalar]
+    func spawn(with values: [Scalar]) -> Self
 }
 
 extension Vector where Scalar: ApproximatelyEquatable {

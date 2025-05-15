@@ -24,7 +24,7 @@ import Tensors
         let b = makeVector(size: n)
         let v = solveDenseRealLinear(A, b)
         
-        #expect(try (A * v as! DenseVector<Double>).approximatelyEquals(b, tolerance: 1e-13))
+        #expect((A * v).approximatelyEquals(b, tolerance: 1e-13))
     }
 }
 
@@ -35,7 +35,7 @@ import Tensors
         let b = makeVector(size: n)
         let v = solveDenseRealLinear(A, b)
         
-        #expect(try (A * v as! DenseVector<Double>).approximatelyEquals(b, tolerance: 1e-8))
+        #expect((A * v).approximatelyEquals(b, tolerance: 1e-8))
     }
 }
 

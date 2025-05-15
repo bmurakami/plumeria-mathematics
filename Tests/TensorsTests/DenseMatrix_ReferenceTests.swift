@@ -32,9 +32,9 @@ import Testing
     let A = try DenseMatrix_Reference([[1.0, 2.0],
                              [3.0, 4.0]])
     let v = DenseVector([2.0, 3.0])
-    let b = try A * v
+    let b = A * v
 
-    #expect((b as! DenseVector<Double>) == DenseVector([8.0, 18.0]))
+    #expect(b == DenseVector([8.0, 18.0]))
 }
 
 @Test func DenseMatrix_Reference_transpose() throws {
