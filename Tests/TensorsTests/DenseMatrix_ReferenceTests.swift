@@ -1,7 +1,7 @@
 import Testing
 @testable import Tensors
 
-@Test func RealDenseMatrix_initializerWithValues() throws {
+@Test func DenseMatrix_Reference_initializerWithValues() throws {
     var m = try DenseMatrix_Reference([[1.0, 2.0], [3.0, 4.0]])
     #expect(m[0, 0] == 1.0)
     #expect(m[1, 0] == 3.0)
@@ -12,7 +12,7 @@ import Testing
     #expect(m[1, 0] == 3.14)
 }
 
-@Test func RealDenseMatrix_initializerWithRowsAndColumns() throws {
+@Test func DenseMatrix_Reference_initializerWithRowsAndColumns() throws {
     var m = DenseMatrix_Reference(rows: 2, columns: 3)
     
     #expect(m.rows == 2)
@@ -28,7 +28,7 @@ import Testing
     #expect(m[1, 2] == 3.14)
 }
 
-@Test func RealDenseMatrix_vectorMultiplication() throws {
+@Test func DenseMatrix_Reference_vectorMultiplication() throws {
     let A = try DenseMatrix_Reference([[1.0, 2.0],
                              [3.0, 4.0]])
     let v = DenseVector([2.0, 3.0])
@@ -37,7 +37,7 @@ import Testing
     #expect((b as! DenseVector<Double>) == DenseVector([8.0, 18.0]))
 }
 
-@Test func RealDenseMatrix_transpose() throws {
+@Test func DenseMatrix_Reference_transpose() throws {
     let m = try DenseMatrix_Reference([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
     let mt = m.t
     for i in 0..<mt.rows {
@@ -47,12 +47,12 @@ import Testing
     }
 }
 
-@Test func RealDenseMatrix_flatten() throws {
+@Test func DenseMatrix_Reference_flatten() throws {
     let m = try DenseMatrix_Reference([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
     #expect(m.flatten() == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
 }
 
-@Test func RealDenseMatrix_initializerValidation() {
+@Test func DenseMatrix_Reference_initializerValidation() {
     let testCases = [
         [],
         [[]],
