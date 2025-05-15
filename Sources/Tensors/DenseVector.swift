@@ -17,8 +17,4 @@ public struct DenseVector<T: FloatingPoint & ApproximatelyEquatable>: Vector {
     public func toArray() -> [T] {
         return values
     }
-    
-    public func spawn(with values: [T]) -> Self{
-        return DenseVector<T>(values)
-    }
 }

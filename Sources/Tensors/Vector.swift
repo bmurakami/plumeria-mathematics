@@ -1,11 +1,10 @@
 public protocol Vector : Equatable {
     associatedtype Scalar : FloatingPoint
-    
+    init(_ values: [Scalar])
     var count: Int { get }
     subscript(i: Int) -> Scalar { get set }
     
     func toArray() -> [Scalar]
-    func spawn(with values: [Scalar]) -> Self
 }
 
 extension Vector where Scalar: ApproximatelyEquatable {
@@ -20,4 +19,3 @@ extension Vector where Scalar: ApproximatelyEquatable {
         return true
     }
 }
-

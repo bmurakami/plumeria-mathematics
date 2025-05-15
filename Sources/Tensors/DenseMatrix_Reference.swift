@@ -43,7 +43,7 @@ public struct DenseMatrix_Reference<T: Numeric & ApproximatelyEquatable>: Matrix
             sum.append(x)
         }
         
-        return v.spawn(with: sum)
+        return V(sum)
     }
 
     public var t: any Matrix {
