@@ -9,7 +9,7 @@ import Tensors
     // x + 2y - z = 2
     // x + y - 4z = -9
     
-    let A = try DenseMatrix_Reference([[2.0, -1, 1], [1, 2, -1], [1, 1, -4]])
+    let A = DenseMatrix_Reference([[2.0, -1, 1], [1, 2, -1], [1, 1, -4]])
     let b = DenseVector([3.0, 2, -9])
     let v_actual = solveDenseRealLinear(A, b)
     let v_expected = DenseVector([1.0, 2, 3])
@@ -61,5 +61,5 @@ func makeMatrix(size: Int) throws -> DenseMatrix_Reference<Double> {
         }
         matrix.append(row)
     }
-    return try DenseMatrix_Reference(matrix)
+    return DenseMatrix_Reference(matrix)
 }
