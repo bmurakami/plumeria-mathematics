@@ -1,5 +1,3 @@
-
-
 public struct DenseMatrix_Reference<T: Numeric & ApproximatelyEquatable>: Matrix {
     public private(set)var values: [[T]]
 
@@ -7,19 +5,12 @@ public struct DenseMatrix_Reference<T: Numeric & ApproximatelyEquatable>: Matrix
         values = Array(repeating: Array(repeating: intialValue, count: columns), count: rows)
     }
 
-    public init(_ values: [[T]]) throws {
-        func validate() throws {
-            if values.isEmpty || (values.count > 0 && values[0].isEmpty) {
-                throw MatrixError.malformedMatrix(reason: "The matrix cannot be empty or partially empty")
-            }
-            for row in values {
-                if row.count != values[0].count {
-                    throw MatrixError.malformedMatrix(reason: "All rows must have the same number of columns")
-                }
-            }
-        }
+    public init(_ values: [[T]]) {
+        precondition(!values.isEmpty && !values[0].isEmpty,
+                     "The matrix cannot be empty or partially empty")
+        precondition(values.allSatisfy { $0.count == values[0].count},
+                     "All rows in a matrix must have the same size")
         
-        try validate()
         self.values = values
     }
     
