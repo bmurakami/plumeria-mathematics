@@ -46,7 +46,7 @@ public struct DenseMatrix_Reference<T: Numeric & ApproximatelyEquatable>: Matrix
         return V(sum)
     }
 
-    public var t: any Matrix {
+    public var t: Self {
         var At = DenseMatrix_Reference<T>(rows: self.columns, columns: self.rows, intialValue: values[0][0])
         for i in 0..<self.rows {
             for j in 0..<self.columns {

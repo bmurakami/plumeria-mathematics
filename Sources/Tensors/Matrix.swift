@@ -3,7 +3,7 @@ public protocol Matrix {
     
     var rows: Int { get }
     var columns: Int { get }
-    var t: any Matrix { get }
+    var t: Self { get }
     subscript(i: Int, j: Int) -> Scalar { get set }
 
     func times<V: Vector>(_ v: V) -> V where V.Scalar == Scalar
