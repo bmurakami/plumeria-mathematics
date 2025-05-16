@@ -1,4 +1,5 @@
 public struct DenseMatrix_Reference<T: Numeric & ApproximatelyEquatable>: Matrix {
+    public typealias Scalar = T
     public private(set)var values: [[T]]
 
     public init(rows: Int, columns: Int, intialValue: T = 0.0) {
@@ -47,12 +48,12 @@ public struct DenseMatrix_Reference<T: Numeric & ApproximatelyEquatable>: Matrix
         return At
     }
     
-    public subscript(i: Int, j: Int) -> T {
+    public subscript(i: Int, j: Int) -> Scalar {
         get { return values[i][j] }
         set { values[i][j] = newValue }
     }
     
-    public func toArray() -> [[T]] {
+    public func toArray() -> [[Scalar]] {
         return values
     }
 }
