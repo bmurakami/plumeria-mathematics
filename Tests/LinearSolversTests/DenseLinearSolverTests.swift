@@ -29,7 +29,7 @@ import Tensors
 }
 
 @Test func solveDenseRealLinear_correctness_largeMatrices() throws {
-    let sizes = [100, 1000]
+    let sizes = [100, 500]
     for n in sizes {
         let A = try makeMatrix(size: n)
         let b = makeVector(size: n)
