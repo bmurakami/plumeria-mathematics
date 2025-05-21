@@ -11,7 +11,7 @@ let package = Package(
     ],
     targets: [
         .systemLibrary(name: "COpenBLAS", path: "Sources/COpenBLAS"),
-        .target(name: "Tensors"),
+        .target(name: "Tensors", dependencies: ["COpenBLAS"]),
         .target(
             name: "LinearSolvers",
             dependencies: ["Tensors","COpenBLAS"],
