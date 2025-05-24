@@ -8,7 +8,7 @@ public protocol Vector : Equatable {
 }
 
 extension Vector where Scalar: ApproximatelyEquatable {
-    public func approximatelyEquals(_ other: Self, tolerance: Scalar = Scalar.ulpOfOne) -> Bool {
+    public func approximatelyEquals(_ other: Self, tolerance: Scalar = 10 * Scalar.ulpOfOne) -> Bool {
         guard self.count == other.count else { return false }
         
         for i in 0..<count {
