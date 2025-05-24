@@ -8,7 +8,7 @@ public func solveDenseRealLinear_Accelerate(_ A: DenseMatrix_Reference<Double>, 
     
     var n = Int32(A.rows)
     var nrhs = Int32(1)
-    var matrixA = A.t.flatten()
+    var matrixA = A.flatten()
     var bCopy = Array(b.values)
     var lda = Int32(A.rows)
     var ldb = Int32(A.rows)

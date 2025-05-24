@@ -15,8 +15,18 @@ public struct DenseMatrix_Reference<T: Numeric & ApproximatelyEquatable>: Matrix
         self.values = values
     }
     
-    public func flatten() -> [T] {
-        return Array(values.joined())
+    public func flatten(columnMajorOrder: Bool = false) -> [T] {
+        var flattened = Array(repeating: T.zero, count: rows * columns)
+        if columnMajorOrder {
+            return Array(values.joined())
+        } else {
+            for i in 0..<rows {
+                for j in 0..<columns {
+                    flattened[i + rows * j] = values[i][j]
+                }
+            }
+            return flattened
+        }
     }
     
     public var rows: Int { return values.count }

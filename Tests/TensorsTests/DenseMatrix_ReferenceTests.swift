@@ -49,10 +49,13 @@ import Testing
 
 @Test func DenseMatrix_Reference_flatten() {
     let m = DenseMatrix_Reference.init([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-    #expect(m.flatten() == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+    
+    #expect(m.flatten(columnMajorOrder: true) == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+    #expect(m.flatten(columnMajorOrder: false) == [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
 }
 
 @Test func DenseMatrix_Reference_toArray() {
-    let m = DenseMatrix_Reference.init([[1.0, 2.0], [3.0, 4.0]])
-    #expect(m.toArray() == [[1.0, 2.0], [3.0, 4.0]])
+    let a = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
+    let m = DenseMatrix_Reference(a)
+    #expect(m.toArray() == a)
 }
