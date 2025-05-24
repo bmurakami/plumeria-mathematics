@@ -1,5 +1,5 @@
 public protocol Vector : Equatable {
-    associatedtype Scalar : FloatingPoint
+    associatedtype Scalar: FloatingPoint
     init(_ values: [Scalar])
     var count: Int { get }
     subscript(i: Int) -> Scalar { get set }

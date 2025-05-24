@@ -1,6 +1,6 @@
 import COpenBLAS
 
-public struct DenseMatrix_BLAS<T: Numeric & ApproximatelyEquatable>: Matrix {
+public struct DenseMatrix_BLAS<T: FloatingPoint & ApproximatelyEquatable>: Matrix {
     public typealias Scalar = T
     
     private var n_r: Int

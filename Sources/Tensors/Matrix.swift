@@ -1,5 +1,5 @@
 public protocol Matrix {
-    associatedtype Scalar
+    associatedtype Scalar: FloatingPoint
     
     var rows: Int { get }
     var columns: Int { get }

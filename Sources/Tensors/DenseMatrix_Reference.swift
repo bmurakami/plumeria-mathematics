@@ -1,4 +1,4 @@
-public struct DenseMatrix_Reference<T: Numeric & ApproximatelyEquatable>: Matrix {
+public struct DenseMatrix_Reference<T: FloatingPoint & ApproximatelyEquatable>: Matrix {
     public typealias Scalar = T
     public private(set)var values: [[T]]
 
