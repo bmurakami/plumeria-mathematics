@@ -1,7 +1,7 @@
 import Testing
 @testable import Tensors
 
-@Test func Complex_initializers() {
+@Test func Complex_init() {
     let z = Complex(1.2, 3.4)
     #expect(z.re == 1.2)
     #expect(z.im == 3.4)

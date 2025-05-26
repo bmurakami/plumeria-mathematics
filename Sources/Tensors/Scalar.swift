@@ -1,10 +1,17 @@
+import Foundation
+
 public protocol Scalar: Tensor {
     static var zero: Self { get }
-
-//    func approximatelyEquals(_ other: Self, tolerance: Double) -> Bool
+    func round() -> Self
 }
 
 extension Double: Scalar {
+    public func round() -> Double {
+        let precision = 14
+        let multiplier = pow(10.0, Double(precision))
+        return (self * multiplier).rounded() / multiplier
+    }
+    
     public func approximatelyEquals(_ other: Self, tolerance: Double = 10 * Double.ulpOfOne) -> Bool {
         return abs(self - other) < tolerance * (abs(self) + abs(other))
     }
@@ -16,13 +23,19 @@ public struct Complex: Scalar {
     
     public var re:  Double { x }
     public var im:  Double { y }
-    public static var zero: Complex { Complex(0.0, 0.0) }
 
     public init(_ real: Double, _ imaginary: Double) {
         self.x = real
         self.y = imaginary
     }
     
+    // MARK: - Scalar conformance
+    public static var zero: Complex { Complex(0.0, 0.0) }
+    
+    public func round() -> Complex {
+        return Complex(x.round(), y.round())
+    }
+
     // MARK: - Tensor conformance
     public static func + (lhs: Complex, rhs: Complex) -> Complex {
         return Complex(lhs.x + rhs.x, lhs.y + rhs.y)
@@ -36,3 +49,4 @@ public struct Complex: Scalar {
         return re.approximatelyEquals(other.re) && im.approximatelyEquals(other.im)
     }
 }
+

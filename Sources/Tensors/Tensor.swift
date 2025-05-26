@@ -1,4 +1,4 @@
-public protocol Tensor: Equatable {
+public protocol Tensor: Equatable, Sendable {
     static func + (lhs: Self, rhs: Self) -> Self
     static func - (lhs: Self, rhs: Self) -> Self
     static prefix func - (operand: Self) -> Self
@@ -9,5 +9,4 @@ public extension Tensor {
     static func - (lhs: Self, rhs: Self) -> Self {
         return lhs + (-rhs)
     }
-
 }
