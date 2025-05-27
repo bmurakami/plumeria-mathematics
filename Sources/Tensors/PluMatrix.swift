@@ -5,6 +5,9 @@ public protocol PluMatrix: PluTensor {
     var columns: Int { get }
     var transpose: Self { get }
     subscript(i: Int, j: Int) -> S { get set }
+    
+    init(rows: Int, columns: Int, initialValue: S)
+    init(_ values: [[S]])
 
     func times<V: VectorType>(_ v: V) -> V where V.S == S
     func toArray(round: Bool) -> [[S]]

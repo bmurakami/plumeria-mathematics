@@ -17,13 +17,13 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix {
     public var columns: Int { return values[0].count }
     
     public var transpose: Self {
-        var At = MatrixDenseReference(rows: self.columns, columns: self.rows, initialValue: values[0][0])
+        var mt = MatrixDenseReference(rows: self.columns, columns: self.rows, initialValue: values[0][0])
         for i in 0..<self.rows {
             for j in 0..<self.columns {
-                At[j, i] = values[i][j]
+                mt[j, i] = values[i][j]
             }
         }
-        return At
+        return mt
     }
     
     public subscript(i: Int, j: Int) -> S {
