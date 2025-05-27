@@ -1,11 +1,13 @@
 import Foundation
 
-public protocol Scalar: Tensor {
+public protocol PluScalar: PluTensor {
     static var zero: Self { get }
+    
     func round() -> Self
+    static func * (lhs: Self, rhs: Self) -> Self
 }
 
-extension Double: Scalar {
+extension Double: PluScalar {
     public func round() -> Double {
         let precision = 14
         let multiplier = pow(10.0, Double(precision))
@@ -17,7 +19,7 @@ extension Double: Scalar {
     }
 }
 
-public struct Complex: Scalar {
+public struct Complex: PluScalar {
     private let x: Double
     private let y: Double
     
@@ -34,6 +36,10 @@ public struct Complex: Scalar {
     
     public func round() -> Complex {
         return Complex(x.round(), y.round())
+    }
+    
+    public static func * (lhs: Complex, rhs: Complex) -> Complex {
+        return Complex(lhs.x * rhs.x - lhs.y * rhs.y, lhs.x * rhs.y + lhs.y * rhs.x)
     }
 
     // MARK: - Tensor conformance

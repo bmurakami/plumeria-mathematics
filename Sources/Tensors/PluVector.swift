@@ -1,5 +1,5 @@
-protocol Vector<S>: Tensor {
-    associatedtype S: Scalar
+public protocol VectorType: PluTensor {
+    associatedtype S: PluScalar
     
     var size: Int { get }
     subscript(index: Int) -> S { get set }
@@ -9,7 +9,7 @@ protocol Vector<S>: Tensor {
     func toArray(round: Bool) -> [S]
 }
 
-extension Vector {
+extension VectorType {
     public func approximatelyEquals(_ other: Self, tolerance: Double = 10 * Double.ulpOfOne) -> Bool {
         guard self.size == other.size else { return false }
         

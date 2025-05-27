@@ -1,8 +1,8 @@
-public struct VectorDenseReference<S: Scalar>: Vector {
+public struct VectorDenseReference<S: PluScalar>: VectorType {
     private var values: [S]
     
     public var size: Int { values.count }
-    public subscript(i: Int) -> S {
+    public  subscript(i: Int) -> S {
         get { return values[i] }
         set { values[i] = newValue }
     }
@@ -23,10 +23,10 @@ public struct VectorDenseReference<S: Scalar>: Vector {
             fatalError("Vector dimensions must match for addition")
         }
         let result = zip(lhs.values, rhs.values).map { $0 + $1 }
-        return VectorDenseReference(result)
+        return VectorDenseReference<S>(result)
     }
     
     public static prefix func - (vector: VectorDenseReference<S>) -> VectorDenseReference<S> {
-        return VectorDenseReference(vector.values.map { -$0 })
+        return VectorDenseReference<S>(vector.values.map { -$0 })
     }
 }
