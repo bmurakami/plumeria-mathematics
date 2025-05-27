@@ -1,6 +1,7 @@
 public struct VectorDenseReference<S: PluScalar>: VectorType {
     private var values: [S]
     
+    // MARK: - PluVector conformance
     public var size: Int { values.count }
     public  subscript(i: Int) -> S {
         get { return values[i] }
@@ -18,6 +19,7 @@ public struct VectorDenseReference<S: PluScalar>: VectorType {
         return values
     }
 
+    // MARK: - PluTensor conformance
     public static func + (lhs: VectorDenseReference<S>, rhs: VectorDenseReference<S>) -> VectorDenseReference<S> {
         guard lhs.size == rhs.size else {
             fatalError("Vector dimensions must match for addition")

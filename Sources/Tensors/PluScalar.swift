@@ -8,12 +8,14 @@ public protocol PluScalar: PluTensor {
 }
 
 extension Double: PluScalar {
+    // MARK: - PluScalar conformance
     public func round() -> Double {
         let precision = 14
         let multiplier = pow(10.0, Double(precision))
         return (self * multiplier).rounded() / multiplier
     }
     
+    // MARK: - PluTensor conformance
     public func approximatelyEquals(_ other: Self, tolerance: Double = 10 * Double.ulpOfOne) -> Bool {
         return abs(self - other) < tolerance * (abs(self) + abs(other))
     }
@@ -31,7 +33,7 @@ public struct Complex: PluScalar {
         self.y = imaginary
     }
     
-    // MARK: - Scalar conformance
+    // MARK: - PluScalar conformance
     public static var zero: Complex { Complex(0.0, 0.0) }
     
     public func round() -> Complex {
@@ -42,7 +44,7 @@ public struct Complex: PluScalar {
         return Complex(lhs.x * rhs.x - lhs.y * rhs.y, lhs.x * rhs.y + lhs.y * rhs.x)
     }
 
-    // MARK: - Tensor conformance
+    // MARK: - PluTensor conformance
     public static func + (lhs: Complex, rhs: Complex) -> Complex {
         return Complex(lhs.x + rhs.x, lhs.y + rhs.y)
     }

@@ -1,18 +1,7 @@
 public struct MatrixDenseReference<S: PluScalar>: PluMatrix {
     private var values: [[S]]
     
-    public init(rows: Int, columns: Int, initialValue: S = .zero) {
-        values = Array(repeating: Array(repeating: initialValue, count: columns), count: rows)
-    }
-    
-    public init(_ values: [[S]]) {
-        precondition(!values.isEmpty && !values[0].isEmpty)
-        precondition(values.allSatisfy({ $0.count == values[0].count }))
-        
-        self.values = values
-    }
-    
-    // MARK: - Matrix conformance
+    // MARK: - PluMatrix conformance
     public var rows: Int { return values.count }
     public var columns: Int { return values[0].count }
     
@@ -30,7 +19,18 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix {
         get { return values[i][j] }
         set { values[i][j] = newValue }
     }
+
+    public init(rows: Int, columns: Int, initialValue: S = .zero) {
+        values = Array(repeating: Array(repeating: initialValue, count: columns), count: rows)
+    }
     
+    public init(_ values: [[S]]) {
+        precondition(!values.isEmpty && !values[0].isEmpty)
+        precondition(values.allSatisfy({ $0.count == values[0].count }))
+        
+        self.values = values
+    }
+        
     public func times<V: VectorType>(_ v: V) -> V where S == V.S {
         precondition(self.columns == v.size, "Matrix columns don't match vector size")
 
@@ -68,7 +68,7 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix {
         }
     }
     
-    // MARK: - Tensor conformance
+    // MARK: - PluTensor conformance
     public static func + (lhs: MatrixDenseReference<S>, rhs: MatrixDenseReference<S>) -> MatrixDenseReference<S> {
         return MatrixDenseReference(zip(lhs.values, rhs.values).map { row1, row2 in zip(row1, row2).map(+)})
     }
