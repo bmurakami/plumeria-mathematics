@@ -10,6 +10,16 @@ import Testing
     
     m[1, 0] = 3.14
     #expect(m[1, 0] == 3.14)
+    
+    m = MatrixDenseBLAS<Double>([[1.0, 2.0], [3.0, 4.0]])
+    m.blasImplementation = .accelerate
+    #expect(m[0, 0] == 1.0)
+    #expect(m[1, 0] == 3.0)
+    #expect(m[0, 1] == 2.0)
+    #expect(m[1, 1] == 4.0)
+    
+    m[1, 0] = 3.14
+    #expect(m[1, 0] == 3.14)
 }
 
 @Test func DenseMatrix_BLAS_initializerWithRowsAndColumns() {

@@ -1,12 +1,13 @@
+import AccelerateWrapper
 import OpenBLASWrapper
 
 public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
     private var values: [S]
     private var n_r: Int
     private var n_c: Int
-    public var blasImplementation: BLASImplementation
+    public var blasImplementation: BLAS
 
-    init(rows: Int, columns: Int, values: [S], blasImplementation: BLASImplementation = .openBLAS) {
+    init(rows: Int, columns: Int, values: [S], blasImplementation: BLAS = BLAS.default) {
         self.n_r = rows
         self.n_c = columns
         self.values = values
@@ -36,7 +37,7 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
         self.n_r = rows
         self.n_c = columns
         self.values = Array(repeating: initialValue, count: rows * columns)
-        self.blasImplementation = .openBLAS
+        self.blasImplementation = BLAS.default
     }
 
     public init(_ values: [[S]]) {
@@ -60,20 +61,21 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
         
         var y = Array(repeating: 0.0, count: v.size)
         
-        switch blasImplementation {
-        case .accelerate:
-            fatalError("Not yet implemented")
-        case .openBLAS:
-            switch S.self {
-            case is Double.Type:
-                var A = flatten() as! [Double] // Ax = y
-                var x = v.toArray(round: false) as! [Double]
+        switch S.self {
+        case is Double.Type:
+            var A = flatten() as! [Double] // Ax = y
+            var x = v.toArray(round: false) as! [Double]
+            
+            switch blasImplementation {
+            case .accelerate:
+                AccelerateOperations.dgemv(Int32(n_r), Int32(n_c), &A, &x, &y)
+            case .openBLAS:
                 OpenBLASOperations.dgemv(Int32(n_r), Int32(n_c), &A, &x, &y)
-            case is Complex.Type:
-                fatalError("Not yet implemented")
-            default :
-                fatalError("Unsupported scalar type")
             }
+        case is Complex.Type:
+            fatalError("Not yet implemented")
+        default:
+            fatalError("Unsupported scalar type")
         }
         
         return V(y as! [S])
@@ -117,9 +119,4 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
         
         return zip(self.values, other.values).allSatisfy { $0.approximatelyEquals($1, tolerance: tolerance) }
     }
-}
-
-public enum BLASImplementation {
-    case accelerate
-    case openBLAS
 }
