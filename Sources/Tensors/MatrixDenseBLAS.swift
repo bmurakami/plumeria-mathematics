@@ -4,11 +4,13 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
     private var values: [S]
     private var n_r: Int
     private var n_c: Int
+    public var blasImplementation: BLASImplementation
 
-    init(rows: Int, columns: Int, values: [S]) {
+    init(rows: Int, columns: Int, values: [S], blasImplementation: BLASImplementation = .openBLAS) {
         self.n_r = rows
         self.n_c = columns
         self.values = values
+        self.blasImplementation = blasImplementation
     }
     
     // MARK: - PluMatrix conformance
@@ -34,22 +36,51 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
         self.n_r = rows
         self.n_c = columns
         self.values = Array(repeating: initialValue, count: rows * columns)
+        self.blasImplementation = .openBLAS
     }
 
     public init(_ values: [[S]]) {
+        func storeAsColumnMajor(_ values: [[S]]) {
+            self.values = (0..<n_c).flatMap { j in
+                (0..<n_r).map { i in
+                    values[i][j]
+                }
+            }
+        }
+        
         self.n_r = values.count
         self.n_c = values[0].count
         self.values = [S.zero]
-        
-        self.values = (0..<n_c).flatMap { j in
-            (0..<n_r).map { i in
-                values[i][j]
-            }
-        }
+        self.blasImplementation = .openBLAS
+        storeAsColumnMajor(values)
     }
 
-    public func times<V: VectorType>(_ v: V) -> V where V.S == S {
-        return V([S.zero])
+    public func times<V: PluVector>(_ v: V) -> V where V.S == S {
+        precondition(n_c == v.size, "Number of columns in matrix must equal size of vector")
+        
+        var y = Array(repeating: 0.0, count: v.size)
+        
+        switch blasImplementation {
+        case .accelerate:
+            fatalError("Not yet implemented")
+        case .openBLAS:
+            switch S.self {
+            case is Double.Type:
+                let alpha: Double = 1.0
+                let beta = 0.0
+
+                var A = flatten() as! [Double] // Ax = y
+                var x = v.toArray(round: false) as! [Double]
+                COpenBLAS.cblas_dgemv(CblasColMajor, CblasNoTrans, Int32(n_r), Int32(n_c),
+                                      alpha, &A, Int32(n_c), &x, 1, beta, &y, 1)
+            case is Complex.Type:
+                fatalError("Not yet implemented")
+            default :
+                fatalError("Unsupported scalar type")
+            }
+        }
+        
+        return V(y as! [S])
     }
  
     public func toArray(round: Bool = false) -> [[S]] {
@@ -90,4 +121,9 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
         
         return zip(self.values, other.values).allSatisfy { $0.approximatelyEquals($1, tolerance: tolerance) }
     }
+}
+
+public enum BLASImplementation {
+    case accelerate
+    case openBLAS
 }

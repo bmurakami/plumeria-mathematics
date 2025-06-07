@@ -31,7 +31,7 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix {
         self.values = values
     }
         
-    public func times<V: VectorType>(_ v: V) -> V where S == V.S {
+    public func times<V: PluVector>(_ v: V) -> V where S == V.S {
         precondition(self.columns == v.size, "Matrix columns don't match vector size")
 
         var sum: [S] = []

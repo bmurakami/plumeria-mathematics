@@ -9,12 +9,12 @@ public protocol PluMatrix: PluTensor {
     init(rows: Int, columns: Int, initialValue: S)
     init(_ values: [[S]])
 
-    func times<V: VectorType>(_ v: V) -> V where V.S == S
+    func times<V: PluVector>(_ v: V) -> V where V.S == S
     func toArray(round: Bool) -> [[S]]
     func flatten(columnMajorOrder: Bool) -> [S]
 }
 
 infix operator * : MultiplicationPrecedence
-public func * <M: PluMatrix, V: VectorType>(lhs: M, rhs: V) -> V where M.S == V.S {
+public func * <M: PluMatrix, V: PluVector>(lhs: M, rhs: V) -> V where M.S == V.S {
     return lhs.times(rhs)
 }

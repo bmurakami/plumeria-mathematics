@@ -1,4 +1,4 @@
-public struct VectorDenseReference<S: PluScalar>: VectorType {
+public struct VectorDenseReference<S: PluScalar>: PluVector {
     private var values: [S]
     
     // MARK: - PluVector conformance

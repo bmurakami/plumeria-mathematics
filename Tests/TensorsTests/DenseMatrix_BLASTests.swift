@@ -28,14 +28,14 @@ import Testing
     #expect(m[1, 2] == 3.14)
 }
 
-//@Test func DenseMatrix_BLAS_vectorMultiplication() {
-//    let A = MatrixDenseBLAS<Double>([[1.0, 2.0],
-//                             [3.0, 4.0]])
-//    let v = VectorDenseBLAS<Double>([2.0, 3.0])
-//    let b = A * v
-//
-//    #expect(b == VectorDenseBLAS<Double>([8.0, 18.0]))
-//}
+@Test func DenseMatrix_BLAS_vectorMultiplication() {
+    let A = MatrixDenseBLAS<Double>([[1.0, 2.0],
+                                     [3.0, 4.0]])
+    let v = VectorDenseReference<Double>([2.0, 3.0])
+    let b = A * v
+
+    #expect(b == VectorDenseReference<Double>([8.0, 18.0]))
+}
 
 @Test func DenseMatrix_BLAS_transpose() {
     let m = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
