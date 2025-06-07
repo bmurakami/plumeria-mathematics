@@ -1,4 +1,4 @@
-import COpenBLAS
+import OpenBLASWrapper
 
 public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
     private var values: [S]
@@ -66,13 +66,9 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
         case .openBLAS:
             switch S.self {
             case is Double.Type:
-                let alpha: Double = 1.0
-                let beta = 0.0
-
                 var A = flatten() as! [Double] // Ax = y
                 var x = v.toArray(round: false) as! [Double]
-                COpenBLAS.cblas_dgemv(CblasColMajor, CblasNoTrans, Int32(n_r), Int32(n_c),
-                                      alpha, &A, Int32(n_c), &x, 1, beta, &y, 1)
+                OpenBLASOperations.dgemv(Int32(n_r), Int32(n_c), &A, &x, &y)
             case is Complex.Type:
                 fatalError("Not yet implemented")
             default :

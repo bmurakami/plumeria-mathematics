@@ -11,10 +11,11 @@ let package = Package(
     ],
     targets: [
         .systemLibrary(name: "COpenBLAS", path: "Sources/COpenBLAS"),
-        .target(name: "Tensors", dependencies: ["COpenBLAS"]),
+        .target(name: "OpenBLASWrapper", dependencies: ["COpenBLAS"]),
+        .target(name: "Tensors", dependencies: ["OpenBLASWrapper"]),
         .target(
             name: "LinearSolvers",
-            dependencies: ["Tensors","COpenBLAS"],
+            dependencies: ["Tensors", "COpenBLAS"],
             cSettings: [.define("ACCELERATE_NEW_LAPACK")],
             linkerSettings: [.unsafeFlags([
                 "/Users/murakami1/.local/spack/opt/spack/darwin-m1/openblas-0.3.29-urtlqs4wcu3shs6ryfazhsk7rknmjklu/lib/libopenblas.a"
