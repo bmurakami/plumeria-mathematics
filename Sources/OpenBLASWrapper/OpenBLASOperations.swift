@@ -1,6 +1,7 @@
 import COpenBLAS
 
-public struct OpenBLASOperations {
+public enum OpenBLASOperations {
+    // MARK: - BLAS
     public static func dgemv(
         _ m: Int32, _ n: Int32,
         _ a: UnsafeMutablePointer<Double>,
@@ -12,7 +13,24 @@ public struct OpenBLASOperations {
         let lda = Int32(n)
         let incx = Int32(1)
         let incy = Int32(1)
-
+        
         COpenBLAS.cblas_dgemv(CblasColMajor, CblasNoTrans, m, n, alpha, a, lda, x, incx, beta, y, incy)
+    }
+    
+    // MARK: - LAPACK
+    public static func dgesv(
+        _ n: Int32,
+        _ a: UnsafeMutablePointer<Double>,
+        _ b: UnsafeMutablePointer<Double>
+    ) -> Int32 {
+        var nMutable = n
+        var nrhs = Int32(1)
+        var lda = n
+        var ipiv = Array<Int32>(repeating: 0, count: Int(n))
+        var ldb = n
+        var info = Int32(0)
+        
+        COpenBLAS.dgesv_(&nMutable, &nrhs, a, &lda, &ipiv, b, &ldb, &info)
+        return info
     }
 }
