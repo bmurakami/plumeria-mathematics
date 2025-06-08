@@ -47,14 +47,14 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix {
         return mt
     }
     
-    public func toArray(round: Bool = false) -> [[S]] {
+    public func toArray(round: Bool) -> [[S]] {
         if round {
             return values.map { $0.map { $0.round() }}
         }
         return values
     }
     
-    public func flatten(columnMajorOrder: Bool = false) -> [S] {
+    public func flatten(columnMajorOrder: Bool) -> [S] {
         var flattened = Array(repeating: S.zero, count: rows * columns)
         if columnMajorOrder {
             return Array(values.joined())

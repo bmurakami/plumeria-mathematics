@@ -14,6 +14,16 @@ public protocol PluMatrix: PluTensor {
     func flatten(columnMajorOrder: Bool) -> [S]
 }
 
+extension PluMatrix {
+    public func toArray() -> [[S]] {
+        return toArray(round: false)
+    }
+    
+    public func flatten() -> [S] {
+        return flatten(columnMajorOrder: false)
+    }
+}
+
 infix operator * : MultiplicationPrecedence
 public func * <M: PluMatrix, V: PluVector>(lhs: M, rhs: V) -> V where M.S == V.S {
     return lhs.times(rhs)
