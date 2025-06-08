@@ -49,7 +49,7 @@ import Testing
 
 @Test func DenseMatrix_BLAS_transpose() {
     let m = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-    let mt = m.transpose
+    let mt = m.transpose()
     for i in 0..<mt.rows {
         for j in 0..<mt.columns {
             #expect(mt[i, j] == m[j, i])

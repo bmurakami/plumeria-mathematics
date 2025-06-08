@@ -17,16 +17,6 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
     // MARK: - PluMatrix conformance
     public var rows: Int { return n_r }
     public var columns: Int { return n_c }
-
-    public var transpose: MatrixDenseBLAS<S> {
-        var mt = MatrixDenseBLAS(rows: n_c, columns: n_r)
-        for i in 0..<n_r {
-            for j in 0..<n_c {
-                mt[j, i] = values[i + n_r * j]
-            }
-        }
-        return mt
-    }
     
     public subscript(i: Int, j: Int) -> S {
         get { values[i + n_r * j] }
@@ -79,6 +69,16 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
         }
         
         return V(y as! [S])
+    }
+    
+    public func transpose() -> MatrixDenseBLAS<S> {
+        var mt = MatrixDenseBLAS(rows: n_c, columns: n_r)
+        for i in 0..<n_r {
+            for j in 0..<n_c {
+                mt[j, i] = values[i + n_r * j]
+            }
+        }
+        return mt
     }
  
     public func toArray(round: Bool = false) -> [[S]] {
