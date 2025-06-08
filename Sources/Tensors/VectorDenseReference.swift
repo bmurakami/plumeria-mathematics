@@ -12,7 +12,7 @@ public struct VectorDenseReference<S: PluScalar>: PluVector {
         self.values = values
     }
     
-    public func toArray(round: Bool = false) -> [S] {
+    public func toArray(round: Bool) -> [S] {
         if round {
             return values.map { $0.round() }
         }

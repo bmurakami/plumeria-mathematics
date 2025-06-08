@@ -10,6 +10,10 @@ public protocol PluVector: PluTensor {
 }
 
 extension PluVector {
+    public func toArray() -> [S] {
+        return toArray(round: false)
+    }
+    
     public func approximatelyEquals(_ other: Self, tolerance: Double = 10 * Double.ulpOfOne) -> Bool {
         guard self.size == other.size else { return false }
         

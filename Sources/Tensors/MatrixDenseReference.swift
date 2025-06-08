@@ -4,17 +4,7 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix {
     // MARK: - PluMatrix conformance
     public var rows: Int { return values.count }
     public var columns: Int { return values[0].count }
-    
-    public var transpose: Self {
-        var mt = MatrixDenseReference(rows: self.columns, columns: self.rows, initialValue: values[0][0])
-        for i in 0..<self.rows {
-            for j in 0..<self.columns {
-                mt[j, i] = values[i][j]
-            }
-        }
-        return mt
-    }
-    
+        
     public subscript(i: Int, j: Int) -> S {
         get { return values[i][j] }
         set { values[i][j] = newValue }
@@ -47,14 +37,24 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix {
         return V(sum)
     }
     
-    public func toArray(round: Bool = false) -> [[S]] {
+    public func transpose() -> Self {
+        var mt = MatrixDenseReference(rows: self.columns, columns: self.rows, initialValue: values[0][0])
+        for i in 0..<self.rows {
+            for j in 0..<self.columns {
+                mt[j, i] = values[i][j]
+            }
+        }
+        return mt
+    }
+    
+    public func toArray(round: Bool) -> [[S]] {
         if round {
             return values.map { $0.map { $0.round() }}
         }
         return values
     }
     
-    public func flatten(columnMajorOrder: Bool = false) -> [S] {
+    public func flatten(columnMajorOrder: Bool) -> [S] {
         var flattened = Array(repeating: S.zero, count: rows * columns)
         if columnMajorOrder {
             return Array(values.joined())
