@@ -1,0 +1,6 @@
+spack:
+  specs:
+    - openblas build_system=cmake
+    - sundials
+  
+  view: true

@@ -17,9 +17,12 @@ let package = Package(
         .target(
             name: "LinearSolvers",
             dependencies: ["Tensors", "COpenBLAS"],
-            linkerSettings: [.unsafeFlags([
-                "/Users/murakami1/.local/spack/opt/spack/darwin-m1/openblas-0.3.29-urtlqs4wcu3shs6ryfazhsk7rknmjklu/lib/libopenblas.a"
-            ])]
+            linkerSettings: [
+                .unsafeFlags([
+                    "-Xlinker", "-rpath",
+                    "-Xlinker", "plumath-spack/.spack-env/view/lib"
+                ])
+            ]
         ),
         .testTarget(name: "TensorsTests", dependencies: ["Tensors"]),
         .testTarget(
