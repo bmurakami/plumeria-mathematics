@@ -1,3 +1,4 @@
+#if canImport(Accelerate)
 import Accelerate
 
 public struct AccelerateOperations {
@@ -33,3 +34,4 @@ public struct AccelerateOperations {
         return info
     }
 }
+#endif

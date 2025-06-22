@@ -1,4 +1,6 @@
+#if canImport(Accelerate)
 import AccelerateWrapper
+#endif
 import OpenBLASWrapper
 import Tensors
 
@@ -14,9 +16,11 @@ public func solveLinearDense<M: PluMatrix, V: PluVector>(_ A: M, _ b: V, blasImp
         var bArray = b.toArray() as! [Double]
 
         switch blasImplementation {
+        #if canImport(Accelerate)
         case .accelerate:
             let _ = AccelerateOperations.dgesv(Int32(n), &AArray, &bArray)
             x = bArray as! [V.S]
+        #endif
         case .openBLAS:
             let _ = OpenBLASOperations.dgesv(Int32(n), &AArray, &bArray)
             x = bArray as! [V.S]

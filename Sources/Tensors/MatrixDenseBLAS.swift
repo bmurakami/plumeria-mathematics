@@ -57,8 +57,10 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
             var x = v.toArray(round: false) as! [Double]
             
             switch blasImplementation {
+            #if canImport(Accelerate)
             case .accelerate:
                 AccelerateOperations.dgemv(Int32(n_r), Int32(n_c), &A, &x, &y)
+            #endif
             case .openBLAS:
                 OpenBLASOperations.dgemv(Int32(n_r), Int32(n_c), &A, &x, &y)
             }

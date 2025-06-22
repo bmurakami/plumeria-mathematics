@@ -3,7 +3,7 @@ public enum BLAS {
     case openBLAS
     
     public static var `default`: BLAS {
-        #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+        #if canImport(Accelerate)
         return .accelerate
         #else
         return .openBLAS
