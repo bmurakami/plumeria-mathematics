@@ -1,5 +1,7 @@
+// Package.swift
 // swift-tools-version: 6.1
 
+import Foundation
 import PackageDescription
 
 let package = Package(
@@ -10,24 +12,16 @@ let package = Package(
         .library(name: "PlumeriaLinearSolvers", targets: ["LinearSolvers"]),
     ],
     targets: [
-        .systemLibrary(name: "COpenBLAS", path: "Sources/COpenBLAS"),
-        .target(name: "OpenBLASWrapper", dependencies: ["COpenBLAS"]),
+        .systemLibrary(name: "COpenBLAS", path: "Sources/COpenBLAS", pkgConfig: "openblas" ),
         .target(name: "AccelerateWrapper", cSettings: [.define("ACCELERATE_NEW_LAPACK")]),
-        .target(name: "Tensors", dependencies: ["AccelerateWrapper", "OpenBLASWrapper"]),
         .target(
-            name: "LinearSolvers",
-            dependencies: ["Tensors", "COpenBLAS"],
-            linkerSettings: [
-                .unsafeFlags([
-                    "-Xlinker", "-rpath",
-                    "-Xlinker", "plumath-spack/.spack-env/view/lib"
-                ])
-            ]
+            name: "OpenBLASWrapper",
+            dependencies: ["COpenBLAS"],
+            cSettings: [.unsafeFlags(["-I", ProcessInfo.processInfo.environment["OPENBLAS_INCLUDE_PATH"]!])]
         ),
+        .target(name: "Tensors", dependencies: ["AccelerateWrapper", "OpenBLASWrapper"]),
+        .target(name: "LinearSolvers", dependencies: ["Tensors"]),
         .testTarget(name: "TensorsTests", dependencies: ["Tensors"]),
-        .testTarget(
-            name: "LinearSolversTests",
-            dependencies: ["LinearSolvers", "COpenBLAS"]
-        ),
+        .testTarget(name: "LinearSolversTests", dependencies: ["LinearSolvers"]),
     ]
 )

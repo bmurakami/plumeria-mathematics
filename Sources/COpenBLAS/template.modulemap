@@ -1,5 +1,0 @@
-module COpenBLAS {
-    header "PLUMATH_PATH/plumath-spack/.spack-env/view/include/openblas/cblas.h"
-    header "PLUMATH_PATH/plumath-spack/.spack-env/view/include/openblas/lapack.h"
-    export *
-}
