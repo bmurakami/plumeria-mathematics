@@ -19,18 +19,12 @@ jobs:
       packages: read
     steps:
     - uses: actions/checkout@v4
-    - name: Debug pkg-config
-      run: |
-        . /opt/spack/share/spack/setup-env.sh
-        spack load openblas
-        echo "pkg-config openblas found: $(pkg-config --exists openblas && echo YES || echo NO)"
-        echo "includedir result: $(pkg-config --variable=includedir openblas || echo FAILED)"
-        echo "OPENBLAS_INCLUDE_PATH: $OPENBLAS_INCLUDE_PATH"
     - name: Build and Test
       shell: bash
       run: |
         . /opt/spack/share/spack/setup-env.sh
         spack load openblas
         . /root/.local/share/swiftly/env.sh
+        export OPENBLAS_INCLUDE_PATH=$(pkg-config --variable=includedir openblas)
         swift build -v
         swift test -v
