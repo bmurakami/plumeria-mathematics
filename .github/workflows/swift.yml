@@ -22,7 +22,7 @@ jobs:
     - name: Build and Test
       run: |
         . /opt/spack/share/spack/setup-env.sh
-        . /root/spack-installations.sh
+        spack load openblas
         . /root/.local/share/swiftly/env.sh
         swift build -v
         swift test -v
