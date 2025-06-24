@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: container: ghcr.io/bmurakami/plumeria-mathematics:latest
+    container: ghcr.io/bmurakami/plumeria-mathematics:latest
     steps:
     - uses: actions/checkout@v4
     - name: Build and Test
