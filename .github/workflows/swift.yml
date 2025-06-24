@@ -19,13 +19,13 @@ jobs:
       packages: read
     steps:
     - uses: actions/checkout@v4
-    - name: Test Package Manifest
-      run: swift package dump-package
     - name: Build and Test
       shell: bash
       run: |
         . /opt/spack/share/spack/setup-env.sh
         spack load openblas
         . /root/.local/share/swiftly/env.sh
+        echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        swift package dump-package
         swift build -v
         swift test -v
