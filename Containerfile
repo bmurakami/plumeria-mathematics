@@ -1,8 +1,14 @@
-FROM swift:latest
+FROM docker.io/spack/ubuntu-noble
 
 WORKDIR /root
+RUN curl -k -O https://download.swift.org/swiftly/linux/swiftly-1.0.1-$(uname -m).tar.gz
+RUN tar -zxf swiftly-1.0.1-$(uname -m).tar.gz
+RUN ./swiftly init --quiet-shell-followup -y
+RUN rm LICENSE.txt swiftly*
+RUN . "/root/.local/share/swiftly/env.sh"
 RUN apt update
-RUN apt-get -y install bzip2 ca-certificates g++ gcc gfortran git gzip lsb-release patch python3 tar unzip xz-utils zstd
-RUN apt-get -y install nano
-RUN git clone -c feature.manyFiles=true --depth=2 https://github.com/spack/spack.git
-RUN . spack/share/spack/setup-env.sh && spack install -y openblas
+RUN apt-get install -y libcurl4-openssl-dev libedit2 libpython3-dev libxml2-dev libncurses-dev libz3-dev pkg-config zlib1g-dev
+COPY plumath-spack/spack.yaml plumath-spack/spack.yaml
+COPY spack-installations.sh spack-installations.sh
+RUN apt-get install -y zsh openssh-client
+RUN . /opt/spack/share/spack/setup-env.sh && . /root/spack-installations.sh

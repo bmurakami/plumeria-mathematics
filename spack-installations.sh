@@ -1,6 +1,7 @@
 #!/bin/zsh
 
 spack env activate --dir plumath-spack
+spack concretize
 spack install  
 spack load openblas
 
