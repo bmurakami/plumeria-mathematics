@@ -1,4 +1,22 @@
 spack:
+  definitions:
+  - common_packages: []
+
+  - arm_packages: []
+  - when: arch.satisfies('target=aarch64:')
+    arm_packages:
+    - openblas shared=false
+    
+  - x86_packages: []
+  - when: arch.satisfies('target=x86_64:')
+    x86_packages:
+    - openblas shared=false target=x86_64_v2  # GitHub host CPUs do not have AVX.
+
   specs:
-  - openblas shared=false
-  - sundials
+  - $common_packages
+  - $arm_packages
+  - $x86_packages
+  
+  view: true
+  concretizer:
+    unify: when_possible
