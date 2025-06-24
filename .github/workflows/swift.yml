@@ -19,8 +19,8 @@ jobs:
       packages: read
     steps:
     - uses: actions/checkout@v4
-    - name: Check CPU Features
-      run: cat /proc/cpuinfo | grep flags | head -1
+    - name: Test Package Manifest
+      run: swift package dump-package
     - name: Build and Test
       shell: bash
       run: |
