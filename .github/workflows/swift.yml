@@ -9,7 +9,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: ghcr.io/bmurakami/plumeria-mathematics:latest
+    container:
+      image: ghcr.io/bmurakami/plumeria-mathematics:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: read
+      packages: read
     steps:
     - uses: actions/checkout@v4
     - name: Build and Test
