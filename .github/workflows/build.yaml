@@ -7,16 +7,24 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-
+  build-darwin-m1:
     runs-on: macos-15
-
     steps:
     - uses: actions/checkout@v4
     - name: Build
       run: |
-        ./install-pluscilib.sh
+        ./install-pluscilib.sh darwin-m1
         swift build -v
     - name: Run tests
       run: swift test -v
 
+  build-linux-aarch64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        ./install-pluscilib.sh linux-aarch64
+        swift build -v
+    - name: Run tests 
+      run: swift test -v
