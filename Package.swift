@@ -12,7 +12,7 @@ let package = Package(
         .library(name: "PlumeriaLinearSolvers", targets: ["LinearSolvers"]),
     ],
     targets: [
-        .systemLibrary(name: "COpenBLAS", path: "Sources/COpenBLAS", pkgConfig: "openblas" ),
+        .systemLibrary(name: "COpenBLAS", path: "Sources/COpenBLAS"),
         .target(name: "AccelerateWrapper", cSettings: [.define("ACCELERATE_NEW_LAPACK")]),
         .target(name: "OpenBLASWrapper", dependencies: ["COpenBLAS"]),
         .target(name: "Tensors", dependencies: ["AccelerateWrapper", "OpenBLASWrapper"]),
