@@ -1,5 +1,5 @@
 module COpenBLAS {
-    header "cblas.h"
-    header "lapack.h"
+    header "include/cblas.h"
+    header "include/lapack.h"
     export *
 }

@@ -1,5 +1,5 @@
 .DS_Store
 .build/
 .swiftpm/
-plumath-spack/.spack-env/
-plumath-spack/spack.lock
+Sources/COpenBLAS/include
+Sources/COpenBLAS/lib
