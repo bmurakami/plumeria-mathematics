@@ -13,9 +13,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build
       run: |
-        ./BuildScripts/install-pluscilib.sh darwin-m1
-        ln -s openblas/cblas.h cblas.h
-        ln -s openblas/lapack.h lapack.h
+        ./BuildScripts/install-pluscilib.sh
         swift build -v
     - name: Run tests
       run: swift test -v
@@ -26,7 +24,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build
       run: |
-        ./BuildScripts/install-pluscilib.sh linux-aarch64
+        ./BuildScripts/install-pluscilib.sh
         swift build -v
     - name: Run tests 
       run: swift test -v
