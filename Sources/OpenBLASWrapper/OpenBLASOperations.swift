@@ -6,7 +6,7 @@ public enum OpenBLASOperations {
         _ m: Int32, _ n: Int32,
         _ a: UnsafeMutablePointer<Double>,
         _ x: UnsafeMutablePointer<Double>,
-        _ y: UnsafeMutablePointer<Double>,
+        _ y: UnsafeMutablePointer<Double>
     ) {
         let alpha: Double = 1.0
         let beta = 0.0
