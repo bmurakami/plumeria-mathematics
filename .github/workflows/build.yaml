@@ -25,7 +25,6 @@ jobs:
     - name: Build
       run: |
         ./install-pluscilib.sh linux-aarch64
-        ls
         swift build -v
     - name: Run tests 
       run: swift test -v
