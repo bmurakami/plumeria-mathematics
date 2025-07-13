@@ -17,7 +17,6 @@ let package = Package(
         .target(
             name: "OpenBLASWrapper",
             dependencies: ["COpenBLAS"],
-            cSettings: [.unsafeFlags(["-I", ProcessInfo.processInfo.environment["OPENBLAS_INCLUDE_PATH"]!])]
         ),
         .target(name: "Tensors", dependencies: ["AccelerateWrapper", "OpenBLASWrapper"]),
         .target(name: "LinearSolvers", dependencies: ["Tensors"]),
