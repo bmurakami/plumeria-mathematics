@@ -14,10 +14,7 @@ let package = Package(
     targets: [
         .systemLibrary(name: "COpenBLAS", path: "Sources/COpenBLAS", pkgConfig: "openblas" ),
         .target(name: "AccelerateWrapper", cSettings: [.define("ACCELERATE_NEW_LAPACK")]),
-        .target(
-            name: "OpenBLASWrapper",
-            dependencies: ["COpenBLAS"],
-        ),
+        .target(name: "OpenBLASWrapper", dependencies: ["COpenBLAS"]),
         .target(name: "Tensors", dependencies: ["AccelerateWrapper", "OpenBLASWrapper"]),
         .target(name: "LinearSolvers", dependencies: ["Tensors"]),
         .testTarget(name: "TensorsTests", dependencies: ["Tensors"]),
