@@ -13,7 +13,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build
       run: |
-        ./BuildScripts/install-pluscilib.sh
+        ./BuildScripts/install-pluscilib-darwin-m1.sh
         swift build -v
     - name: Run tests
       run: swift test -v
@@ -24,7 +24,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build
       run: |
-        ./BuildScripts/install-pluscilib.sh
+        ./BuildScripts/install-pluscilib-linux-aarch64.sh
         swift build -v
     - name: Run tests 
       run: swift test -v
