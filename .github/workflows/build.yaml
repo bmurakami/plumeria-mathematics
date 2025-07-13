@@ -1,0 +1,22 @@
+name: Plumeria Mathematics CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: macos-15
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        ./install-pluscilib.sh
+        swift build -v
+    - name: Run tests
+      run: swift test -v
+
