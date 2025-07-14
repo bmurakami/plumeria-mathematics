@@ -7,16 +7,33 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-
+  build-darwin-m1:
     runs-on: macos-15
-
     steps:
     - uses: actions/checkout@v4
     - name: Build
       run: |
-        ./install-pluscilib.sh
+        ./BuildScripts/install-pluscilib-darwin-m1.sh
         swift build -v
     - name: Run tests
       run: swift test -v
 
+  build-linux-aarch64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        ./BuildScripts/install-pluscilib-linux-aarch64.sh
+        swift build -v
+
+  build-linux-neoverse_v2:  
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        ./BuildScripts/install-pluscilib-linux-neoverse_v2.sh
+        swift build -v
+    - name: Run tests
+      run: swift test -v
