@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import Tensors
 @testable import LinearSolvers
@@ -30,10 +31,12 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
 }
 
 @Test func solveLinearDense_correctness_smallMatrices_reference() {
+    srand48(42)
     solveLinearDense_correctness_smallMatrices(matrixType: MatrixDenseReference<Double>.self)
 }
 
 @Test func solveLinearDense_correctness_smallMatrices_BLAS() {
+    srand48(42)
     solveLinearDense_correctness_smallMatrices(matrixType: MatrixDenseBLAS<Double>.self)
 }
 
@@ -50,16 +53,18 @@ func solveLinearDense_correctness_largeMatrices<MatrixType: PluMatrix>(matrixTyp
 }
 
 @Test func solveLinearDense_correctness_largeMatrices_reference() {
+    srand48(42)
     solveLinearDense_correctness_largeMatrices(matrixType: MatrixDenseReference<Double>.self)
 }
 
 @Test func solveLinearDense_correctness_largeMatrices_BLAS() {
+    srand48(42)
     solveLinearDense_correctness_largeMatrices(matrixType: MatrixDenseBLAS<Double>.self)
 }
 
 func randomNumber() -> Double {
-    let sign = Double.random(in: 0..<1) > 0.5 ? 1.0 : -1.0
-    return sign * Double.random(in: 1..<100)  // No small numbers!
+    let sign = drand48() > 0.5 ? 1.0 : -1.0
+    return sign * (drand48() * 99.0 + 1.0)
 }
 
 func makeVector(size: Int) -> VectorDenseReference<Double> {
