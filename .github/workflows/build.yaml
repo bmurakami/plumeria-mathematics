@@ -26,5 +26,14 @@ jobs:
       run: |
         ./BuildScripts/install-pluscilib-linux-aarch64.sh
         swift build -v
-    - name: Run tests 
+
+  build-linux-aarch64:  
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        ./BuildScripts/install-pluscilib-linux-neoverse_v2.sh
+        swift build -v
+    - name: Run tests
       run: swift test -v
