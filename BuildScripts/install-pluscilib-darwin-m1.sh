@@ -5,6 +5,6 @@ curl -L "https://github.com/bmurakami/plumeria-scientific-libraries/releases/dow
 unzip -o openblas.zip -d Sources/COpenBLAS
 rm openblas.zip
 cd Sources/COpenBLAS/include
-cp -r openblas/* .
+cp -rf openblas/* .
 rm -rf openblas
 cd -

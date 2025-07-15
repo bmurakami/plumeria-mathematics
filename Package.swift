@@ -8,8 +8,7 @@ let package = Package(
     name: "PlumeriaMathematics",
     platforms: [.macOS(.v15)],
     products: [
-        .library(name: "PlumeriaTensors", targets: ["Tensors"]),
-        .library(name: "PlumeriaLinearSolvers", targets: ["LinearSolvers"]),
+        .library(name: "PlumeriaMathematics", targets: ["PlumeriaMathematics"]),
     ],
     targets: [
         .systemLibrary(name: "COpenBLAS", path: "Sources/COpenBLAS"),
@@ -18,7 +17,7 @@ let package = Package(
         .target(name: "Tensors", dependencies: ["AccelerateWrapper", "OpenBLASWrapper"]),
         .target(name: "LinearSolvers", dependencies: ["Tensors"],
                 linkerSettings: [.unsafeFlags(["\(Context.packageDirectory)/Sources/COpenBLAS/lib/libopenblas.a"])]),
-                // This linking is for Linux and harmless to macOS.
+        .target(name: "PlumeriaMathematics", dependencies: ["Tensors", "LinearSolvers"]),
         .testTarget(name: "TensorsTests", dependencies: ["Tensors"]),
         .testTarget(name: "LinearSolversTests", dependencies: ["LinearSolvers"]),
     ]
