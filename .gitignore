@@ -1,5 +1,3 @@
 .DS_Store
 .build/
 .swiftpm/
-Sources/COpenBLAS/include
-Sources/COpenBLAS/lib

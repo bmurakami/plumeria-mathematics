@@ -1,0 +1,13 @@
+libdir=/Users/runner/work/plumeria-scientific-libraries/plumeria-scientific-libraries/spack/opt/spack/darwin-m1/openblas-0.3.27-ktma2dken3avzs7ao4nuq5tdhymhufh5/lib
+libnameprefix=
+libnamesuffix=
+libsuffix=
+includedir=/Users/runner/work/plumeria-scientific-libraries/plumeria-scientific-libraries/spack/opt/spack/darwin-m1/openblas-0.3.27-ktma2dken3avzs7ao4nuq5tdhymhufh5/include/openblas
+
+openblas_config=USE_64BITINT= NO_CBLAS= NO_LAPACK= NO_LAPACKE= DYNAMIC_ARCH=ON DYNAMIC_OLDER=OFF NO_AFFINITY=1 USE_OPENMP=OFF generic MAX_THREADS=3 
+Name: OpenBLAS
+Description: OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version
+Version: 0.3.27
+URL: https://github.com/OpenMathLib/OpenBLAS
+Libs:  -L${libdir} -l${libnameprefix}openblas${libnamesuffix}${libsuffix} 
+Cflags: -I${includedir}
