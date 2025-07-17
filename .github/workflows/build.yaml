@@ -37,3 +37,14 @@ jobs:
         swift build -v
     - name: Run tests
       run: swift test -v
+
+  build-linux-x86_64:  
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        ./BuildScripts/install-pluscilib-linux-x86_64.sh
+        swift build -v
+    - name: Run tests
+      run: swift test -v
