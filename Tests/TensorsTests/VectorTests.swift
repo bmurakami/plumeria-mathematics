@@ -16,11 +16,11 @@ let b = [-4.5, 5.6]
     let t = Complex(b[0], b[1])
     let v = VectorDenseReference<Complex>([s, t])
     #expect(v.size == a.count)
-    #expect(v[0].re == a[0])
-    #expect(v[0].im == a[1])
+    #expect(v[0].real == a[0])
+    #expect(v[0].imaginary == a[1])
     #expect(v[0] == Complex(a[0], a[1]))
-    #expect(v[1].re == b[0])
-    #expect(v[1].im == b[1])
+    #expect(v[1].real == b[0])
+    #expect(v[1].imaginary == b[1])
     #expect(v[1] == Complex(b[0], b[1]))
 }
 
