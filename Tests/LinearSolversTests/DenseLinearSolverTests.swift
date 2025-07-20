@@ -15,7 +15,7 @@ import Tensors
     let v_actual = solveLinearDense(A, b)
     let v_expected = VectorDenseReference([1.0, 2, 3])
     
-    #expect(v_actual.approximatelyEquals(v_expected))
+    #expect(v_actual.isApproximatelyEqual(to: v_expected))
 }
 
 func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixType: MatrixType.Type)
@@ -26,7 +26,7 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
         let b = makeVector(size: n)
         let v = solveLinearDense(A, b)
         
-        #expect((A * v).approximatelyEquals(b, tolerance: 1e-13))
+        #expect((A * v).isApproximatelyEqual(to: b, relativeTolerance: 1e-13))
     }
 }
 
@@ -48,7 +48,7 @@ func solveLinearDense_correctness_largeMatrices<MatrixType: PluMatrix>(matrixTyp
         let b = makeVector(size: n)
         let v = solveLinearDense(A, b)
         
-        #expect((A * v).approximatelyEquals(b, tolerance: 1e-8))
+        #expect((A * v).isApproximatelyEqual(to: b, relativeTolerance: 1e-8))
     }
 }
 

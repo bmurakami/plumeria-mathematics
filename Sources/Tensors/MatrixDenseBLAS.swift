@@ -115,10 +115,4 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
     public static prefix func - (operand: MatrixDenseBLAS<S>) -> MatrixDenseBLAS<S> {
         return MatrixDenseBLAS(rows: operand.n_r, columns: operand.n_c, values: operand.values.map { -$0 })
     }
-
-    public func approximatelyEquals(_ other: MatrixDenseBLAS<S>, tolerance: Double = 10 * Double.ulpOfOne) -> Bool {
-        guard self.n_r == other.n_r && self.n_c == other.n_c else { return false }
-        
-        return zip(self.values, other.values).allSatisfy { $0.approximatelyEquals($1, tolerance: tolerance) }
-    }
 }

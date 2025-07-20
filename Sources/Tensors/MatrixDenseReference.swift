@@ -76,17 +76,4 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix {
     public static prefix func - (matrix: MatrixDenseReference<S>) -> MatrixDenseReference<S> {
         return MatrixDenseReference(matrix.values.map { $0.map { -$0 } })
     }
-    
-    public func approximatelyEquals(_ other: MatrixDenseReference<S>, tolerance: Double = 10 * Double.ulpOfOne) -> Bool {
-        guard rows == other.rows, columns == other.columns else { return false }
-        
-        for i in 0..<rows {
-            for j in 0..<columns {
-                if !values[i][j].approximatelyEquals(other.values[i][j], tolerance: tolerance) {
-                    return false
-                }
-            }
-        }
-        return true
-    }
 }

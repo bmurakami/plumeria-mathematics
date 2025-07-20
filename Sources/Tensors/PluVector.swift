@@ -14,11 +14,15 @@ extension PluVector {
         return toArray(round: false)
     }
     
-    public func approximatelyEquals(_ other: Self, tolerance: Double = 10 * Double.ulpOfOne) -> Bool {
+    public func isApproximatelyEqual(
+        to other: Self,
+        relativeTolerance: S.Magnitude = S.Magnitude.ulpOfOne.squareRoot(),
+        norm: (Self) -> S.Magnitude = { _ in .zero }
+    ) -> Bool {
         guard self.size == other.size else { return false }
         
         for i in 0..<size {
-            if !self[i].approximatelyEquals(other[i], tolerance: tolerance) {
+            if !self[i].isApproximatelyEqual(to: other[i], relativeTolerance: relativeTolerance) {
                 return false
             }
         }
