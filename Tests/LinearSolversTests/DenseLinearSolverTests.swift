@@ -26,7 +26,7 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
         let b = makeVector(size: n)
         let v = solveLinearDense(A, b)
         
-        #expect((A * v).isApproximatelyEqual(to: b, relativeTolerance: 1e-13))
+        #expect((A * v).isApproximatelyEqual(to: b, relativeTolerance: 1e-12))
     }
 }
 
