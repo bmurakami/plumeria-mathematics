@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
 
-curl -L "https://github.com/bmurakami/plumeria-scientific-libraries/releases/download/test-release/pluscilib-linux-neoverse_v2.zip" -o openblas.zip
-unzip -o openblas.zip -d Sources/COpenBLAS
-rm openblas.zip
+curl -L "https://github.com/bmurakami/plumeria-scientific-libraries/releases/download/0.1-latest/pluscilib-linux-neoverse_v2.tar.gz" -o openblas.tar.gz
+tar -xzf openblas.tar.gz -C Sources/COpenBLAS
+rm openblas.tar.gz
