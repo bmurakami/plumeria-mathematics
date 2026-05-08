@@ -20,16 +20,7 @@ extension PluMatrix {
     }
     
     public func flatten() -> [S] {
-        return flatten(columnMajorOrder: false)
-    }
-    
-    // Temporary
-    public func isApproximatelyEqual(
-        to other: Self,
-        relativeTolerance: S.Magnitude = S.Magnitude.ulpOfOne.squareRoot(),
-        norm: (Self) -> S.Magnitude = { _ in .zero }
-    ) -> Bool {
-        return true
+        return flatten(columnMajorOrder: true)
     }
 }
 

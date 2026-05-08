@@ -1,11 +1,25 @@
 import AccelerateWrapper
 import OpenBLASWrapper
 
-public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
+public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, FlatTensor {
+    public typealias Scalar = S
+    
     private var values: [S]
     private var n_r: Int
     private var n_c: Int
     public var blasImplementation: BLAS
+    
+    private func index(row: Int, column: Int) -> Int {
+        row + n_r * column
+    }
+    
+    private func value(row: Int, column: Int) -> S {
+        values[index(row: row, column: column)]
+    }
+    
+    private mutating func setValue(_ value: S, row: Int, column: Int) {
+        values[index(row: row, column: column)] = value
+    }
 
     init(rows: Int, columns: Int, values: [S], blasImplementation: BLAS = BLAS.default) {
         self.n_r = rows
@@ -19,8 +33,8 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
     public var columns: Int { return n_c }
     
     public subscript(i: Int, j: Int) -> S {
-        get { values[i + n_r * j] }
-        set { values[i + n_r * j] = newValue }
+        get { value(row: i, column: j) }
+        set { setValue(newValue, row: i, column: j) }
     }
     
     public init(rows: Int, columns: Int, initialValue: S = S.zero) {
@@ -44,6 +58,54 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
         self.values = [S.zero]
         self.blasImplementation = .openBLAS
         storeAsColumnMajor(values)
+    }
+
+    // MARK: - FlatTensor conformance
+    public var elements: [S] {
+        get { values }
+        set {
+            precondition(newValue.count == rows * columns, "Matrix element count must match matrix shape")
+            values = newValue
+        }
+    }
+    
+    public var shape: [Int] { [rows, columns] }
+    
+    public init(shape: [Int]) {
+        precondition(shape.count == 2, "MatrixDenseBLAS shape must have rank 2")
+        precondition(shape.allSatisfy { $0 >= 0 }, "Matrix shape dimensions must be non-negative")
+        
+        self.init(rows: shape[0], columns: shape[1])
+    }
+    
+    public init(shape: [Int], elements: [S]) {
+        precondition(shape.count == 2, "MatrixDenseBLAS shape must have rank 2")
+        precondition(shape.allSatisfy { $0 >= 0 }, "Matrix shape dimensions must be non-negative")
+        precondition(shape.reduce(1, *) == elements.count, "Matrix shape \(shape) requires \(shape.reduce(1, *)) elements, but got \(elements.count)")
+        
+        self.init(rows: shape[0], columns: shape[1], values: elements)
+    }
+    
+    public subscript(indices indices: Int...) -> S {
+        get { self[Array(indices)] }
+        set { self[Array(indices)] = newValue }
+    }
+    
+    public subscript(_ indices: [Int]) -> S {
+        get {
+            precondition(indices.count == 2, "MatrixDenseBLAS index rank must be 2")
+            precondition(indices[0] >= 0 && indices[0] < rows, "Matrix row index out of bounds")
+            precondition(indices[1] >= 0 && indices[1] < columns, "Matrix column index out of bounds")
+            
+            return value(row: indices[0], column: indices[1])
+        }
+        set {
+            precondition(indices.count == 2, "MatrixDenseBLAS index rank must be 2")
+            precondition(indices[0] >= 0 && indices[0] < rows, "Matrix row index out of bounds")
+            precondition(indices[1] >= 0 && indices[1] < columns, "Matrix column index out of bounds")
+            
+            setValue(newValue, row: indices[0], column: indices[1])
+        }
     }
 
     public func times<V: PluVector>(_ v: V) -> V where V.S == S {
@@ -77,7 +139,7 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
         var mt = MatrixDenseBLAS(rows: n_c, columns: n_r)
         for i in 0..<n_r {
             for j in 0..<n_c {
-                mt[j, i] = values[i + n_r * j]
+                mt.setValue(value(row: i, column: j), row: j, column: i)
             }
         }
         return mt
@@ -86,22 +148,23 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
     public func toArray(round: Bool = false) -> [[S]] {
         return (0..<n_r).map { i in
                     (0..<n_c).map { j in
-                        round ? self[i, j].round() : self[i, j]
+                        let value = value(row: i, column: j)
+                        return round ? value.round() : value
                     }
                 }
     }
     
-    public func flatten(columnMajorOrder: Bool = false) -> [S] {
+    public func flatten(columnMajorOrder: Bool = true) -> [S] {
         if columnMajorOrder {
+            return values
+        } else {
             var flattened = Array(repeating: S.zero, count: n_r * n_c)
             for i in 0..<n_r {
                 for j in 0..<n_c {
-                    flattened[j + n_c * i] = self[i, j]
+                    flattened[j + n_c * i] = value(row: i, column: j)
                 }
             }
             return flattened
-        } else {
-            return values
         }
     }
     
