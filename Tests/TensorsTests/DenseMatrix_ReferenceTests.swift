@@ -49,12 +49,21 @@ import Testing
 @Test func DenseMatrix_Reference_flatten() {
     let m = MatrixDenseReference<Double>.init([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
     
-    #expect(m.flatten(columnMajorOrder: true) == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
-    #expect(m.flatten(columnMajorOrder: false) == [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
+    #expect(m.flatten(columnMajorOrder: true) == [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
+    #expect(m.flatten(columnMajorOrder: false) == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
 }
 
 @Test func DenseMatrix_Reference_toArray() {
     let a = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
     let m = MatrixDenseReference<Double>(a)
     #expect(m.toArray() == a)
+}
+
+@Test func DenseMatrix_Reference_approximatelyEqual() {
+    let a = MatrixDenseReference<Double>([[1.0, 2.0], [3.0, 4.0]])
+    let b = MatrixDenseReference<Double>([[1.0, 2.0], [3.0, 4.0 + 1e-14]])
+    let c = MatrixDenseReference<Double>([[1.0, 2.0], [3.0, 5.0]])
+    
+    #expect(a.isApproximatelyEqual(to: b, relativeTolerance: 1e-12))
+    #expect(!a.isApproximatelyEqual(to: c, relativeTolerance: 1e-12))
 }

@@ -62,12 +62,25 @@ import Testing
 @Test func DenseMatrix_BLAS_flatten() {
     let m = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
 
-    #expect(m.flatten(columnMajorOrder: true) == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
-    #expect(m.flatten(columnMajorOrder: false) == [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
+    #expect(m.flatten(columnMajorOrder: true) == [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
+    #expect(m.flatten(columnMajorOrder: false) == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
 }
 
 @Test func DenseMatrix_BLAS_toArray() {
     let a = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
     let m = MatrixDenseBLAS<Double>(a)
     #expect(m.toArray() == a)
+}
+
+@Test func DenseMatrix_BLAS_flatTensorConformance() {
+    var m = MatrixDenseBLAS<Double>(shape: [2, 3], elements: [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
+    
+    #expect(m.shape == [2, 3])
+    #expect(m.rank == 2)
+    #expect(m.elements == [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
+    #expect(m[0, 2] == 3.0)
+    #expect(m[[1, 2]] == 6.0)
+    
+    m[[1, 0]] = 7.0
+    #expect(m.elements == [1.0, 7.0, 2.0, 5.0, 3.0, 6.0])
 }

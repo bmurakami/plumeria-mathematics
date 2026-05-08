@@ -1,7 +1,9 @@
 import AccelerateWrapper
 import OpenBLASWrapper
 
-public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
+public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, FlatTensor {
+    public typealias Scalar = S
+    
     private var values: [S]
     private var n_r: Int
     private var n_c: Int
@@ -44,6 +46,54 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
         self.values = [S.zero]
         self.blasImplementation = .openBLAS
         storeAsColumnMajor(values)
+    }
+
+    // MARK: - FlatTensor conformance
+    public var elements: [S] {
+        get { values }
+        set {
+            precondition(newValue.count == rows * columns, "Matrix element count must match matrix shape")
+            values = newValue
+        }
+    }
+    
+    public var shape: [Int] { [rows, columns] }
+    
+    public init(shape: [Int]) {
+        precondition(shape.count == 2, "MatrixDenseBLAS shape must have rank 2")
+        precondition(shape.allSatisfy { $0 >= 0 }, "Matrix shape dimensions must be non-negative")
+        
+        self.init(rows: shape[0], columns: shape[1])
+    }
+    
+    public init(shape: [Int], elements: [S]) {
+        precondition(shape.count == 2, "MatrixDenseBLAS shape must have rank 2")
+        precondition(shape.allSatisfy { $0 >= 0 }, "Matrix shape dimensions must be non-negative")
+        precondition(shape.reduce(1, *) == elements.count, "Matrix shape \(shape) requires \(shape.reduce(1, *)) elements, but got \(elements.count)")
+        
+        self.init(rows: shape[0], columns: shape[1], values: elements)
+    }
+    
+    public subscript(_ indices: Int...) -> S {
+        get { self[Array(indices)] }
+        set { self[Array(indices)] = newValue }
+    }
+    
+    public subscript(_ indices: [Int]) -> S {
+        get {
+            precondition(indices.count == 2, "MatrixDenseBLAS index rank must be 2")
+            precondition(indices[0] >= 0 && indices[0] < rows, "Matrix row index out of bounds")
+            precondition(indices[1] >= 0 && indices[1] < columns, "Matrix column index out of bounds")
+            
+            return values[indices[0] + rows * indices[1]]
+        }
+        set {
+            precondition(indices.count == 2, "MatrixDenseBLAS index rank must be 2")
+            precondition(indices[0] >= 0 && indices[0] < rows, "Matrix row index out of bounds")
+            precondition(indices[1] >= 0 && indices[1] < columns, "Matrix column index out of bounds")
+            
+            values[indices[0] + rows * indices[1]] = newValue
+        }
     }
 
     public func times<V: PluVector>(_ v: V) -> V where V.S == S {
@@ -91,8 +141,10 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
                 }
     }
     
-    public func flatten(columnMajorOrder: Bool = false) -> [S] {
+    public func flatten(columnMajorOrder: Bool = true) -> [S] {
         if columnMajorOrder {
+            return values
+        } else {
             var flattened = Array(repeating: S.zero, count: n_r * n_c)
             for i in 0..<n_r {
                 for j in 0..<n_c {
@@ -100,8 +152,6 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix  {
                 }
             }
             return flattened
-        } else {
-            return values
         }
     }
     
