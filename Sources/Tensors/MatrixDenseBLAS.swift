@@ -86,7 +86,7 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, FlatTensor {
         self.init(rows: shape[0], columns: shape[1], values: elements)
     }
     
-    public subscript(_ indices: Int...) -> S {
+    public subscript(indices indices: Int...) -> S {
         get { self[Array(indices)] }
         set { self[Array(indices)] = newValue }
     }

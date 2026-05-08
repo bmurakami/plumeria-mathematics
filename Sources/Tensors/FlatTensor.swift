@@ -13,7 +13,7 @@ public protocol FlatTensor {
     init(shape: [Int])
     init(shape: [Int], elements: [Scalar])
     
-    subscript(_ indices: Int...) -> Scalar { get set }
+    subscript(indices indices: Int...) -> Scalar { get set }
     subscript(_ indices: [Int]) -> Scalar { get set }
     
     func flatten(order: TensorStorageOrder) -> [Scalar]
@@ -49,7 +49,7 @@ public extension FlatTensor {
         return zip(indices, strides).map(*).reduce(0, +)
     }
     
-    subscript(_ indices: Int...) -> Scalar {
+    subscript(indices indices: Int...) -> Scalar {
         get { elements[linearIndex(indices: indices)] }
         set { elements[linearIndex(indices: indices)] = newValue }
     }

@@ -49,6 +49,7 @@ struct VectorTests {
     func testVectorSubscript(data: [TestScalar], index: Int, expected: TestScalar) {
         let vector = VectorDenseReference(data)
         #expect(vector[index] == expected)
+        #expect(vector[indices: index] == expected)
         #expect(vector[[index]] == expected)
     }
     
@@ -110,6 +111,7 @@ struct MatrixTests {
     ])
     func testMatrixSubscript(data: [TestScalar], rows: Int, cols: Int, row: Int, col: Int, expected: TestScalar) {
         let matrix = FlatMatrix(rows: rows, columns: cols, data: data)
+        #expect(matrix[indices: row, col] == expected)
         #expect(matrix[[row, col]] == expected)
     }
     
