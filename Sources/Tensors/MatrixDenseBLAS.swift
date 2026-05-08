@@ -8,6 +8,18 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, FlatTensor {
     private var n_r: Int
     private var n_c: Int
     public var blasImplementation: BLAS
+    
+    private func index(row: Int, column: Int) -> Int {
+        row + n_r * column
+    }
+    
+    private func value(row: Int, column: Int) -> S {
+        values[index(row: row, column: column)]
+    }
+    
+    private mutating func setValue(_ value: S, row: Int, column: Int) {
+        values[index(row: row, column: column)] = value
+    }
 
     init(rows: Int, columns: Int, values: [S], blasImplementation: BLAS = BLAS.default) {
         self.n_r = rows
@@ -21,8 +33,8 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, FlatTensor {
     public var columns: Int { return n_c }
     
     public subscript(i: Int, j: Int) -> S {
-        get { values[i + n_r * j] }
-        set { values[i + n_r * j] = newValue }
+        get { value(row: i, column: j) }
+        set { setValue(newValue, row: i, column: j) }
     }
     
     public init(rows: Int, columns: Int, initialValue: S = S.zero) {
@@ -85,14 +97,14 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, FlatTensor {
             precondition(indices[0] >= 0 && indices[0] < rows, "Matrix row index out of bounds")
             precondition(indices[1] >= 0 && indices[1] < columns, "Matrix column index out of bounds")
             
-            return values[indices[0] + rows * indices[1]]
+            return value(row: indices[0], column: indices[1])
         }
         set {
             precondition(indices.count == 2, "MatrixDenseBLAS index rank must be 2")
             precondition(indices[0] >= 0 && indices[0] < rows, "Matrix row index out of bounds")
             precondition(indices[1] >= 0 && indices[1] < columns, "Matrix column index out of bounds")
             
-            values[indices[0] + rows * indices[1]] = newValue
+            setValue(newValue, row: indices[0], column: indices[1])
         }
     }
 
@@ -127,7 +139,7 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, FlatTensor {
         var mt = MatrixDenseBLAS(rows: n_c, columns: n_r)
         for i in 0..<n_r {
             for j in 0..<n_c {
-                mt[j, i] = values[i + n_r * j]
+                mt.setValue(value(row: i, column: j), row: j, column: i)
             }
         }
         return mt
@@ -136,7 +148,8 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, FlatTensor {
     public func toArray(round: Bool = false) -> [[S]] {
         return (0..<n_r).map { i in
                     (0..<n_c).map { j in
-                        round ? self[i, j].round() : self[i, j]
+                        let value = value(row: i, column: j)
+                        return round ? value.round() : value
                     }
                 }
     }
@@ -148,7 +161,7 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, FlatTensor {
             var flattened = Array(repeating: S.zero, count: n_r * n_c)
             for i in 0..<n_r {
                 for j in 0..<n_c {
-                    flattened[j + n_c * i] = self[i, j]
+                    flattened[j + n_c * i] = value(row: i, column: j)
                 }
             }
             return flattened
