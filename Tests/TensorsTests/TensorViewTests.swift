@@ -45,6 +45,34 @@ import Testing
     #expect(view.storage.elements == [1.0, 99.0, 2.0, 4.0])
 }
 
+@Test func TensorView_copiedViewsShareStorage() {
+    let original = TensorView<Double>(shape: [3], elements: [1.0, 2.0, 3.0])
+    let copy = original
+    
+    #expect(original.storage === copy.storage)
+}
+
+@Test func TensorView_mutatingCopiedViewDetachesStorage() {
+    let original = TensorView<Double>(shape: [3], elements: [1.0, 2.0, 3.0])
+    var copy = original
+    
+    copy[[1]] = 99.0
+    
+    #expect(original.storage !== copy.storage)
+    #expect(original[[1]] == 2.0)
+    #expect(copy[[1]] == 99.0)
+}
+
+@Test func TensorView_mutatingUniqueViewDoesNotCopy() {
+    var view = TensorView<Double>(shape: [3], elements: [1.0, 2.0, 3.0])
+    let storageID = ObjectIdentifier(view.storage)
+    
+    view[[1]] = 99.0
+    
+    #expect(ObjectIdentifier(view.storage) == storageID)
+    #expect(view.storage.elements == [1.0, 99.0, 3.0])
+}
+
 @Test func TensorView_canRepresentOffsetAndStridedView() {
     let storage = TensorStorage([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
     let view = TensorView(storage: storage, offset: 1, shape: [3], strides: [2])

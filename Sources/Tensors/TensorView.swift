@@ -37,19 +37,20 @@ public struct TensorView<Scalar: PluScalar> {
     
     public subscript(_ indices: [Int]) -> Scalar {
         get { storage[linearIndex(indices)] }
-        set { storage[linearIndex(indices)] = newValue }
+        set {
+            ensureUniqueStorage()
+            storage[linearIndex(indices)] = newValue
+        }
     }
     
     private static func columnMajorStrides(for shape: [Int]) -> [Int] {
         var strides = Array(repeating: 0, count: shape.count)
-        
         if !shape.isEmpty {
             strides[0] = 1
             for dimension in 1..<shape.count {
                 strides[dimension] = strides[dimension - 1] * shape[dimension - 1]
             }
         }
-        
         return strides
     }
     
@@ -61,5 +62,11 @@ public struct TensorView<Scalar: PluScalar> {
         }
         
         return offset + zip(indices, strides).map(*).reduce(0, +)
+    }
+    
+    private mutating func ensureUniqueStorage() {
+        if !isKnownUniquelyReferenced(&storage) {
+            storage = TensorStorage(storage.elements)
+        }
     }
 }
