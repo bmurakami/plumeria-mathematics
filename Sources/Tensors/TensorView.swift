@@ -34,6 +34,7 @@ public struct TensorView<Scalar: PluScalar> {
     
     public var rank: Int { shape.count }
     public var count: Int { shape.reduce(1, *) }
+    public var isContiguous: Bool { strides == Self.columnMajorStrides(for: shape) }
     
     public subscript(_ indices: [Int]) -> Scalar {
         get { storage[linearIndex(indices)] }

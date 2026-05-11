@@ -9,6 +9,7 @@ import Testing
     #expect(view.strides == [1])
     #expect(view.rank == 1)
     #expect(view.count == 4)
+    #expect(view.isContiguous)
     #expect(view.storage.elements == [0.0, 0.0, 0.0, 0.0])
 }
 
@@ -20,6 +21,7 @@ import Testing
     #expect(view.strides == [1, 2])
     #expect(view.rank == 2)
     #expect(view.count == 6)
+    #expect(view.isContiguous)
     #expect(view.storage.elements == [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 }
 
@@ -80,6 +82,32 @@ import Testing
     #expect(view[[0]] == 2.0)
     #expect(view[[1]] == 4.0)
     #expect(view[[2]] == 6.0)
+}
+
+@Test("Contiguous and non-contiguous views", arguments: [
+    ([1.0, 2.0, 3.0], 0, [3], [1], true),
+    ([1.0, 4.0, 2.0, 5.0, 3.0, 6.0], 2, [2], [1], true),
+    ([1.0, 2.0, 3.0, 4.0, 5.0], 0, [3], [2], false),
+    ([1.0, 4.0, 2.0, 5.0, 3.0, 6.0], 1, [3], [2], false)
+])
+func TensorView_contiguity(elements: [Double], offset: Int, shape: [Int], strides: [Int], expected: Bool) {
+    let storage = TensorStorage(elements)
+    let view = TensorView(storage: storage, offset: offset, shape: shape, strides: strides)
+    
+    #expect(view.isContiguous == expected)
+}
+
+@Test func TensorView_scalarViewIsContiguous() {
+    let view = TensorView<Double>(shape: [], elements: [42.0])
+    
+    #expect(view.isContiguous)
+}
+
+@Test func TensorView_emptyDimensionViewIsContiguousWithColumnMajorStrides() {
+    let view = TensorView<Double>(shape: [0, 3])
+    
+    #expect(view.strides == [1, 0])
+    #expect(view.isContiguous)
 }
 
 @Test func TensorView_readOnlyAccessDoesNotCopyStorage() {
