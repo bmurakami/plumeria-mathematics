@@ -133,6 +133,41 @@ func TensorView_slicesVector(range: SliceRange, shape: [Int], strides: [Int], is
     #expect(slice[[0]] == 99.0)
 }
 
+@Test func TensorView_chainsVectorSlices() {
+    let view = TensorView<Double>(shape: [8], elements: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+    let firstSlice = view.slice(SliceRange(1..<8, step: 2))
+    let secondSlice = firstSlice.slice(SliceRange(1..<3))
+    
+    #expect(secondSlice.storage === view.storage)
+    #expect(secondSlice.offset == 3)
+    #expect(secondSlice.shape == [2])
+    #expect(secondSlice.strides == [2])
+    #expect(!secondSlice.isContiguous)
+    #expect(secondSlice[[0]] == 4.0)
+    #expect(secondSlice[[1]] == 6.0)
+}
+
+@Test func TensorView_chainsMatrixSlices() {
+    // Original:                   First slice:       Second slice:
+    // [1.0,  2.0,  3.0,  4.0]     [ 2.0,  3.0]       [ 3.0]
+    // [5.0,  6.0,  7.0,  8.0]     [ 6.0,  7.0]       [ 7.0]
+    // [9.0, 10.0, 11.0, 12.0]     [10.0, 11.0]
+    let view = TensorView<Double>(
+        shape: [3, 4],
+        elements: [1.0, 5.0, 9.0, 2.0, 6.0, 10.0, 3.0, 7.0, 11.0, 4.0, 8.0, 12.0]
+    )
+    let firstSlice = view.slice(rows: SliceRange(0..<3), columns: SliceRange(1..<3))
+    let secondSlice = firstSlice.slice(rows: SliceRange(0..<2), columns: SliceRange(1..<2))
+    
+    #expect(secondSlice.storage === view.storage)
+    #expect(secondSlice.offset == 6)
+    #expect(secondSlice.shape == [2, 1])
+    #expect(secondSlice.strides == [1, 3])
+    #expect(!secondSlice.isContiguous)
+    #expect(secondSlice[[0, 0]] == 3.0)
+    #expect(secondSlice[[1, 0]] == 7.0)
+}
+
 @Test func TensorView_convenienceSlicesMatchCoreSlice() {
     let vector = TensorView<Double>(shape: [4], elements: [1.0, 2.0, 3.0, 4.0])
     let matrix = TensorView<Double>(shape: [2, 3], elements: [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
