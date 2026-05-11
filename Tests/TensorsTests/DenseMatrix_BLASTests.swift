@@ -72,14 +72,13 @@ import Testing
     #expect(m.toArray() == a)
 }
 
-@Test func DenseMatrix_BLAS_flatTensorConformance() {
+@Test func DenseMatrix_BLAS_shapeBasedAccess() {
     var m = MatrixDenseBLAS<Double>(shape: [2, 3], elements: [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
     
     #expect(m.shape == [2, 3])
     #expect(m.rank == 2)
     #expect(m.elements == [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
     #expect(m[0, 2] == 3.0)
-    #expect(m[indices: 0, 2] == 3.0)
     #expect(m[[1, 2]] == 6.0)
     
     m[[1, 0]] = 7.0

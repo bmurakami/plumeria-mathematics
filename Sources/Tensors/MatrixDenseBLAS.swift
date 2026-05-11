@@ -1,9 +1,7 @@
 import AccelerateWrapper
 import OpenBLASWrapper
 
-public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, FlatTensor {
-    public typealias Scalar = S
-    
+public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
     private var values: [S]
     private var n_r: Int
     private var n_c: Int
@@ -60,7 +58,6 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, FlatTensor {
         storeAsColumnMajor(values)
     }
 
-    // MARK: - FlatTensor conformance
     public var elements: [S] {
         get { values }
         set {
@@ -70,6 +67,7 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, FlatTensor {
     }
     
     public var shape: [Int] { [rows, columns] }
+    public var rank: Int { shape.count }
     
     func view() -> TensorView<S> {
         TensorView(storage: TensorStorage(values), offset: 0, shape: shape, strides: [1, rows])
@@ -90,11 +88,6 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, FlatTensor {
                      "Matrix shape \(shape) requires \(count) elements, but got \(elements.count)")
         
         self.init(rows: shape[0], columns: shape[1], values: elements)
-    }
-    
-    public subscript(indices indices: Int...) -> S {
-        get { self[Array(indices)] }
-        set { self[Array(indices)] = newValue }
     }
     
     public subscript(_ indices: [Int]) -> S {
