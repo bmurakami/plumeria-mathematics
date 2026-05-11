@@ -44,6 +44,22 @@ public struct TensorView<Scalar: PluScalar> {
         }
     }
     
+    public func slice(_ ranges: [SliceRange]) -> TensorView<Scalar> {
+        precondition(ranges.count == rank, "Slice rank must match tensor rank")
+        for (dimension, range) in ranges.enumerated() {
+            let dimensionSize = shape[dimension]
+            let lastIndex = range.start + (range.length - 1) * range.step
+            precondition(range.start <= dimensionSize, "Slice start is out of bounds")
+            precondition(range.length == 0 || lastIndex < dimensionSize, "Slice end is out of bounds")
+        }
+        
+        let newOffset = offset + zip(ranges, strides).map { $0.start * $1 }.reduce(0, +)
+        let newShape = ranges.map(\.length)
+        let newStrides = zip(ranges, strides).map { $0.step * $1 }
+        
+        return TensorView(storage: storage, offset: newOffset, shape: newShape, strides: newStrides)
+    }
+    
     private static func columnMajorStrides(for shape: [Int]) -> [Int] {
         var strides = Array(repeating: 0, count: shape.count)
         if !shape.isEmpty {

@@ -1,4 +1,4 @@
-public struct SliceRange: Equatable {
+public struct SliceRange: Equatable, Sendable {
     public let start: Int
     public let length: Int
     public let step: Int

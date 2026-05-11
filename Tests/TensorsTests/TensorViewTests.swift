@@ -84,6 +84,55 @@ import Testing
     #expect(view[[2]] == 6.0)
 }
 
+@Test("Vector slicing", arguments: [
+    (SliceRange(1..<4), [3], [1], true, [2.0, 3.0, 4.0]),
+    (SliceRange(1..<6, step: 2), [3], [2], false, [2.0, 4.0, 6.0])
+])
+func TensorView_slicesVector(range: SliceRange, shape: [Int], strides: [Int], isContiguous: Bool, values: [Double]) {
+    let view = TensorView<Double>(shape: [6], elements: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+    let slice = view.slice([range])
+    
+    #expect(slice.storage === view.storage)
+    #expect(slice.offset == 1)
+    #expect(slice.shape == shape)
+    #expect(slice.strides == strides)
+    #expect(slice.isContiguous == isContiguous)
+    #expect((0..<slice.count).map { slice[[$0]] } == values)
+}
+
+@Test func TensorView_slicesSubmatrix() {
+    // Original:                   Slice rows 1..<3, columns 1..<3:
+    // [1.0,  2.0,  3.0,  4.0]     [ 6.0,  7.0]
+    // [5.0,  6.0,  7.0,  8.0]     [10.0, 11.0]
+    // [9.0, 10.0, 11.0, 12.0]
+    let view = TensorView<Double>(
+        shape: [3, 4],
+        elements: [1.0, 5.0, 9.0, 2.0, 6.0, 10.0, 3.0, 7.0, 11.0, 4.0, 8.0, 12.0]
+    )
+    let slice = view.slice([SliceRange(1..<3), SliceRange(1..<3)])
+    
+    #expect(slice.storage === view.storage)
+    #expect(slice.offset == 4)
+    #expect(slice.shape == [2, 2])
+    #expect(slice.strides == [1, 3])
+    #expect(!slice.isContiguous)
+    #expect(slice[[0, 0]] == 6.0)
+    #expect(slice[[1, 0]] == 10.0)
+    #expect(slice[[0, 1]] == 7.0)
+    #expect(slice[[1, 1]] == 11.0)
+}
+
+@Test func TensorView_mutatingSliceCopiesOnWrite() {
+    let view = TensorView<Double>(shape: [4], elements: [1.0, 2.0, 3.0, 4.0])
+    var slice = view.slice([SliceRange(1..<3)])
+    
+    slice[[0]] = 99.0
+    
+    #expect(slice.storage !== view.storage)
+    #expect(view[[1]] == 2.0)
+    #expect(slice[[0]] == 99.0)
+}
+
 @Test("Contiguous and non-contiguous views", arguments: [
     ([1.0, 2.0, 3.0], 0, [3], [1], true),
     ([1.0, 4.0, 2.0, 5.0, 3.0, 6.0], 2, [2], [1], true),
