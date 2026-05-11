@@ -60,6 +60,16 @@ public struct TensorView<Scalar: PluScalar> {
         return TensorView(storage: storage, offset: newOffset, shape: newShape, strides: newStrides)
     }
     
+    public func slice(_ range: SliceRange) -> TensorView<Scalar> {
+        precondition(rank == 1, "Vector slice requires rank 1")
+        return slice([range])
+    }
+    
+    public func slice(rows: SliceRange, columns: SliceRange) -> TensorView<Scalar> {
+        precondition(rank == 2, "Matrix slice requires rank 2")
+        return slice([rows, columns])
+    }
+    
     private static func columnMajorStrides(for shape: [Int]) -> [Int] {
         var strides = Array(repeating: 0, count: shape.count)
         if !shape.isEmpty {

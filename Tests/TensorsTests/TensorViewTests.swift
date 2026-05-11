@@ -90,7 +90,7 @@ import Testing
 ])
 func TensorView_slicesVector(range: SliceRange, shape: [Int], strides: [Int], isContiguous: Bool, values: [Double]) {
     let view = TensorView<Double>(shape: [6], elements: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
-    let slice = view.slice([range])
+    let slice = view.slice(range)
     
     #expect(slice.storage === view.storage)
     #expect(slice.offset == 1)
@@ -109,7 +109,7 @@ func TensorView_slicesVector(range: SliceRange, shape: [Int], strides: [Int], is
         shape: [3, 4],
         elements: [1.0, 5.0, 9.0, 2.0, 6.0, 10.0, 3.0, 7.0, 11.0, 4.0, 8.0, 12.0]
     )
-    let slice = view.slice([SliceRange(1..<3), SliceRange(1..<3)])
+    let slice = view.slice(rows: SliceRange(1..<3), columns: SliceRange(1..<3))
     
     #expect(slice.storage === view.storage)
     #expect(slice.offset == 4)
@@ -131,6 +131,22 @@ func TensorView_slicesVector(range: SliceRange, shape: [Int], strides: [Int], is
     #expect(slice.storage !== view.storage)
     #expect(view[[1]] == 2.0)
     #expect(slice[[0]] == 99.0)
+}
+
+@Test func TensorView_convenienceSlicesMatchCoreSlice() {
+    let vector = TensorView<Double>(shape: [4], elements: [1.0, 2.0, 3.0, 4.0])
+    let matrix = TensorView<Double>(shape: [2, 3], elements: [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
+    let vectorSlice = vector.slice(SliceRange(1..<3))
+    let coreVectorSlice = vector.slice([SliceRange(1..<3)])
+    let matrixSlice = matrix.slice(rows: SliceRange(0..<2), columns: SliceRange(1..<3))
+    let coreMatrixSlice = matrix.slice([SliceRange(0..<2), SliceRange(1..<3)])
+    
+    #expect(vectorSlice.offset == coreVectorSlice.offset)
+    #expect(vectorSlice.shape == coreVectorSlice.shape)
+    #expect(vectorSlice.strides == coreVectorSlice.strides)
+    #expect(matrixSlice.offset == coreMatrixSlice.offset)
+    #expect(matrixSlice.shape == coreMatrixSlice.shape)
+    #expect(matrixSlice.strides == coreMatrixSlice.strides)
 }
 
 @Test("Contiguous and non-contiguous views", arguments: [
