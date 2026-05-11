@@ -85,3 +85,36 @@ import Testing
     m[[1, 0]] = 7.0
     #expect(m.elements == [1.0, 7.0, 2.0, 5.0, 3.0, 6.0])
 }
+
+@Test func DenseMatrix_BLAS_view() {
+    let matrix = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0],
+                                          [4.0, 5.0, 6.0]])
+    let view = matrix.view()
+    
+    #expect(view.offset == 0)
+    #expect(view.shape == [2, 3])
+    #expect(view.strides == [1, 2])
+    #expect(view.isContiguous)
+    #expect(view.storage.elements == [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
+    #expect(view[[0, 2]] == 3.0)
+    #expect(view[[1, 2]] == 6.0)
+}
+
+@Test func DenseMatrix_BLAS_viewSlicesColumnsAndRows() {
+    let matrix = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0],
+                                          [4.0, 5.0, 6.0]])
+    let view = matrix.view()
+    let column = view.slice(rows: SliceRange.all(length: matrix.rows), columns: SliceRange(1..<2))
+    let row = view.slice(rows: SliceRange(1..<2), columns: SliceRange.all(length: matrix.columns))
+    
+    #expect(column.shape == [2, 1])
+    #expect(column.strides == [1, 2])
+    #expect(column.isContiguous)
+    #expect(column[[0, 0]] == 2.0)
+    #expect(column[[1, 0]] == 5.0)
+    #expect(row.shape == [1, 3])
+    #expect(row.strides == [1, 2])
+    #expect(!row.isContiguous)
+    #expect(row[[0, 0]] == 4.0)
+    #expect(row[[0, 2]] == 6.0)
+}

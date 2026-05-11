@@ -71,6 +71,10 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, FlatTensor {
     
     public var shape: [Int] { [rows, columns] }
     
+    func view() -> TensorView<S> {
+        TensorView(storage: TensorStorage(values), offset: 0, shape: shape, strides: [1, rows])
+    }
+    
     public init(shape: [Int]) {
         precondition(shape.count == 2, "MatrixDenseBLAS shape must have rank 2")
         precondition(shape.allSatisfy { $0 >= 0 }, "Matrix shape dimensions must be non-negative")
@@ -81,7 +85,9 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, FlatTensor {
     public init(shape: [Int], elements: [S]) {
         precondition(shape.count == 2, "MatrixDenseBLAS shape must have rank 2")
         precondition(shape.allSatisfy { $0 >= 0 }, "Matrix shape dimensions must be non-negative")
-        precondition(shape.reduce(1, *) == elements.count, "Matrix shape \(shape) requires \(shape.reduce(1, *)) elements, but got \(elements.count)")
+        let count = shape.reduce(1, *)
+        precondition(count == elements.count,
+                     "Matrix shape \(shape) requires \(count) elements, but got \(elements.count)")
         
         self.init(rows: shape[0], columns: shape[1], values: elements)
     }
