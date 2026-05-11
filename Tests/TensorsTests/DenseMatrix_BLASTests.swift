@@ -95,3 +95,26 @@ import Testing
     #expect(matrix[1, 0] == 4.0)
     #expect(copy[1, 0] == 99.0)
 }
+
+@Test func DenseMatrix_BLAS_slicesRowsAndColumns() {
+    let matrix = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0, 4.0],
+                                          [5.0, 6.0, 7.0, 8.0],
+                                          [9.0, 10.0, 11.0, 12.0]])
+    let slice = matrix.slice(rows: SliceRange(1..<3), columns: SliceRange(1..<3))
+    
+    #expect(slice.shape == [2, 2])
+    #expect(slice.toArray() == [[6.0, 7.0], [10.0, 11.0]])
+    #expect(slice.flatten(columnMajorOrder: true) == [6.0, 10.0, 7.0, 11.0])
+    #expect(slice.flatten(columnMajorOrder: false) == [6.0, 7.0, 10.0, 11.0])
+}
+
+@Test func DenseMatrix_BLAS_mutatingSliceCopiesOnWrite() {
+    let matrix = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0],
+                                          [4.0, 5.0, 6.0]])
+    var slice = matrix.slice(rows: SliceRange(0..<2), columns: SliceRange(1..<2))
+    
+    slice[1, 0] = 99.0
+    
+    #expect(matrix[1, 1] == 5.0)
+    #expect(slice[1, 0] == 99.0)
+}

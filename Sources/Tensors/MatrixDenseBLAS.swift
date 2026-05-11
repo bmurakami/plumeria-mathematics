@@ -18,6 +18,12 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
         self.blasImplementation = blasImplementation
     }
     
+    init(view: TensorView<S>, blasImplementation: BLAS = BLAS.default) {
+        precondition(view.rank == 2, "MatrixDenseBLAS view must have rank 2")
+        self.view = view
+        self.blasImplementation = blasImplementation
+    }
+    
     // MARK: - PluMatrix conformance
     public var rows: Int { view.shape[0] }
     public var columns: Int { view.shape[1] }
@@ -46,7 +52,7 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
     }
 
     public var elements: [S] {
-        get { view.storage.elements }
+        get { viewElements(columnMajorOrder: true) }
         set {
             precondition(newValue.count == rows * columns, "Matrix element count must match matrix shape")
             view = TensorView(shape: shape, elements: newValue)
@@ -88,6 +94,10 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
             
             setValue(newValue, row: indices[0], column: indices[1])
         }
+    }
+    
+    public func slice(rows: SliceRange, columns: SliceRange) -> MatrixDenseBLAS<S> {
+        MatrixDenseBLAS(view: view.slice(rows: rows, columns: columns), blasImplementation: blasImplementation)
     }
 
     public func times<V: PluVector>(_ v: V) -> V where V.S == S {
@@ -137,17 +147,7 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
     }
     
     public func flatten(columnMajorOrder: Bool = true) -> [S] {
-        if columnMajorOrder {
-            return elements
-        } else {
-            var flattened = Array(repeating: S.zero, count: rows * columns)
-            for row in 0..<rows {
-                for column in 0..<columns {
-                    flattened[column + columns * row] = value(row: row, column: column)
-                }
-            }
-            return flattened
-        }
+        viewElements(columnMajorOrder: columnMajorOrder)
     }
     
     // MARK: - PluTensor conformance
@@ -164,5 +164,16 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
     
     public static func == (lhs: MatrixDenseBLAS<S>, rhs: MatrixDenseBLAS<S>) -> Bool {
         lhs.shape == rhs.shape && lhs.elements == rhs.elements && lhs.blasImplementation == rhs.blasImplementation
+    }
+    
+    private func viewElements(columnMajorOrder: Bool) -> [S] {
+        var elements = Array(repeating: S.zero, count: rows * columns)
+        for row in 0..<rows {
+            for column in 0..<columns {
+                let index = columnMajorOrder ? row + rows * column : column + columns * row
+                elements[index] = value(row: row, column: column)
+            }
+        }
+        return elements
     }
 }
