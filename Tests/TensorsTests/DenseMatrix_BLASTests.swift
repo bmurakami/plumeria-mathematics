@@ -7,10 +7,10 @@ import Testing
     #expect(m[1, 0] == 3.0)
     #expect(m[0, 1] == 2.0)
     #expect(m[1, 1] == 4.0)
-
+    
     m[1, 0] = 3.14
     #expect(m[1, 0] == 3.14)
-
+    
     #if canImport(Accelerate)
     m = MatrixDenseBLAS<Double>([[1.0, 2.0], [3.0, 4.0]])
     m.blasImplementation = .accelerate
@@ -18,7 +18,7 @@ import Testing
     #expect(m[1, 0] == 3.0)
     #expect(m[0, 1] == 2.0)
     #expect(m[1, 1] == 4.0)
-
+    
     m[1, 0] = 3.14
     #expect(m[1, 0] == 3.14)
     #endif
@@ -26,16 +26,16 @@ import Testing
 
 @Test func DenseMatrix_BLAS_initializerWithRowsAndColumns() {
     var m = MatrixDenseBLAS<Double>.init(rows: 2, columns: 3)
-
+    
     #expect(m.rows == 2)
     #expect(m.columns == 3)
-
+    
     for i in 0..<m.rows {
         for j in 0..<m.columns {
             #expect(m[i, j] == 0)
         }
     }
-
+    
     m[1, 2] = 3.14
     #expect(m[1, 2] == 3.14)
 }
@@ -74,13 +74,13 @@ import Testing
 
 @Test func DenseMatrix_BLAS_shapeBasedAccess() {
     var m = MatrixDenseBLAS<Double>(shape: [2, 3], elements: [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
-
+    
     #expect(m.shape == [2, 3])
     #expect(m.rank == 2)
     #expect(m.elements == [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
     #expect(m[0, 2] == 3.0)
     #expect(m[[1, 2]] == 6.0)
-
+    
     m[[1, 0]] = 7.0
     #expect(m.elements == [1.0, 7.0, 2.0, 5.0, 3.0, 6.0])
 }
@@ -97,9 +97,9 @@ import Testing
     let matrix = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0],
                                           [4.0, 5.0, 6.0]])
     var copy = matrix
-
+    
     copy[1, 0] = 99.0
-
+    
     #expect(matrix[1, 0] == 4.0)
     #expect(copy[1, 0] == 99.0)
 }
@@ -109,7 +109,7 @@ import Testing
                                           [5.0, 6.0, 7.0, 8.0],
                                           [9.0, 10.0, 11.0, 12.0]])
     let slice = matrix.slice(rows: SliceRange(1..<3), columns: SliceRange(1..<3))
-
+    
     #expect(slice.shape == [2, 2])
     #expect(slice.toArray() == [[6.0, 7.0], [10.0, 11.0]])
     #expect(slice.flatten(columnMajorOrder: true) == [6.0, 10.0, 7.0, 11.0])
@@ -120,9 +120,9 @@ import Testing
     let matrix = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0],
                                           [4.0, 5.0, 6.0]])
     var slice = matrix.slice(rows: SliceRange(0..<2), columns: SliceRange(1..<2))
-
+    
     slice[1, 0] = 99.0
-
+    
     #expect(matrix[1, 1] == 5.0)
     #expect(slice[1, 0] == 99.0)
 }
@@ -132,7 +132,7 @@ import Testing
                                           [5.0, 6.0, 7.0, 8.0],
                                           [9.0, 10.0, 11.0, 12.0]])
     let slice: MatrixDenseBLAS<Double> = matrix[1..<3, 1..<3]
-
+    
     #expect(slice.toArray() == [[6.0, 7.0], [10.0, 11.0]])
 }
 
@@ -141,7 +141,7 @@ import Testing
                                           [5.0, 6.0, 7.0, 8.0],
                                           [9.0, 10.0, 11.0, 12.0]])
     let row: VectorFlatView<Double> = matrix[1, all]
-
+    
     #expect(row.elements == [5.0, 6.0, 7.0, 8.0])
 }
 
@@ -150,6 +150,6 @@ import Testing
                                           [4.0, 5.0, 6.0],
                                           [7.0, 8.0, 9.0]])
     let column: VectorFlatView<Double> = matrix[all, 1]
-
+    
     #expect(column.elements == [2.0, 5.0, 8.0])
 }
