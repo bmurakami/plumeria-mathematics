@@ -216,3 +216,63 @@ func TensorFlatView_contiguity(elements: [Double], offset: Int, shape: [Int], st
     
     #expect(view.storage === storage)
 }
+
+@Test func TensorFlatView_variadicIntegerSubscriptReturnsScalar() {
+    // k=0:              k=1:
+    // [1.0, 3.0, 5.0]   [7.0,  9.0, 11.0]
+    // [2.0, 4.0, 6.0]   [8.0, 10.0, 12.0]
+    let view = TensorFlatView<Double>(shape: [2, 3, 2], elements: Array(1...12).map(Double.init))
+    
+    #expect(view[1, 1, 1] == 10.0)
+}
+
+@Test func TensorFlatView_subscriptDropsRankForFixedIndices() {
+    // k=0:              k=1:                 slice i=1 across j and k:
+    // [1.0, 3.0, 5.0]   [7.0,  9.0, 11.0]    [2.0,  8.0]
+    // [2.0, 4.0, 6.0]   [8.0, 10.0, 12.0]    [4.0, 10.0]
+    //                                        [6.0, 12.0]
+    let view = TensorFlatView<Double>(shape: [2, 3, 2], elements: Array(1...12).map(Double.init))
+    let slice: TensorFlatView<Double> = view[.index(1), all, all]
+    
+    #expect(slice.shape == [3, 2])
+    #expect(slice.strides == [2, 6])
+    #expect(slice.elements == [2.0, 4.0, 6.0, 8.0, 10.0, 12.0])
+}
+
+@Test func TensorFlatView_vectorSliceReturnsVectorFlatView() {
+    // k=0:             k=1:                 slice i=1, j=2 across all k:
+    // [1.0, 3.0, 5.0]  [7.0,  9.0, 11.0]    [6.0, 12.0]
+    // [2.0, 4.0, 6.0]  [8.0, 10.0, 12.0]
+    let view = TensorFlatView<Double>(shape: [2, 3, 2], elements: Array(1...12).map(Double.init))
+    let slice: VectorFlatView<Double> = view.vectorSlice(.index(1), .index(2), all)
+    
+    #expect(slice.shape == [2])
+    #expect(slice.elements == [6.0, 12.0])
+}
+
+@Test func TensorFlatView_vectorSliceAcceptsIntegerLiterals() {
+    // Same slice as above, but integer literals mean .index(integer).
+    let view = TensorFlatView<Double>(shape: [2, 3, 2], elements: Array(1...12).map(Double.init))
+    let slice: VectorFlatView<Double> = view.vectorSlice(1, 2, all)
+    
+    #expect(slice.elements == [6.0, 12.0])
+}
+
+@Test func TensorFlatView_matrixSliceReturnsMatrixFlatView() {
+    // k=0:             k=1:                 slice all i, j=0 and j=2, k=1:
+    // [1.0, 3.0, 5.0]  [7.0,  9.0, 11.0]    [7.0, 11.0]
+    // [2.0, 4.0, 6.0]  [8.0, 10.0, 12.0]    [8.0, 12.0]
+    let view = TensorFlatView<Double>(shape: [2, 3, 2], elements: Array(1...12).map(Double.init))
+    let slice: MatrixFlatView<Double> = view.matrixSlice(all, step(0..<3, by: 2), .index(1))
+    
+    #expect(slice.shape == [2, 2])
+    #expect(slice.toArray() == [[7.0, 11.0], [8.0, 12.0]])
+}
+
+@Test func TensorFlatView_subscriptPreservesRankWhenAllDimensionsRemain() {
+    let view = TensorFlatView<Double>(shape: [2, 3, 2], elements: Array(1...12).map(Double.init))
+    let slice: TensorFlatView<Double> = view[all, all, all]
+    
+    #expect(slice.shape == [2, 3, 2])
+    #expect(slice.elements == view.elements)
+}

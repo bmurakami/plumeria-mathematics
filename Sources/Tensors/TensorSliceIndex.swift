@@ -37,3 +37,9 @@ public let all = TensorSliceIndex.all
 public func step(_ range: Range<Int>, by: Int) -> TensorSliceIndex {
     .step(range, by: by)
 }
+
+extension TensorSliceIndex: ExpressibleByIntegerLiteral {
+    public init(integerLiteral value: Int) {
+        self = .index(value)
+    }
+}
