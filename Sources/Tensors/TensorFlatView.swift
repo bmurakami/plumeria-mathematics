@@ -114,45 +114,6 @@ public struct TensorFlatView<Scalar: PluScalar>: TensorView, Equatable {
         return MatrixFlatView(view: view)
     }
 
-    internal func times(
-        _ other: TensorFlatView<Scalar>,
-        contract axes: [(lhs: Int, rhs: Int)]
-    ) -> TensorFlatView<Scalar> {
-        validateContraction(axes, with: other)
-
-        let lhsContractedAxes = Set(axes.map(\.lhs))
-        let rhsContractedAxes = Set(axes.map(\.rhs))
-        let lhsFreeAxes = (0..<rank).filter { !lhsContractedAxes.contains($0) }
-        let rhsFreeAxes = (0..<other.rank).filter { !rhsContractedAxes.contains($0) }
-        let resultShape = lhsFreeAxes.map { shape[$0] } + rhsFreeAxes.map { other.shape[$0] }
-        let contractShape = axes.map { shape[$0.lhs] }
-        var result = TensorFlatView(shape: resultShape)
-
-        for resultIndex in Self.indexCombinations(for: resultShape) {
-            var lhsIndex = Array(repeating: 0, count: rank)
-            var rhsIndex = Array(repeating: 0, count: other.rank)
-
-            for (index, axis) in lhsFreeAxes.enumerated() {
-                lhsIndex[axis] = resultIndex[index]
-            }
-            for (index, axis) in rhsFreeAxes.enumerated() {
-                rhsIndex[axis] = resultIndex[lhsFreeAxes.count + index]
-            }
-
-            var sum = Scalar.zero
-            for contractIndex in Self.indexCombinations(for: contractShape) {
-                for (index, axis) in axes.enumerated() {
-                    lhsIndex[axis.lhs] = contractIndex[index]
-                    rhsIndex[axis.rhs] = contractIndex[index]
-                }
-                sum += self[lhsIndex] * other[rhsIndex]
-            }
-            result[resultIndex] = sum
-        }
-
-        return result
-    }
-
     private static func columnMajorStrides(for shape: [Int]) -> [Int] {
         var strides = Array(repeating: 0, count: shape.count)
         if !shape.isEmpty {
@@ -187,33 +148,6 @@ public struct TensorFlatView<Scalar: PluScalar>: TensorView, Equatable {
             let index = remaining % dimension
             remaining /= dimension
             return index
-        }
-    }
-
-    private static func indexCombinations(for shape: [Int]) -> [[Int]] {
-        guard !shape.isEmpty else { return [[]] }
-        guard shape.allSatisfy({ $0 > 0 }) else { return [] }
-
-        var combinations: [[Int]] = [[]]
-        for dimension in shape {
-            combinations = combinations.flatMap { prefix in
-                (0..<dimension).map { prefix + [$0] }
-            }
-        }
-        return combinations
-    }
-
-    private func validateContraction(_ axes: [(lhs: Int, rhs: Int)], with other: TensorFlatView<Scalar>) {
-        var lhsAxes = Set<Int>()
-        var rhsAxes = Set<Int>()
-
-        for axis in axes {
-            precondition(axis.lhs >= 0 && axis.lhs < rank, "Contraction lhs axis out of bounds")
-            precondition(axis.rhs >= 0 && axis.rhs < other.rank, "Contraction rhs axis out of bounds")
-            precondition(lhsAxes.insert(axis.lhs).inserted, "Contraction lhs axes must be unique")
-            precondition(rhsAxes.insert(axis.rhs).inserted, "Contraction rhs axes must be unique")
-            precondition(shape[axis.lhs] == other.shape[axis.rhs],
-                         "Contracted tensor dimensions must match")
         }
     }
 

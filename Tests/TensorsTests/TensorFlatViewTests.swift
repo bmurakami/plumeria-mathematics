@@ -201,57 +201,6 @@ func TensorFlatView_contiguity(elements: [Double], offset: Int, shape: [Int], st
     #expect(view.isContiguous)
 }
 
-@Test func TensorFlatView_timesComputesOuterProduct() {
-    let lhs = TensorFlatView<Double>(shape: [2], elements: [2.0, 3.0])
-    let rhs = TensorFlatView<Double>(shape: [3], elements: [5.0, 7.0, 11.0])
-
-    let result = lhs.times(rhs, contract: [])
-
-    #expect(result.shape == [2, 3])
-    #expect(result.elements == [10.0, 15.0, 14.0, 21.0, 22.0, 33.0])
-}
-
-@Test func TensorFlatView_timesComputesDotProduct() {
-    let lhs = TensorFlatView<Double>(shape: [3], elements: [2.0, 3.0, 5.0])
-    let rhs = TensorFlatView<Double>(shape: [3], elements: [7.0, 11.0, 13.0])
-
-    let result = lhs.times(rhs, contract: [(lhs: 0, rhs: 0)])
-
-    #expect(result.shape == [])
-    #expect(result.elements == [112.0])
-}
-
-@Test func TensorFlatView_timesComputesMatrixVectorProduct() {
-    let matrix = TensorFlatView<Double>(shape: [2, 3], elements: [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
-    let vector = TensorFlatView<Double>(shape: [3], elements: [7.0, 11.0, 13.0])
-
-    let result = matrix.times(vector, contract: [(lhs: 1, rhs: 0)])
-
-    #expect(result.shape == [2])
-    #expect(result.elements == [68.0, 161.0])
-}
-
-@Test func TensorFlatView_timesComputesMatrixMatrixProduct() {
-    let lhs = TensorFlatView<Double>(shape: [2, 3], elements: [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
-    let rhs = TensorFlatView<Double>(shape: [3, 2], elements: [7.0, 9.0, 11.0, 8.0, 10.0, 12.0])
-
-    let result = lhs.times(rhs, contract: [(lhs: 1, rhs: 0)])
-
-    #expect(result.shape == [2, 2])
-    #expect(result.elements == [58.0, 139.0, 64.0, 154.0])
-}
-
-@Test func TensorFlatView_timesComputesMultiAxisContraction() {
-    let lhs = TensorFlatView<Double>(shape: [2, 3, 4], elements: Array(1...24).map(Double.init))
-    let rhs = TensorFlatView<Double>(shape: [3, 5, 4], elements: Array(1...60).map(Double.init))
-
-    let result = lhs.times(rhs, contract: [(lhs: 1, rhs: 0), (lhs: 2, rhs: 2)])
-
-    #expect(result.shape == [2, 5])
-    #expect(result.elements == [4894.0, 5188.0, 5326.0, 5656.0, 5758.0,
-                                6124.0, 6190.0, 6592.0, 6622.0, 7060.0])
-}
-
 @Test func TensorFlatView_emptyDimensionViewIsContiguousWithColumnMajorStrides() {
     let view = TensorFlatView<Double>(shape: [0, 3])
 
