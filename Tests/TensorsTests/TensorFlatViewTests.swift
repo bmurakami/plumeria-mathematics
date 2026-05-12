@@ -1,8 +1,8 @@
 import Testing
 @testable import Tensors
 
-@Test func TensorView_freshVectorHasColumnMajorStride() {
-    let view = TensorView<Double>(shape: [4])
+@Test func TensorFlatView_freshVectorHasColumnMajorStride() {
+    let view = TensorFlatView<Double>(shape: [4])
     
     #expect(view.offset == 0)
     #expect(view.shape == [4])
@@ -13,8 +13,8 @@ import Testing
     #expect(view.storage.elements == [0.0, 0.0, 0.0, 0.0])
 }
 
-@Test func TensorView_freshMatrixHasColumnMajorStrides() {
-    let view = TensorView<Double>(shape: [2, 3])
+@Test func TensorFlatView_freshMatrixHasColumnMajorStrides() {
+    let view = TensorFlatView<Double>(shape: [2, 3])
     
     #expect(view.offset == 0)
     #expect(view.shape == [2, 3])
@@ -25,11 +25,8 @@ import Testing
     #expect(view.storage.elements == [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 }
 
-@Test func TensorView_readsColumnMajorElements() {
-    let view = TensorView<Double>(
-        shape: [2, 3],
-        elements: [1.0, 4.0, 2.0, 5.0, 3.0, 6.0]
-    )
+@Test func TensorFlatView_readsColumnMajorElements() {
+    let view = TensorFlatView<Double>(shape: [2, 3], elements: [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
     
     #expect(view[[0, 0]] == 1.0)
     #expect(view[[1, 0]] == 4.0)
@@ -39,23 +36,23 @@ import Testing
     #expect(view[[1, 2]] == 6.0)
 }
 
-@Test func TensorView_subscriptMutationUpdatesElement() {
-    var view = TensorView<Double>(shape: [2, 2], elements: [1.0, 3.0, 2.0, 4.0])
+@Test func TensorFlatView_subscriptMutationUpdatesElement() {
+    var view = TensorFlatView<Double>(shape: [2, 2], elements: [1.0, 3.0, 2.0, 4.0])
     view[[1, 0]] = 99.0
     
     #expect(view[[1, 0]] == 99.0)
     #expect(view.storage.elements == [1.0, 99.0, 2.0, 4.0])
 }
 
-@Test func TensorView_copiedViewsShareStorage() {
-    let original = TensorView<Double>(shape: [3], elements: [1.0, 2.0, 3.0])
+@Test func TensorFlatView_copiedViewsShareStorage() {
+    let original = TensorFlatView<Double>(shape: [3], elements: [1.0, 2.0, 3.0])
     let copy = original
     
     #expect(original.storage === copy.storage)
 }
 
-@Test func TensorView_mutatingCopiedViewDetachesStorage() {
-    let original = TensorView<Double>(shape: [3], elements: [1.0, 2.0, 3.0])
+@Test func TensorFlatView_mutatingCopiedViewDetachesStorage() {
+    let original = TensorFlatView<Double>(shape: [3], elements: [1.0, 2.0, 3.0])
     var copy = original
     
     copy[[1]] = 99.0
@@ -65,8 +62,8 @@ import Testing
     #expect(copy[[1]] == 99.0)
 }
 
-@Test func TensorView_mutatingUniqueViewDoesNotCopy() {
-    var view = TensorView<Double>(shape: [3], elements: [1.0, 2.0, 3.0])
+@Test func TensorFlatView_mutatingUniqueViewDoesNotCopy() {
+    var view = TensorFlatView<Double>(shape: [3], elements: [1.0, 2.0, 3.0])
     let storageID = ObjectIdentifier(view.storage)
     
     view[[1]] = 99.0
@@ -75,9 +72,9 @@ import Testing
     #expect(view.storage.elements == [1.0, 99.0, 3.0])
 }
 
-@Test func TensorView_canRepresentOffsetAndStridedView() {
+@Test func TensorFlatView_canRepresentOffsetAndStridedView() {
     let storage = TensorStorage([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
-    let view = TensorView(storage: storage, offset: 1, shape: [3], strides: [2])
+    let view = TensorFlatView(storage: storage, offset: 1, shape: [3], strides: [2])
     
     #expect(view[[0]] == 2.0)
     #expect(view[[1]] == 4.0)
@@ -88,8 +85,9 @@ import Testing
     (SliceRange(1..<4), [3], [1], true, [2.0, 3.0, 4.0]),
     (SliceRange(1..<6, step: 2), [3], [2], false, [2.0, 4.0, 6.0])
 ])
-func TensorView_slicesVector(range: SliceRange, shape: [Int], strides: [Int], isContiguous: Bool, values: [Double]) {
-    let view = TensorView<Double>(shape: [6], elements: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+func TensorFlatView_slicesVector(range: SliceRange, shape: [Int], strides: [Int],
+                                 isContiguous: Bool, values: [Double]) {
+    let view = TensorFlatView<Double>(shape: [6], elements: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
     let slice = view.slice(range)
     
     #expect(slice.storage === view.storage)
@@ -100,12 +98,12 @@ func TensorView_slicesVector(range: SliceRange, shape: [Int], strides: [Int], is
     #expect((0..<slice.count).map { slice[[$0]] } == values)
 }
 
-@Test func TensorView_slicesSubmatrix() {
+@Test func TensorFlatView_slicesSubmatrix() {
     // Original:                   Slice rows 1..<3, columns 1..<3:
     // [1.0,  2.0,  3.0,  4.0]     [ 6.0,  7.0]
     // [5.0,  6.0,  7.0,  8.0]     [10.0, 11.0]
     // [9.0, 10.0, 11.0, 12.0]
-    let view = TensorView<Double>(
+    let view = TensorFlatView<Double>(
         shape: [3, 4],
         elements: [1.0, 5.0, 9.0, 2.0, 6.0, 10.0, 3.0, 7.0, 11.0, 4.0, 8.0, 12.0]
     )
@@ -122,8 +120,8 @@ func TensorView_slicesVector(range: SliceRange, shape: [Int], strides: [Int], is
     #expect(slice[[1, 1]] == 11.0)
 }
 
-@Test func TensorView_mutatingSliceCopiesOnWrite() {
-    let view = TensorView<Double>(shape: [4], elements: [1.0, 2.0, 3.0, 4.0])
+@Test func TensorFlatView_mutatingSliceCopiesOnWrite() {
+    let view = TensorFlatView<Double>(shape: [4], elements: [1.0, 2.0, 3.0, 4.0])
     var slice = view.slice([SliceRange(1..<3)])
     
     slice[[0]] = 99.0
@@ -133,8 +131,8 @@ func TensorView_slicesVector(range: SliceRange, shape: [Int], strides: [Int], is
     #expect(slice[[0]] == 99.0)
 }
 
-@Test func TensorView_chainsVectorSlices() {
-    let view = TensorView<Double>(shape: [8], elements: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+@Test func TensorFlatView_chainsVectorSlices() {
+    let view = TensorFlatView<Double>(shape: [8], elements: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
     let firstSlice = view.slice(SliceRange(1..<8, step: 2))
     let secondSlice = firstSlice.slice(SliceRange(1..<3))
     
@@ -147,12 +145,12 @@ func TensorView_slicesVector(range: SliceRange, shape: [Int], strides: [Int], is
     #expect(secondSlice[[1]] == 6.0)
 }
 
-@Test func TensorView_chainsMatrixSlices() {
+@Test func TensorFlatView_chainsMatrixSlices() {
     // Original:                   First slice:       Second slice:
     // [1.0,  2.0,  3.0,  4.0]     [ 2.0,  3.0]       [ 3.0]
     // [5.0,  6.0,  7.0,  8.0]     [ 6.0,  7.0]       [ 7.0]
     // [9.0, 10.0, 11.0, 12.0]     [10.0, 11.0]
-    let view = TensorView<Double>(
+    let view = TensorFlatView<Double>(
         shape: [3, 4],
         elements: [1.0, 5.0, 9.0, 2.0, 6.0, 10.0, 3.0, 7.0, 11.0, 4.0, 8.0, 12.0]
     )
@@ -168,9 +166,9 @@ func TensorView_slicesVector(range: SliceRange, shape: [Int], strides: [Int], is
     #expect(secondSlice[[1, 0]] == 7.0)
 }
 
-@Test func TensorView_convenienceSlicesMatchCoreSlice() {
-    let vector = TensorView<Double>(shape: [4], elements: [1.0, 2.0, 3.0, 4.0])
-    let matrix = TensorView<Double>(shape: [2, 3], elements: [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
+@Test func TensorFlatView_convenienceSlicesMatchCoreSlice() {
+    let vector = TensorFlatView<Double>(shape: [4], elements: [1.0, 2.0, 3.0, 4.0])
+    let matrix = TensorFlatView<Double>(shape: [2, 3], elements: [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
     let vectorSlice = vector.slice(SliceRange(1..<3))
     let coreVectorSlice = vector.slice([SliceRange(1..<3)])
     let matrixSlice = matrix.slice(rows: SliceRange(0..<2), columns: SliceRange(1..<3))
@@ -190,29 +188,29 @@ func TensorView_slicesVector(range: SliceRange, shape: [Int], strides: [Int], is
     ([1.0, 2.0, 3.0, 4.0, 5.0], 0, [3], [2], false),
     ([1.0, 4.0, 2.0, 5.0, 3.0, 6.0], 1, [3], [2], false)
 ])
-func TensorView_contiguity(elements: [Double], offset: Int, shape: [Int], strides: [Int], expected: Bool) {
+func TensorFlatView_contiguity(elements: [Double], offset: Int, shape: [Int], strides: [Int], expected: Bool) {
     let storage = TensorStorage(elements)
-    let view = TensorView(storage: storage, offset: offset, shape: shape, strides: strides)
+    let view = TensorFlatView(storage: storage, offset: offset, shape: shape, strides: strides)
     
     #expect(view.isContiguous == expected)
 }
 
-@Test func TensorView_scalarViewIsContiguous() {
-    let view = TensorView<Double>(shape: [], elements: [42.0])
+@Test func TensorFlatView_scalarViewIsContiguous() {
+    let view = TensorFlatView<Double>(shape: [], elements: [42.0])
     
     #expect(view.isContiguous)
 }
 
-@Test func TensorView_emptyDimensionViewIsContiguousWithColumnMajorStrides() {
-    let view = TensorView<Double>(shape: [0, 3])
+@Test func TensorFlatView_emptyDimensionViewIsContiguousWithColumnMajorStrides() {
+    let view = TensorFlatView<Double>(shape: [0, 3])
     
     #expect(view.strides == [1, 0])
     #expect(view.isContiguous)
 }
 
-@Test func TensorView_readOnlyAccessDoesNotCopyStorage() {
+@Test func TensorFlatView_readOnlyAccessDoesNotCopyStorage() {
     let storage = TensorStorage([1.0, 2.0, 3.0])
-    let view = TensorView(storage: storage, offset: 0, shape: [3], strides: [1])
+    let view = TensorFlatView(storage: storage, offset: 0, shape: [3], strides: [1])
     
     _ = view[[1]]
     

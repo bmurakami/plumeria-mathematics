@@ -2,7 +2,7 @@ import AccelerateWrapper
 import OpenBLASWrapper
 
 public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
-    private var view: TensorView<S>
+    private var view: TensorFlatView<S>
     public var blasImplementation: BLAS
     
     private func value(row: Int, column: Int) -> S {
@@ -14,11 +14,11 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
     }
 
     init(rows: Int, columns: Int, values: [S], blasImplementation: BLAS = BLAS.default) {
-        self.view = TensorView(shape: [rows, columns], elements: values)
+        self.view = TensorFlatView(shape: [rows, columns], elements: values)
         self.blasImplementation = blasImplementation
     }
     
-    init(view: TensorView<S>, blasImplementation: BLAS = BLAS.default) {
+    init(view: TensorFlatView<S>, blasImplementation: BLAS = BLAS.default) {
         precondition(view.rank == 2, "MatrixDenseBLAS view must have rank 2")
         self.view = view
         self.blasImplementation = blasImplementation
@@ -35,7 +35,7 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
     
     public init(rows: Int, columns: Int, initialValue: S = S.zero) {
         let elements = Array(repeating: initialValue, count: rows * columns)
-        self.view = TensorView(shape: [rows, columns], elements: elements)
+        self.view = TensorFlatView(shape: [rows, columns], elements: elements)
         self.blasImplementation = BLAS.default
     }
 
@@ -47,7 +47,7 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
                 values[row][column]
             }
         }
-        self.view = TensorView(shape: [rows, columns], elements: elements)
+        self.view = TensorFlatView(shape: [rows, columns], elements: elements)
         self.blasImplementation = .openBLAS
     }
 
@@ -55,7 +55,7 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
         get { viewElements(columnMajorOrder: true) }
         set {
             precondition(newValue.count == rows * columns, "Matrix element count must match matrix shape")
-            view = TensorView(shape: shape, elements: newValue)
+            view = TensorFlatView(shape: shape, elements: newValue)
         }
     }
     
