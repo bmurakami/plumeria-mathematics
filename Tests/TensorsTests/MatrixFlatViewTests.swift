@@ -73,3 +73,41 @@ import Testing
                                  [3.0, 4.0]])
     #expect(slice.toArray() == [[2.0], [99.0]])
 }
+
+@Test func MatrixFlatView_subscriptSlicesRowsAndColumns() {
+    let matrix = MatrixFlatView<Double>([[1.0, 2.0, 3.0, 4.0],
+                                         [5.0, 6.0, 7.0, 8.0],
+                                         [9.0, 10.0, 11.0, 12.0]])
+    let slice: MatrixFlatView<Double> = matrix[1..<3, 1..<3]
+    
+    #expect(slice.toArray() == [[6.0, 7.0], [10.0, 11.0]])
+}
+
+@Test func MatrixFlatView_subscriptSlicesRowToVector() {
+    let matrix = MatrixFlatView<Double>([[1.0, 2.0, 3.0, 4.0],
+                                         [5.0, 6.0, 7.0, 8.0],
+                                         [9.0, 10.0, 11.0, 12.0]])
+    let row: VectorFlatView<Double> = matrix[1, step(0..<4, by: 2)]
+    
+    #expect(row.elements == [5.0, 7.0])
+}
+
+@Test func MatrixFlatView_subscriptSlicesColumnToVector() {
+    let matrix = MatrixFlatView<Double>([[1.0, 2.0, 3.0],
+                                         [4.0, 5.0, 6.0],
+                                         [7.0, 8.0, 9.0]])
+    let column: VectorFlatView<Double> = matrix[all, 1]
+    
+    #expect(column.elements == [2.0, 5.0, 8.0])
+}
+
+@Test func MatrixFlatView_subscriptSlicesWithAllAndStep() {
+    let matrix = MatrixFlatView<Double>([[1.0, 2.0, 3.0, 4.0],
+                                         [5.0, 6.0, 7.0, 8.0],
+                                         [9.0, 10.0, 11.0, 12.0]])
+    let slice: MatrixFlatView<Double> = matrix[all, step(0..<4, by: 2)]
+    
+    #expect(slice.toArray() == [[1.0, 3.0],
+                                [5.0, 7.0],
+                                [9.0, 11.0]])
+}

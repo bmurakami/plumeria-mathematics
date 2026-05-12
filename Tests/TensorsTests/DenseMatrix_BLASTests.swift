@@ -118,3 +118,30 @@ import Testing
     #expect(matrix[1, 1] == 5.0)
     #expect(slice[1, 0] == 99.0)
 }
+
+@Test func DenseMatrix_BLAS_subscriptSlicesRowsAndColumns() {
+    let matrix = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0, 4.0],
+                                          [5.0, 6.0, 7.0, 8.0],
+                                          [9.0, 10.0, 11.0, 12.0]])
+    let slice: MatrixDenseBLAS<Double> = matrix[1..<3, 1..<3]
+    
+    #expect(slice.toArray() == [[6.0, 7.0], [10.0, 11.0]])
+}
+
+@Test func DenseMatrix_BLAS_subscriptSlicesRowToVector() {
+    let matrix = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0, 4.0],
+                                          [5.0, 6.0, 7.0, 8.0],
+                                          [9.0, 10.0, 11.0, 12.0]])
+    let row: VectorFlatView<Double> = matrix[1, all]
+    
+    #expect(row.elements == [5.0, 6.0, 7.0, 8.0])
+}
+
+@Test func DenseMatrix_BLAS_subscriptSlicesColumnToVector() {
+    let matrix = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0],
+                                          [4.0, 5.0, 6.0],
+                                          [7.0, 8.0, 9.0]])
+    let column: VectorFlatView<Double> = matrix[all, 1]
+    
+    #expect(column.elements == [2.0, 5.0, 8.0])
+}

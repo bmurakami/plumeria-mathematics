@@ -99,6 +99,49 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
     public func slice(rows: SliceRange, columns: SliceRange) -> MatrixDenseBLAS<S> {
         MatrixDenseBLAS(view: view.slice(rows: rows, columns: columns), blasImplementation: blasImplementation)
     }
+    
+    public func slice(row: Int, columns: SliceRange) -> VectorFlatView<S> {
+        MatrixFlatView(view: view).slice(row: row, columns: columns)
+    }
+    
+    public func slice(rows: SliceRange, column: Int) -> VectorFlatView<S> {
+        MatrixFlatView(view: view).slice(rows: rows, column: column)
+    }
+    
+    public subscript(rows: Range<Int>, columns: Range<Int>) -> MatrixDenseBLAS<S> {
+        slice(rows: SliceRange(rows), columns: SliceRange(columns))
+    }
+    
+    public subscript(rows: Range<Int>, columns: TensorSliceIndex) -> MatrixDenseBLAS<S> {
+        slice(rows: SliceRange(rows), columns: columns.sliceRange(dimensionSize: self.columns))
+    }
+    
+    public subscript(rows: TensorSliceIndex, columns: Range<Int>) -> MatrixDenseBLAS<S> {
+        slice(rows: rows.sliceRange(dimensionSize: self.rows), columns: SliceRange(columns))
+    }
+    
+    public subscript(rows: TensorSliceIndex, columns: TensorSliceIndex) -> MatrixDenseBLAS<S> {
+        slice(
+            rows: rows.sliceRange(dimensionSize: self.rows),
+            columns: columns.sliceRange(dimensionSize: self.columns)
+        )
+    }
+    
+    public subscript(row: Int, columns: Range<Int>) -> VectorFlatView<S> {
+        slice(row: row, columns: SliceRange(columns))
+    }
+    
+    public subscript(row: Int, columns: TensorSliceIndex) -> VectorFlatView<S> {
+        slice(row: row, columns: columns.sliceRange(dimensionSize: self.columns))
+    }
+    
+    public subscript(rows: Range<Int>, column: Int) -> VectorFlatView<S> {
+        slice(rows: SliceRange(rows), column: column)
+    }
+    
+    public subscript(rows: TensorSliceIndex, column: Int) -> VectorFlatView<S> {
+        slice(rows: rows.sliceRange(dimensionSize: self.rows), column: column)
+    }
 
     public func times<V: PluVector>(_ v: V) -> V where V.S == S {
         precondition(columns == v.size, "Number of columns in matrix must equal size of vector")

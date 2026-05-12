@@ -39,6 +39,41 @@ public struct MatrixFlatView<Scalar: PluScalar>: MatrixView, Equatable {
         set { view[[row, column]] = newValue }
     }
     
+    public subscript(rows: Range<Int>, columns: Range<Int>) -> MatrixFlatView<Scalar> {
+        slice(rows: SliceRange(rows), columns: SliceRange(columns))
+    }
+    
+    public subscript(rows: Range<Int>, columns: TensorSliceIndex) -> MatrixFlatView<Scalar> {
+        slice(rows: SliceRange(rows), columns: columns.sliceRange(dimensionSize: self.columns))
+    }
+    
+    public subscript(rows: TensorSliceIndex, columns: Range<Int>) -> MatrixFlatView<Scalar> {
+        slice(rows: rows.sliceRange(dimensionSize: self.rows), columns: SliceRange(columns))
+    }
+    
+    public subscript(rows: TensorSliceIndex, columns: TensorSliceIndex) -> MatrixFlatView<Scalar> {
+        slice(
+            rows: rows.sliceRange(dimensionSize: self.rows),
+            columns: columns.sliceRange(dimensionSize: self.columns)
+        )
+    }
+    
+    public subscript(row: Int, columns: Range<Int>) -> VectorFlatView<Scalar> {
+        slice(row: row, columns: SliceRange(columns))
+    }
+    
+    public subscript(row: Int, columns: TensorSliceIndex) -> VectorFlatView<Scalar> {
+        slice(row: row, columns: columns.sliceRange(dimensionSize: self.columns))
+    }
+    
+    public subscript(rows: Range<Int>, column: Int) -> VectorFlatView<Scalar> {
+        slice(rows: SliceRange(rows), column: column)
+    }
+    
+    public subscript(rows: TensorSliceIndex, column: Int) -> VectorFlatView<Scalar> {
+        slice(rows: rows.sliceRange(dimensionSize: self.rows), column: column)
+    }
+    
     public func slice(rows: SliceRange, columns: SliceRange) -> MatrixFlatView<Scalar> {
         MatrixFlatView(view: view.slice(rows: rows, columns: columns))
     }
