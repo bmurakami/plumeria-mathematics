@@ -1,4 +1,4 @@
-public protocol PluVector: PluTensor {
+public protocol PluVector: PluTensor, TensorStructure {
     associatedtype S: PluScalar
     
     var size: Int { get }
@@ -10,6 +10,9 @@ public protocol PluVector: PluTensor {
 }
 
 extension PluVector {
+    public var shape: [Int] { [size] }
+    public var rank: Int { 1 }
+
     public func toArray() -> [S] {
         return toArray(round: false)
     }

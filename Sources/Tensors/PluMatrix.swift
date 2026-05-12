@@ -1,4 +1,4 @@
-public protocol PluMatrix: PluTensor {
+public protocol PluMatrix: PluTensor, TensorStructure {
     associatedtype S: PluScalar
     
     var rows: Int { get }
@@ -15,6 +15,9 @@ public protocol PluMatrix: PluTensor {
 }
 
 extension PluMatrix {
+    public var shape: [Int] { [rows, columns] }
+    public var rank: Int { 2 }
+
     public func toArray() -> [[S]] {
         return toArray(round: false)
     }

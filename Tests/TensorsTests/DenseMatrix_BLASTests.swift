@@ -85,6 +85,14 @@ import Testing
     #expect(m.elements == [1.0, 7.0, 2.0, 5.0, 3.0, 6.0])
 }
 
+@Test func DenseMatrix_BLAS_tensorStructure() {
+    let matrix = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0],
+                                          [4.0, 5.0, 6.0]])
+
+    #expect(matrix.shape == [2, 3])
+    #expect(matrix.rank == 2)
+}
+
 @Test func DenseMatrix_BLAS_copiesOnWrite() {
     let matrix = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0],
                                           [4.0, 5.0, 6.0]])
