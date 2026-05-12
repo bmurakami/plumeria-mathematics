@@ -1,6 +1,4 @@
-public struct VectorDenseReference<S: PluScalar>: PluVector, FlatTensor {
-    public typealias Scalar = S
-    
+public struct VectorDenseReference<S: PluScalar>: PluVector {
     public var elements: [S]
     
     // MARK: - PluVector conformance
@@ -21,8 +19,8 @@ public struct VectorDenseReference<S: PluScalar>: PluVector, FlatTensor {
         return elements
     }
     
-    // MARK: - FlatTensor conformance
     public var shape: [Int] { [size] }
+    public var rank: Int { shape.count }
     
     public init(shape: [Int]) {
         precondition(shape.count == 1, "Vector shape must have rank 1")
@@ -33,7 +31,8 @@ public struct VectorDenseReference<S: PluScalar>: PluVector, FlatTensor {
     
     public init(shape: [Int], elements: [S]) {
         precondition(shape.count == 1, "Vector shape must have rank 1")
-        precondition(shape[0] == elements.count, "Vector shape \(shape) requires \(shape[0]) elements, but got \(elements.count)")
+        precondition(shape[0] == elements.count,
+                     "Vector shape \(shape) requires \(shape[0]) elements, but got \(elements.count)")
         
         self.init(elements)
     }
