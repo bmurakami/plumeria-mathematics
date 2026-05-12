@@ -239,6 +239,14 @@ func TensorFlatView_contiguity(elements: [Double], offset: Int, shape: [Int], st
     #expect(slice.elements == [2.0, 4.0, 6.0, 8.0, 10.0, 12.0])
 }
 
+@Test func TensorFlatView_subscriptRangeHelperWorksBeyondRankThree() {
+    let view = TensorFlatView<Double>(shape: [2, 2, 2, 2], elements: Array(1...16).map(Double.init))
+    let slice: TensorFlatView<Double> = view[1, range(0..<2), all, 1]
+    
+    #expect(slice.shape == [2, 2])
+    #expect(slice.elements == [10.0, 12.0, 14.0, 16.0])
+}
+
 @Test func TensorFlatView_vectorSliceReturnsVectorFlatView() {
     // k=0:             k=1:                 slice i=1, j=2 across all k:
     // [1.0, 3.0, 5.0]  [7.0,  9.0, 11.0]    [6.0, 12.0]

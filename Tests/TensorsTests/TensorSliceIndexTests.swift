@@ -7,6 +7,12 @@ import Testing
     #expect(range == SliceRange(1..<4))
 }
 
+@Test func TensorSliceIndex_rangeHelperCreatesRangeIndex() {
+    let range = range(1..<4).sliceRange(dimensionSize: 5)
+    
+    #expect(range == SliceRange(1..<4))
+}
+
 @Test func TensorSliceIndex_stepNormalizesToSliceRange() {
     let range = step(0..<5, by: 2).sliceRange(dimensionSize: 5)
     

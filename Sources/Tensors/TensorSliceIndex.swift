@@ -34,6 +34,10 @@ public enum TensorSliceIndex: Equatable, Sendable {
 
 public let all = TensorSliceIndex.all
 
+public func range(_ range: Range<Int>) -> TensorSliceIndex {
+    .range(range)
+}
+
 public func step(_ range: Range<Int>, by: Int) -> TensorSliceIndex {
     .step(range, by: by)
 }
