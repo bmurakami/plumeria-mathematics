@@ -45,3 +45,10 @@ let b = [-4.5, 5.6]
     let v1 = VectorDenseReference<Double>([1.2, 3.4, 5.6])
     #expect(v1.toArray() == [1.2, 3.4, 5.6])
 }
+
+@Test func VectorDenseReference_tensorStructure() {
+    let vector = VectorDenseReference<Double>([1.0, 2.0, 3.0])
+
+    #expect(vector.shape == [3])
+    #expect(vector.rank == 1)
+}

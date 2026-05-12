@@ -7,35 +7,35 @@ public struct TensorFlatView<Scalar: PluScalar>: TensorView, Equatable {
     public var count: Int { shape.reduce(1, *) }
     public var elements: [Scalar] { (0..<count).map { self[tensorIndices(forFlatIndex: $0)] } }
     public var isContiguous: Bool { strides == Self.columnMajorStrides(for: shape) }
-    
+
     public init(shape: [Int]) {
         precondition(shape.allSatisfy { $0 >= 0 }, "Tensor shape dimensions must be non-negative")
-        
+
         self.init(shape: shape, elements: Array(repeating: .zero, count: shape.reduce(1, *)))
     }
-    
+
     public init(shape: [Int], elements: [Scalar]) {
         precondition(shape.allSatisfy { $0 >= 0 }, "Tensor shape dimensions must be non-negative")
-        
+
         let count = shape.reduce(1, *)
         precondition(count == elements.count,
                      "Tensor shape \(shape) requires \(count) elements, but got \(elements.count)")
-        
+
         let strides = Self.columnMajorStrides(for: shape)
         self.init(storage: TensorStorage(elements), offset: 0, shape: shape, strides: strides)
     }
-    
+
     public init(storage: TensorStorage<Scalar>, offset: Int, shape: [Int], strides: [Int]) {
         precondition(offset >= 0, "Tensor view offset must be non-negative")
         precondition(shape.allSatisfy { $0 >= 0 }, "Tensor shape dimensions must be non-negative")
         precondition(shape.count == strides.count, "Tensor shape and strides must have the same rank")
-        
+
         self.storage = storage
         self.offset = offset
         self.shape = shape
         self.strides = strides
     }
-    
+
     public subscript(_ indices: [Int]) -> Scalar {
         get { storage[linearIndex(indices)] }
         set {
@@ -43,16 +43,16 @@ public struct TensorFlatView<Scalar: PluScalar>: TensorView, Equatable {
             storage[linearIndex(indices)] = newValue
         }
     }
-    
+
     public subscript(_ indices: Int...) -> Scalar {
         get { self[indices] }
         set { self[indices] = newValue }
     }
-    
+
     public subscript(_ indices: TensorSliceIndex...) -> TensorFlatView<Scalar> {
         slice(indices)
     }
-    
+
     public func slice(_ ranges: [SliceRange]) -> TensorFlatView<Scalar> {
         precondition(ranges.count == rank, "Slice rank must match tensor rank")
         for (dimension, range) in ranges.enumerated() {
@@ -61,31 +61,31 @@ public struct TensorFlatView<Scalar: PluScalar>: TensorView, Equatable {
             precondition(range.start <= dimensionSize, "Slice start is out of bounds")
             precondition(range.length == 0 || lastIndex < dimensionSize, "Slice end is out of bounds")
         }
-        
+
         let newOffset = offset + zip(ranges, strides).map { $0.start * $1 }.reduce(0, +)
         let newShape = ranges.map(\.length)
         let newStrides = zip(ranges, strides).map { $0.step * $1 }
-        
+
         return TensorFlatView(storage: storage, offset: newOffset, shape: newShape, strides: newStrides)
     }
-    
+
     public func slice(_ range: SliceRange) -> TensorFlatView<Scalar> {
         precondition(rank == 1, "Vector slice requires rank 1")
         return slice([range])
     }
-    
+
     public func slice(rows: SliceRange, columns: SliceRange) -> TensorFlatView<Scalar> {
         precondition(rank == 2, "Matrix slice requires rank 2")
         return slice([rows, columns])
     }
-    
+
     public func slice(_ indices: [TensorSliceIndex]) -> TensorFlatView<Scalar> {
         precondition(indices.count == rank, "Slice rank must match tensor rank")
-        
+
         var newOffset = offset
         var newShape: [Int] = []
         var newStrides: [Int] = []
-        
+
         for (dimension, index) in indices.enumerated() {
             switch index {
             case .index:
@@ -98,22 +98,61 @@ public struct TensorFlatView<Scalar: PluScalar>: TensorView, Equatable {
                 newStrides.append(range.step * strides[dimension])
             }
         }
-        
+
         return TensorFlatView(storage: storage, offset: newOffset, shape: newShape, strides: newStrides)
     }
-    
+
     public func vectorSlice(_ indices: TensorSliceIndex...) -> VectorFlatView<Scalar> {
         let view = slice(indices)
         precondition(view.rank == 1, "Tensor slice result must have rank 1")
         return VectorFlatView(view: view)
     }
-    
+
     public func matrixSlice(_ indices: TensorSliceIndex...) -> MatrixFlatView<Scalar> {
         let view = slice(indices)
         precondition(view.rank == 2, "Tensor slice result must have rank 2")
         return MatrixFlatView(view: view)
     }
-    
+
+    internal func times(
+        _ other: TensorFlatView<Scalar>,
+        contract axes: [(lhs: Int, rhs: Int)]
+    ) -> TensorFlatView<Scalar> {
+        validateContraction(axes, with: other)
+
+        let lhsContractedAxes = Set(axes.map(\.lhs))
+        let rhsContractedAxes = Set(axes.map(\.rhs))
+        let lhsFreeAxes = (0..<rank).filter { !lhsContractedAxes.contains($0) }
+        let rhsFreeAxes = (0..<other.rank).filter { !rhsContractedAxes.contains($0) }
+        let resultShape = lhsFreeAxes.map { shape[$0] } + rhsFreeAxes.map { other.shape[$0] }
+        let contractShape = axes.map { shape[$0.lhs] }
+        var result = TensorFlatView(shape: resultShape)
+
+        for resultIndex in Self.indexCombinations(for: resultShape) {
+            var lhsIndex = Array(repeating: 0, count: rank)
+            var rhsIndex = Array(repeating: 0, count: other.rank)
+
+            for (index, axis) in lhsFreeAxes.enumerated() {
+                lhsIndex[axis] = resultIndex[index]
+            }
+            for (index, axis) in rhsFreeAxes.enumerated() {
+                rhsIndex[axis] = resultIndex[lhsFreeAxes.count + index]
+            }
+
+            var sum = Scalar.zero
+            for contractIndex in Self.indexCombinations(for: contractShape) {
+                for (index, axis) in axes.enumerated() {
+                    lhsIndex[axis.lhs] = contractIndex[index]
+                    rhsIndex[axis.rhs] = contractIndex[index]
+                }
+                sum += self[lhsIndex] * other[rhsIndex]
+            }
+            result[resultIndex] = sum
+        }
+
+        return result
+    }
+
     private static func columnMajorStrides(for shape: [Int]) -> [Int] {
         var strides = Array(repeating: 0, count: shape.count)
         if !shape.isEmpty {
@@ -124,24 +163,24 @@ public struct TensorFlatView<Scalar: PluScalar>: TensorView, Equatable {
         }
         return strides
     }
-    
+
     private func linearIndex(_ indices: [Int]) -> Int {
         precondition(indices.count == rank, "Tensor index rank \(indices.count) does not match tensor rank \(rank)")
-        
+
         for (dimension, index) in indices.enumerated() {
             precondition(index >= 0 && index < shape[dimension], "Tensor index out of bounds")
         }
-        
+
         return offset + zip(indices, strides).map(*).reduce(0, +)
     }
-    
+
     private func validate(range: SliceRange, dimension: Int) {
         let dimensionSize = shape[dimension]
         let lastIndex = range.start + (range.length - 1) * range.step
         precondition(range.start <= dimensionSize, "Slice start is out of bounds")
         precondition(range.length == 0 || lastIndex < dimensionSize, "Slice end is out of bounds")
     }
-    
+
     private func tensorIndices(forFlatIndex linearIndex: Int) -> [Int] {
         var remaining = linearIndex
         return shape.map { dimension in
@@ -150,13 +189,40 @@ public struct TensorFlatView<Scalar: PluScalar>: TensorView, Equatable {
             return index
         }
     }
-    
+
+    private static func indexCombinations(for shape: [Int]) -> [[Int]] {
+        guard !shape.isEmpty else { return [[]] }
+        guard shape.allSatisfy({ $0 > 0 }) else { return [] }
+
+        var combinations: [[Int]] = [[]]
+        for dimension in shape {
+            combinations = combinations.flatMap { prefix in
+                (0..<dimension).map { prefix + [$0] }
+            }
+        }
+        return combinations
+    }
+
+    private func validateContraction(_ axes: [(lhs: Int, rhs: Int)], with other: TensorFlatView<Scalar>) {
+        var lhsAxes = Set<Int>()
+        var rhsAxes = Set<Int>()
+
+        for axis in axes {
+            precondition(axis.lhs >= 0 && axis.lhs < rank, "Contraction lhs axis out of bounds")
+            precondition(axis.rhs >= 0 && axis.rhs < other.rank, "Contraction rhs axis out of bounds")
+            precondition(lhsAxes.insert(axis.lhs).inserted, "Contraction lhs axes must be unique")
+            precondition(rhsAxes.insert(axis.rhs).inserted, "Contraction rhs axes must be unique")
+            precondition(shape[axis.lhs] == other.shape[axis.rhs],
+                         "Contracted tensor dimensions must match")
+        }
+    }
+
     private mutating func ensureUniqueStorage() {
         if !isKnownUniquelyReferenced(&storage) {
             storage = TensorStorage(storage.elements)
         }
     }
-    
+
     public static func == (lhs: TensorFlatView<Scalar>, rhs: TensorFlatView<Scalar>) -> Bool {
         lhs.shape == rhs.shape && lhs.elements == rhs.elements
     }

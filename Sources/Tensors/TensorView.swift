@@ -1,8 +1,6 @@
-public protocol TensorView {
+public protocol TensorView: TensorStructure {
     associatedtype Scalar: PluScalar
     
-    var shape: [Int] { get }
-    var rank: Int { get }
     var elements: [Scalar] { get }
     var isContiguous: Bool { get }
     
