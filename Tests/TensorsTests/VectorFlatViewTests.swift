@@ -40,3 +40,24 @@ import Testing
     #expect(vector.elements == [1.0, 2.0, 3.0])
     #expect(slice.elements == [99.0, 3.0])
 }
+
+@Test func VectorFlatView_subscriptSlicesRange() {
+    let vector = VectorFlatView<Double>([1.0, 2.0, 3.0, 4.0])
+    let slice: VectorFlatView<Double> = vector[1..<3]
+    
+    #expect(slice.elements == [2.0, 3.0])
+}
+
+@Test func VectorFlatView_subscriptSlicesAll() {
+    let vector = VectorFlatView<Double>([1.0, 2.0, 3.0, 4.0])
+    let slice: VectorFlatView<Double> = vector[all]
+    
+    #expect(slice.elements == [1.0, 2.0, 3.0, 4.0])
+}
+
+@Test func VectorFlatView_subscriptSlicesWithStep() {
+    let vector = VectorFlatView<Double>([1.0, 2.0, 3.0, 4.0, 5.0])
+    let slice: VectorFlatView<Double> = vector[step(0..<5, by: 2)]
+    
+    #expect(slice.elements == [1.0, 3.0, 5.0])
+}

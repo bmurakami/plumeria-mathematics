@@ -35,6 +35,14 @@ public struct VectorFlatView<Scalar: PluScalar>: VectorView, Equatable {
         set { view[[index]] = newValue }
     }
     
+    public subscript(range: Range<Int>) -> VectorFlatView<Scalar> {
+        slice(SliceRange(range))
+    }
+    
+    public subscript(index: TensorSliceIndex) -> VectorFlatView<Scalar> {
+        slice(index.sliceRange(dimensionSize: size))
+    }
+    
     public func slice(_ range: SliceRange) -> VectorFlatView<Scalar> {
         VectorFlatView(view: view.slice(range))
     }
