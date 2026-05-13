@@ -5,13 +5,8 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
     private var view: TensorFlatView<S>
     public var blasImplementation: BLAS
     
-    private func value(row: Int, column: Int) -> S {
-        view[[row, column]]
-    }
-    
-    private mutating func setValue(_ value: S, row: Int, column: Int) {
-        view[[row, column]] = value
-    }
+    private func value(row: Int, column: Int) -> S { view[[row, column]] }
+    private mutating func setValue(_ value: S, row: Int, column: Int) { view[[row, column]] = value }
 
     init(rows: Int, columns: Int, values: [S], blasImplementation: BLAS = BLAS.default) {
         self.view = TensorFlatView(shape: [rows, columns], elements: values)
@@ -169,7 +164,30 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
         
         return V(y as! [S])
     }
-    
+
+    public func times<M: PluMatrix>(_ m: M) -> MatrixDenseBLAS<S> where M.S == S {
+        precondition(columns == m.rows, "Number of matrix columns must match matrix rows")
+        switch S.self {
+        case is Double.Type:
+            var A = flatten() as! [Double]
+            var B = m.flatten() as! [Double]
+            var C = Array(repeating: 0.0, count: rows * m.columns)
+            switch blasImplementation {
+            #if canImport(Accelerate)
+            case .accelerate:
+                AccelerateOperations.dgemm(Int32(rows), Int32(m.columns), Int32(columns), &A, &B, &C)
+            #endif
+            case .openBLAS:
+                OpenBLASOperations.dgemm(Int32(rows), Int32(m.columns), Int32(columns), &A, &B, &C)
+            }
+            return MatrixDenseBLAS(rows: rows, columns: m.columns, values: C as! [S])
+        case is Complex.Type:
+            fatalError("Not yet implemented")
+        default:
+            fatalError("Not yet implemented")
+        }
+    }
+
     public func transpose() -> MatrixDenseBLAS<S> {
         var transposed = MatrixDenseBLAS(rows: columns, columns: rows)
         for row in 0..<rows {

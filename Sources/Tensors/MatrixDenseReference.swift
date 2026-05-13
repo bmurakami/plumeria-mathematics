@@ -36,7 +36,22 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix {
 
         return V(sum)
     }
-    
+
+    public func times<M: PluMatrix>(_ m: M) -> MatrixDenseReference<S> where M.S == S {
+        precondition(columns == m.rows, "Matrix columns must match matrix rows")
+        var product = MatrixDenseReference(rows: rows, columns: m.columns, initialValue: .zero)
+        for i in 0..<rows {
+            for j in 0..<m.columns {
+                var sum = S.zero
+                for k in 0..<columns {
+                    sum += values[i][k] * m[k, j]
+                }
+                product[i, j] = sum
+            }
+        }
+        return product
+    }
+
     public func transpose() -> Self {
         var mt = MatrixDenseReference(rows: self.columns, columns: self.rows, initialValue: values[0][0])
         for i in 0..<self.rows {
