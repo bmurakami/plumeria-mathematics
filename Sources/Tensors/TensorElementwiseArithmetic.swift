@@ -23,6 +23,26 @@ extension TensorElementwiseArithmetic where Magnitude == S.Magnitude {
         return result
     }
 
+    public static func * (tensor: Self, scalar: S) -> Self {
+        var result = Self(shape: tensor.shape, initialValue: .zero)
+        for index in indexCombinations(for: tensor.shape) {
+            result[index] = tensor[index] * scalar
+        }
+        return result
+    }
+
+    public static func * (scalar: S, tensor: Self) -> Self {
+        tensor * scalar
+    }
+
+    public static func / (tensor: Self, scalar: S) -> Self {
+        var result = Self(shape: tensor.shape, initialValue: .zero)
+        for index in indexCombinations(for: tensor.shape) {
+            result[index] = tensor[index] / scalar
+        }
+        return result
+    }
+
     public func isApproximatelyEqual(
         to other: Self,
         relativeTolerance: S.Magnitude = S.Magnitude.ulpOfOne.squareRoot(),
