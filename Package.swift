@@ -12,7 +12,8 @@ let package = Package(
     targets: [
         .systemLibrary(name: "COpenBLAS", path: "Sources/COpenBLAS"),
         .target(name: "AccelerateWrapper", cSettings: [.define("ACCELERATE_NEW_LAPACK")]),
-        .target(name: "OpenBLASWrapper", dependencies: ["COpenBLAS"]),
+        .target(name: "OpenBLASWrapper", dependencies: ["COpenBLAS"],
+                linkerSettings: [.linkedLibrary("gfortran", .when(platforms: [.linux]))]),
         .target(name: "Tensors", dependencies: ["AccelerateWrapper", "OpenBLASWrapper",
             .product(name: "Numerics", package: "swift-numerics")]),
         .target(name: "LinearSolvers", dependencies: ["Tensors"],
