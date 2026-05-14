@@ -49,6 +49,15 @@ import Testing
     #expect(b == VectorDenseReference<Double>([8.0, 18.0]))
 }
 
+@Test func DenseMatrix_BLAS_rectangularVectorMultiplication() {
+    let A = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0],
+                                     [4.0, 5.0, 6.0]])
+    let v = VectorDenseReference<Double>([2.0, 3.0, 4.0])
+    let b = A * v
+
+    #expect(b == VectorDenseReference<Double>([20.0, 47.0]))
+}
+
 @Test func DenseMatrix_BLAS_matrixMultiplication() {
     let A = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
     let B = MatrixDenseBLAS<Double>([[7.0, 8.0], [9.0, 10.0], [11.0, 12.0]])

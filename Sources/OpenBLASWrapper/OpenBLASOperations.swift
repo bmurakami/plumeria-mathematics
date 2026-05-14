@@ -10,7 +10,7 @@ public enum OpenBLASOperations {
     ) {
         let alpha: Double = 1.0
         let beta = 0.0
-        let lda = Int32(n)
+        let lda = Int32(m)
         let incx = Int32(1)
         let incy = Int32(1)
         
