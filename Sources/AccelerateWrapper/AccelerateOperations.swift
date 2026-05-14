@@ -10,13 +10,27 @@ public struct AccelerateOperations {
     ) {
         let alpha: Double = 1.0
         let beta = 0.0
-        let lda = Int32(n)
+        let lda = Int32(m)
         let incx = Int32(1)
         let incy = Int32(1)
 
         Accelerate.cblas_dgemv(CblasColMajor, CblasNoTrans, m, n, alpha, a, lda, x, incx, beta, y, incy)
     }
     
+    public static func dgemm(
+        _ m: Int32, _ n: Int32, _ k: Int32,
+        _ a: UnsafeMutablePointer<Double>,
+        _ b: UnsafeMutablePointer<Double>,
+        _ c: UnsafeMutablePointer<Double>
+    ) {
+        let alpha: Double = 1.0
+        let beta = 0.0
+        let lda = m
+        let ldb = k
+        let ldc = m
+        Accelerate.cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)
+    }
+
     // MARK: - LAPACK
     public static func dgesv(
         _ n: Int32,

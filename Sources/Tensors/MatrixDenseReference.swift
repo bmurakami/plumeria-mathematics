@@ -1,4 +1,4 @@
-public struct MatrixDenseReference<S: PluScalar>: PluMatrix {
+public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorElementwiseArithmetic {
     private var values: [[S]]
     
     // MARK: - PluMatrix conformance
@@ -10,8 +10,26 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix {
         set { values[i][j] = newValue }
     }
 
+    public subscript(_ indices: [Int]) -> S {
+        get {
+            precondition(indices.count == 2, "Matrix index rank must be 2")
+            return self[indices[0], indices[1]]
+        }
+        set {
+            precondition(indices.count == 2, "Matrix index rank must be 2")
+            self[indices[0], indices[1]] = newValue
+        }
+    }
+
     public init(rows: Int, columns: Int, initialValue: S = .zero) {
         values = Array(repeating: Array(repeating: initialValue, count: columns), count: rows)
+    }
+
+    public init(shape: [Int], initialValue: S) {
+        precondition(shape.count == 2, "MatrixDenseReference shape must have rank 2")
+        precondition(shape.allSatisfy { $0 >= 0 }, "Matrix shape dimensions must be non-negative")
+
+        self.init(rows: shape[0], columns: shape[1], initialValue: initialValue)
     }
     
     public init(_ values: [[S]]) {
@@ -36,7 +54,22 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix {
 
         return V(sum)
     }
-    
+
+    public func times<M: PluMatrix>(_ m: M) -> MatrixDenseReference<S> where M.S == S {
+        precondition(columns == m.rows, "Matrix columns must match matrix rows")
+        var product = MatrixDenseReference(rows: rows, columns: m.columns, initialValue: .zero)
+        for i in 0..<rows {
+            for j in 0..<m.columns {
+                var sum = S.zero
+                for k in 0..<columns {
+                    sum += values[i][k] * m[k, j]
+                }
+                product[i, j] = sum
+            }
+        }
+        return product
+    }
+
     public func transpose() -> Self {
         var mt = MatrixDenseReference(rows: self.columns, columns: self.rows, initialValue: values[0][0])
         for i in 0..<self.rows {
@@ -68,12 +101,4 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix {
         }
     }
     
-    // MARK: - PluTensor conformance
-    public static func + (lhs: MatrixDenseReference<S>, rhs: MatrixDenseReference<S>) -> MatrixDenseReference<S> {
-        return MatrixDenseReference(zip(lhs.values, rhs.values).map { row1, row2 in zip(row1, row2).map(+)})
-    }
-    
-    public static prefix func - (matrix: MatrixDenseReference<S>) -> MatrixDenseReference<S> {
-        return MatrixDenseReference(matrix.values.map { $0.map { -$0 } })
-    }
 }

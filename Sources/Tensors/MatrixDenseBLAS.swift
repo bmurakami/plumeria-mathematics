@@ -1,17 +1,12 @@
 import AccelerateWrapper
 import OpenBLASWrapper
 
-public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
+public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorElementwiseArithmetic {
     private var view: TensorFlatView<S>
     public var blasImplementation: BLAS
     
-    private func value(row: Int, column: Int) -> S {
-        view[[row, column]]
-    }
-    
-    private mutating func setValue(_ value: S, row: Int, column: Int) {
-        view[[row, column]] = value
-    }
+    private func value(row: Int, column: Int) -> S { view[[row, column]] }
+    private mutating func setValue(_ value: S, row: Int, column: Int) { view[[row, column]] = value }
 
     init(rows: Int, columns: Int, values: [S], blasImplementation: BLAS = BLAS.default) {
         self.view = TensorFlatView(shape: [rows, columns], elements: values)
@@ -67,6 +62,13 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
         precondition(shape.allSatisfy { $0 >= 0 }, "Matrix shape dimensions must be non-negative")
         
         self.init(rows: shape[0], columns: shape[1])
+    }
+
+    public init(shape: [Int], initialValue: S) {
+        precondition(shape.count == 2, "MatrixDenseBLAS shape must have rank 2")
+        precondition(shape.allSatisfy { $0 >= 0 }, "Matrix shape dimensions must be non-negative")
+
+        self.init(rows: shape[0], columns: shape[1], initialValue: initialValue)
     }
     
     public init(shape: [Int], elements: [S]) {
@@ -169,7 +171,30 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
         
         return V(y as! [S])
     }
-    
+
+    public func times<M: PluMatrix>(_ m: M) -> MatrixDenseBLAS<S> where M.S == S {
+        precondition(columns == m.rows, "Number of matrix columns must match matrix rows")
+        switch S.self {
+        case is Double.Type:
+            var A = flatten() as! [Double]
+            var B = m.flatten() as! [Double]
+            var C = Array(repeating: 0.0, count: rows * m.columns)
+            switch blasImplementation {
+            #if canImport(Accelerate)
+            case .accelerate:
+                AccelerateOperations.dgemm(Int32(rows), Int32(m.columns), Int32(columns), &A, &B, &C)
+            #endif
+            case .openBLAS:
+                OpenBLASOperations.dgemm(Int32(rows), Int32(m.columns), Int32(columns), &A, &B, &C)
+            }
+            return MatrixDenseBLAS(rows: rows, columns: m.columns, values: C as! [S])
+        case is Complex.Type:
+            fatalError("Not yet implemented")
+        default:
+            fatalError("Not yet implemented")
+        }
+    }
+
     public func transpose() -> MatrixDenseBLAS<S> {
         var transposed = MatrixDenseBLAS(rows: columns, columns: rows)
         for row in 0..<rows {
@@ -191,18 +216,6 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix {
     
     public func flatten(columnMajorOrder: Bool = true) -> [S] {
         viewElements(columnMajorOrder: columnMajorOrder)
-    }
-    
-    // MARK: - PluTensor conformance
-    public static func + (lhs: MatrixDenseBLAS<S>, rhs: MatrixDenseBLAS<S>) -> MatrixDenseBLAS<S> {
-        precondition(lhs.shape == rhs.shape, "Matrices must have the same shape.")
-        
-        let elements = zip(lhs.elements, rhs.elements).map { $0 + $1 }
-        return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns, values: elements)
-    }
-    
-    public static prefix func - (operand: MatrixDenseBLAS<S>) -> MatrixDenseBLAS<S> {
-        return MatrixDenseBLAS(rows: operand.rows, columns: operand.columns, values: operand.elements.map { -$0 })
     }
     
     public static func == (lhs: MatrixDenseBLAS<S>, rhs: MatrixDenseBLAS<S>) -> Bool {

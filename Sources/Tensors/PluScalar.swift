@@ -4,6 +4,7 @@ import Numerics
 public typealias Complex = Numerics.Complex<Double>
 
 public protocol PluScalar: ElementaryFunctions & PluTensor & Numeric {
+    static func / (lhs: Self, rhs: Self) -> Self
     func round() -> Self
 }
 

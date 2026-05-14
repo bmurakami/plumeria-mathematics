@@ -1,4 +1,4 @@
-public struct VectorDenseReference<S: PluScalar>: PluVector {
+public struct VectorDenseReference<S: PluScalar>: PluVector, TensorElementwiseArithmetic {
     public var elements: [S]
     
     // MARK: - PluVector conformance
@@ -6,6 +6,17 @@ public struct VectorDenseReference<S: PluScalar>: PluVector {
     public  subscript(i: Int) -> S {
         get { return elements[i] }
         set { elements[i] = newValue }
+    }
+
+    public subscript(_ indices: [Int]) -> S {
+        get {
+            precondition(indices.count == 1, "Vector index rank must be 1")
+            return self[indices[0]]
+        }
+        set {
+            precondition(indices.count == 1, "Vector index rank must be 1")
+            self[indices[0]] = newValue
+        }
     }
 
     public init(_ values: [S]) {
@@ -28,6 +39,13 @@ public struct VectorDenseReference<S: PluScalar>: PluVector {
         
         self.init(Array(repeating: .zero, count: shape[0]))
     }
+
+    public init(shape: [Int], initialValue: S) {
+        precondition(shape.count == 1, "Vector shape must have rank 1")
+        precondition(shape[0] >= 0, "Vector size must be non-negative")
+
+        self.init(Array(repeating: initialValue, count: shape[0]))
+    }
     
     public init(shape: [Int], elements: [S]) {
         precondition(shape.count == 1, "Vector shape must have rank 1")
@@ -37,16 +55,4 @@ public struct VectorDenseReference<S: PluScalar>: PluVector {
         self.init(elements)
     }
 
-    // MARK: - PluTensor conformance
-    public static func + (lhs: VectorDenseReference<S>, rhs: VectorDenseReference<S>) -> VectorDenseReference<S> {
-        guard lhs.size == rhs.size else {
-            fatalError("Vector dimensions must match for addition")
-        }
-        let result = zip(lhs.elements, rhs.elements).map { $0 + $1 }
-        return VectorDenseReference<S>(result)
-    }
-    
-    public static prefix func - (vector: VectorDenseReference<S>) -> VectorDenseReference<S> {
-        return VectorDenseReference<S>(vector.elements.map { -$0 })
-    }
 }

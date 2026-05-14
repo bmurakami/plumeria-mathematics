@@ -36,6 +36,14 @@ import Testing
     #expect(b == VectorDenseReference<Double>([8.0, 18.0]))
 }
 
+@Test func DenseMatrix_Reference_matrixMultiplication() {
+    let A = MatrixDenseReference<Double>([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    let B = MatrixDenseReference<Double>([[7.0, 8.0], [9.0, 10.0], [11.0, 12.0]])
+    let C = A * B
+
+    #expect(C.toArray() == [[58.0, 64.0], [139.0, 154.0]])
+}
+
 @Test func DenseMatrix_Reference_transpose() {
     let m = MatrixDenseReference<Double>([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
     let mt = m.transpose()
