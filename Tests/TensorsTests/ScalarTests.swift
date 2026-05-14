@@ -25,7 +25,6 @@ import Testing
     let z = Complex(3.0, 4.0)
 
     #expect(z.star == Complex(3.0, -4.0))
-    #expect(z.dagger == z.star)
     #expect(z.mod == 5.0)
     #expect(z.arg.isApproximatelyEqual(to: 0.9272952180016122, relativeTolerance: 1e-15))
 }

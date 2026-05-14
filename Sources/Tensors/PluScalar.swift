@@ -10,7 +10,6 @@ public protocol PluScalar: ElementaryFunctions & PluTensor & Numeric {
 
 public protocol ComplexScalar: PluScalar {
     var star: Self { get }
-    var dagger: Self { get }
     var mod: Magnitude { get }
     var arg: Magnitude { get }
 }
@@ -26,7 +25,6 @@ extension Double: PluScalar {
 extension Complex: PluTensor, PluScalar, ComplexScalar {
     // MARK: - ComplexScalar conformance
     public var star: Complex { conjugate }
-    public var dagger: Complex { star }
     public var mod: Double { length }
     public var arg: Double { phase }
 
