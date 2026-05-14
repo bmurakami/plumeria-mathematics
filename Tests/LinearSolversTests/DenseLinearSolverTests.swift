@@ -40,6 +40,21 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
     solveLinearDense_correctness_smallMatrices(matrixType: MatrixDenseBLAS<Double>.self)
 }
 
+@Test func solveLinearDense_complexBLAS() {
+    let A = MatrixDenseBLAS<Complex>([[Complex(1.0, 0.0), Complex(0.0, 1.0)],
+                                      [Complex(2.0, -1.0), Complex(1.0, 1.0)]])
+    let b = VectorDenseReference<Complex>([Complex(2.0, 3.0), Complex(6.0, 2.0)])
+    let expected = VectorDenseReference<Complex>([Complex(1.0, 1.0), Complex(2.0, -1.0)])
+    let actual = solveLinearDense(A, b)
+
+    #expect(actual.isApproximatelyEqual(to: expected, relativeTolerance: 1e-12))
+
+    #if canImport(Accelerate)
+    let accelerate = solveLinearDense(A, b, blasImplementation: .accelerate)
+    #expect(accelerate.isApproximatelyEqual(to: expected, relativeTolerance: 1e-12))
+    #endif
+}
+
 func solveLinearDense_correctness_largeMatrices<MatrixType: PluMatrix>(matrixType: MatrixType.Type)
         where MatrixType.S == Double {
     let sizes = [100, 500]

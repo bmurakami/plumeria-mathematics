@@ -148,13 +148,12 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorElementwiseArithme
     public func times<V: PluVector>(_ v: V) -> V where V.S == S {
         precondition(columns == v.size, "Number of columns in matrix must equal size of vector")
         
-        var y = Array(repeating: 0.0, count: rows)
-        
         switch S.self {
         case is Double.Type:
             var A = flatten() as! [Double] // Ax = y
             var x = v.toArray(round: false) as! [Double]
-            
+            var y = Array(repeating: 0.0, count: rows)
+
             switch blasImplementation {
             #if canImport(Accelerate)
             case .accelerate:
@@ -163,13 +162,26 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorElementwiseArithme
             case .openBLAS:
                 OpenBLASOperations.dgemv(Int32(rows), Int32(columns), &A, &x, &y)
             }
+
+            return V(y as! [S])
         case is Complex.Type:
-            fatalError("Not yet implemented")
+            var A = MatrixDenseBLAS.interleaved(flatten() as! [Complex])
+            var x = MatrixDenseBLAS.interleaved(v.toArray(round: false) as! [Complex])
+            var y = Array(repeating: 0.0, count: rows * 2)
+
+            switch blasImplementation {
+            #if canImport(Accelerate)
+            case .accelerate:
+                AccelerateOperations.zgemv(Int32(rows), Int32(columns), &A, &x, &y)
+            #endif
+            case .openBLAS:
+                OpenBLASOperations.zgemv(Int32(rows), Int32(columns), &A, &x, &y)
+            }
+
+            return V(MatrixDenseBLAS.complexValues(y) as! [S])
         default:
             fatalError("Unsupported scalar type")
         }
-        
-        return V(y as! [S])
     }
 
     public func times<M: PluMatrix>(_ m: M) -> MatrixDenseBLAS<S> where M.S == S {
@@ -189,9 +201,20 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorElementwiseArithme
             }
             return MatrixDenseBLAS(rows: rows, columns: m.columns, values: C as! [S])
         case is Complex.Type:
-            fatalError("Not yet implemented")
+            var A = MatrixDenseBLAS.interleaved(flatten() as! [Complex])
+            var B = MatrixDenseBLAS.interleaved(m.flatten() as! [Complex])
+            var C = Array(repeating: 0.0, count: rows * m.columns * 2)
+            switch blasImplementation {
+            #if canImport(Accelerate)
+            case .accelerate:
+                AccelerateOperations.zgemm(Int32(rows), Int32(m.columns), Int32(columns), &A, &B, &C)
+            #endif
+            case .openBLAS:
+                OpenBLASOperations.zgemm(Int32(rows), Int32(m.columns), Int32(columns), &A, &B, &C)
+            }
+            return MatrixDenseBLAS(rows: rows, columns: m.columns, values: MatrixDenseBLAS.complexValues(C) as! [S])
         default:
-            fatalError("Not yet implemented")
+            fatalError("Unsupported scalar type")
         }
     }
 
@@ -231,5 +254,13 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorElementwiseArithme
             }
         }
         return elements
+    }
+
+    private static func interleaved(_ values: [Complex]) -> [Double] {
+        values.flatMap { [$0.real, $0.imaginary] }
+    }
+
+    private static func complexValues(_ values: [Double]) -> [Complex] {
+        stride(from: 0, to: values.count, by: 2).map { Complex(values[$0], values[$0 + 1]) }
     }
 }

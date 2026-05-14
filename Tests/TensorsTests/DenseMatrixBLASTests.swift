@@ -58,12 +58,43 @@ import Testing
     #expect(b == VectorDenseReference<Double>([20.0, 47.0]))
 }
 
+@Test func DenseMatrix_BLAS_complexVectorMultiplication() {
+    let A = complexTestMatrixA()
+    let v = VectorDenseReference<Complex>([Complex(1.0, 0.0), Complex(0.0, 1.0), Complex(2.0, 0.0)])
+    let b = A * v
+
+    #expect(b == VectorDenseReference<Complex>([Complex(1.0, 1.0), Complex(6.0, -3.0)]))
+
+    #if canImport(Accelerate)
+    var AAccelerate = A
+    AAccelerate.blasImplementation = .accelerate
+    #expect(AAccelerate * v == b)
+    #endif
+}
+
 @Test func DenseMatrix_BLAS_matrixMultiplication() {
     let A = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
     let B = MatrixDenseBLAS<Double>([[7.0, 8.0], [9.0, 10.0], [11.0, 12.0]])
     let C = A * B
 
     #expect(C.toArray() == [[58.0, 64.0], [139.0, 154.0]])
+}
+
+@Test func DenseMatrix_BLAS_complexMatrixMultiplication() {
+    let A = complexTestMatrixA()
+    let B = MatrixDenseBLAS<Complex>([[Complex(1.0, 0.0), Complex(0.0, 1.0)],
+                                      [Complex(2.0, -1.0), Complex(-1.0, 0.0)],
+                                      [Complex(0.0, 0.0), Complex(1.0, 1.0)]])
+    let C = A * B
+
+    #expect(C.toArray() == [[Complex(5.0, -1.0), Complex(-2.0, 0.0)],
+                            [Complex(2.0, 3.0), Complex(4.0, 3.0)]])
+
+    #if canImport(Accelerate)
+    var AAccelerate = A
+    AAccelerate.blasImplementation = .accelerate
+    #expect((AAccelerate * B).toArray() == C.toArray())
+    #endif
 }
 
 @Test func DenseMatrix_BLAS_transpose() {
@@ -169,4 +200,9 @@ import Testing
     let column: VectorFlatView<Double> = matrix[all, 1]
     
     #expect(column.elements == [2.0, 5.0, 8.0])
+}
+
+private func complexTestMatrixA() -> MatrixDenseBLAS<Complex> {
+    MatrixDenseBLAS<Complex>([[Complex(1.0, 1.0), Complex(2.0, 0.0), Complex(0.0, -1.0)],
+                              [Complex(3.0, 0.0), Complex(-1.0, 1.0), Complex(2.0, -1.0)]])
 }
