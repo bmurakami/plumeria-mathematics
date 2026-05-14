@@ -22,7 +22,6 @@ import Testing
 }
 
 @Test func Matrix_eigenRealEigenvalues() {
-    #if canImport(Accelerate)
     let matrix = MatrixDenseBLAS<Double>([[2.0, 0.0],
                                           [0.0, 3.0]])
     let eigen = matrix.eigen()
@@ -30,11 +29,9 @@ import Testing
     #expect(eigen.values == [Complex(2.0, 0.0), Complex(3.0, 0.0)])
     expectEigenpair(matrix, eigen, column: 0)
     expectEigenpair(matrix, eigen, column: 1)
-    #endif
 }
 
 @Test func Matrix_eigenComplexEigenvalues() {
-    #if canImport(Accelerate)
     let matrix = MatrixDenseBLAS<Double>([[0.0, -1.0],
                                           [1.0, 0.0]])
     let eigen = matrix.eigen()
@@ -43,10 +40,8 @@ import Testing
     #expect(eigen.values[1].isApproximatelyEqual(to: Complex(0.0, -1.0)))
     expectEigenpair(matrix, eigen, column: 0)
     expectEigenpair(matrix, eigen, column: 1)
-    #endif
 }
 
-#if canImport(Accelerate)
 private func expectEigenpair(_ matrix: MatrixDenseBLAS<Double>, _ eigen: Eigen, column: Int) {
     let vector = VectorDenseReference<Complex>((0..<matrix.rows).map { eigen.vectors[$0, column] })
     let left = complexMatrix(matrix) * vector
@@ -60,4 +55,3 @@ private func complexMatrix(_ matrix: MatrixDenseBLAS<Double>) -> MatrixDenseBLAS
         (0..<matrix.columns).map { column in Complex(matrix[row, column], 0.0) }
     })
 }
-#endif

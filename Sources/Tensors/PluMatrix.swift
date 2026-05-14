@@ -1,5 +1,7 @@
 #if canImport(Accelerate)
 import AccelerateWrapper
+#else
+import OpenBLASWrapper
 #endif
 
 public protocol PluMatrix: PluTensor, TensorStructure {
@@ -112,19 +114,19 @@ extension PluMatrix {
 extension PluMatrix where S == Double {
     public func eigen() -> Eigen {
         precondition(rows == columns, "Eigen decomposition requires a square matrix")
-        #if !canImport(Accelerate)
-        preconditionFailure("Eigen decomposition requires Accelerate")
-        #else
         let n = Int32(rows)
         var matrix = flatten()
         var real = Array(repeating: 0.0, count: rows)
         var imaginary = Array(repeating: 0.0, count: rows)
         var vectors = Array(repeating: 0.0, count: rows * columns)
+        #if canImport(Accelerate)
         let info = AccelerateOperations.dgeev(n, &matrix, &real, &imaginary, &vectors)
+        #else
+        let info = OpenBLASOperations.dgeev(n, &matrix, &real, &imaginary, &vectors)
+        #endif
         precondition(info == 0, "Eigen decomposition failed with LAPACK info \(info)")
         return Eigen(values: eigenvalues(real: real, imaginary: imaginary),
                      vectors: eigenvectors(real: real, imaginary: imaginary, vectors: vectors))
-        #endif
     }
 
     private func eigenvalues(real: [Double], imaginary: [Double]) -> [Complex] {
