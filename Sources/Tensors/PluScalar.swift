@@ -34,6 +34,38 @@ extension Complex: PluTensor, PluScalar, ComplexScalar {
     }
 }
 
+public func + (left: Double, right: Complex) -> Complex {
+    Complex(left, 0.0) + right
+}
+
+public func + (left: Complex, right: Double) -> Complex {
+    left + Complex(right, 0.0)
+}
+
+public func - (left: Double, right: Complex) -> Complex {
+    Complex(left, 0.0) - right
+}
+
+public func - (left: Complex, right: Double) -> Complex {
+    left - Complex(right, 0.0)
+}
+
+public func * (left: Double, right: Complex) -> Complex {
+    Complex(left, 0.0) * right
+}
+
+public func * (left: Complex, right: Double) -> Complex {
+    left * Complex(right, 0.0)
+}
+
+public func / (left: Double, right: Complex) -> Complex {
+    Complex(left, 0.0) / right
+}
+
+public func / (left: Complex, right: Double) -> Complex {
+    left / Complex(right, 0.0)
+}
+
 extension PluScalar {
     public func round() -> Self {
         round(precision: 14)

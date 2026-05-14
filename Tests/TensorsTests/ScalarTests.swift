@@ -21,6 +21,19 @@ import Testing
     #expect((a/b).isApproximatelyEqual(to: Complex(-0.20503261882572227, -0.3387698042870456)))
 }
 
+@Test func Complex_mixedRealArithmetic() {
+    let z = Complex(3.0, -2.0)
+
+    #expect(5.0 + z == Complex(8.0, -2.0))
+    #expect(z + 5.0 == Complex(8.0, -2.0))
+    #expect(5.0 - z == Complex(2.0, 2.0))
+    #expect(z - 5.0 == Complex(-2.0, -2.0))
+    #expect(5.0 * z == Complex(15.0, -10.0))
+    #expect(z * 5.0 == Complex(15.0, -10.0))
+    #expect((5.0 / z).isApproximatelyEqual(to: Complex(15.0/13.0, 10.0/13.0)))
+    #expect((z / 5.0).isApproximatelyEqual(to: Complex(0.6, -0.4)))
+}
+
 @Test func Complex_plumeriaScalarProperties() {
     let z = Complex(3.0, 4.0)
 
