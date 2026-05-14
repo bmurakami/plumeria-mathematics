@@ -59,12 +59,17 @@ import Testing
 }
 
 @Test func DenseMatrix_BLAS_complexVectorMultiplication() {
-    let A = MatrixDenseBLAS<Complex>([[Complex(1.0, 1.0), Complex(2.0, 0.0), Complex(0.0, -1.0)],
-                                      [Complex(3.0, 0.0), Complex(-1.0, 1.0), Complex(2.0, -1.0)]])
+    let A = complexTestMatrixA()
     let v = VectorDenseReference<Complex>([Complex(1.0, 0.0), Complex(0.0, 1.0), Complex(2.0, 0.0)])
     let b = A * v
 
     #expect(b == VectorDenseReference<Complex>([Complex(1.0, 1.0), Complex(6.0, -3.0)]))
+
+    #if canImport(Accelerate)
+    var AAccelerate = A
+    AAccelerate.blasImplementation = .accelerate
+    #expect(AAccelerate * v == b)
+    #endif
 }
 
 @Test func DenseMatrix_BLAS_matrixMultiplication() {
@@ -76,8 +81,7 @@ import Testing
 }
 
 @Test func DenseMatrix_BLAS_complexMatrixMultiplication() {
-    let A = MatrixDenseBLAS<Complex>([[Complex(1.0, 1.0), Complex(2.0, 0.0), Complex(0.0, -1.0)],
-                                      [Complex(3.0, 0.0), Complex(-1.0, 1.0), Complex(2.0, -1.0)]])
+    let A = complexTestMatrixA()
     let B = MatrixDenseBLAS<Complex>([[Complex(1.0, 0.0), Complex(0.0, 1.0)],
                                       [Complex(2.0, -1.0), Complex(-1.0, 0.0)],
                                       [Complex(0.0, 0.0), Complex(1.0, 1.0)]])
@@ -85,6 +89,12 @@ import Testing
 
     #expect(C.toArray() == [[Complex(5.0, -1.0), Complex(-2.0, 0.0)],
                             [Complex(2.0, 3.0), Complex(4.0, 3.0)]])
+
+    #if canImport(Accelerate)
+    var AAccelerate = A
+    AAccelerate.blasImplementation = .accelerate
+    #expect((AAccelerate * B).toArray() == C.toArray())
+    #endif
 }
 
 @Test func DenseMatrix_BLAS_transpose() {
@@ -190,4 +200,9 @@ import Testing
     let column: VectorFlatView<Double> = matrix[all, 1]
     
     #expect(column.elements == [2.0, 5.0, 8.0])
+}
+
+private func complexTestMatrixA() -> MatrixDenseBLAS<Complex> {
+    MatrixDenseBLAS<Complex>([[Complex(1.0, 1.0), Complex(2.0, 0.0), Complex(0.0, -1.0)],
+                              [Complex(3.0, 0.0), Complex(-1.0, 1.0), Complex(2.0, -1.0)]])
 }

@@ -214,7 +214,7 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorElementwiseArithme
             }
             return MatrixDenseBLAS(rows: rows, columns: m.columns, values: MatrixDenseBLAS.complexValues(C) as! [S])
         default:
-            fatalError("Not yet implemented")
+            fatalError("Unsupported scalar type")
         }
     }
 

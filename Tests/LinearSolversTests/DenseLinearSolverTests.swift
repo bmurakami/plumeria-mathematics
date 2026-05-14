@@ -48,6 +48,11 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
     let actual = solveLinearDense(A, b)
 
     #expect(actual.isApproximatelyEqual(to: expected, relativeTolerance: 1e-12))
+
+    #if canImport(Accelerate)
+    let accelerate = solveLinearDense(A, b, blasImplementation: .accelerate)
+    #expect(accelerate.isApproximatelyEqual(to: expected, relativeTolerance: 1e-12))
+    #endif
 }
 
 func solveLinearDense_correctness_largeMatrices<MatrixType: PluMatrix>(matrixType: MatrixType.Type)
