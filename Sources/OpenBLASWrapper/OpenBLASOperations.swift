@@ -129,4 +129,33 @@ public enum OpenBLASOperations {
         }
         return info
     }
+
+    #if !canImport(Accelerate)
+    public static func dgeev(
+        _ n: Int32,
+        _ a: inout [Double],
+        _ wr: inout [Double],
+        _ wi: inout [Double],
+        _ vr: inout [Double]
+    ) -> Int32 {
+        var jobvl = Int8(UnicodeScalar("N").value)
+        var jobvr = Int8(UnicodeScalar("V").value)
+        var nMutable = n
+        var lda = n
+        var vl = Array(repeating: 0.0, count: 1)
+        var ldvl = Int32(1)
+        var ldvr = n
+        var workQuery = 0.0
+        var lwork = Int32(-1)
+        var info = Int32(0)
+
+        COpenBLAS.dgeev_(&jobvl, &jobvr, &nMutable, &a, &lda, &wr, &wi, &vl, &ldvl, &vr, &ldvr,
+                         &workQuery, &lwork, &info, 1, 1)
+        lwork = Int32(workQuery)
+        var work = Array(repeating: 0.0, count: Int(lwork))
+        COpenBLAS.dgeev_(&jobvl, &jobvr, &nMutable, &a, &lda, &wr, &wi, &vl, &ldvl, &vr, &ldvr,
+                         &work, &lwork, &info, 1, 1)
+        return info
+    }
+    #endif
 }
