@@ -1,4 +1,4 @@
-public struct TensorDenseBLAS<S: PluScalar>: TensorContraction, Equatable {
+public struct TensorDenseBLAS<S: PluScalar>: TensorContraction, TensorElementwiseArithmetic, Equatable {
     public typealias MatrixImplementation = MatrixDenseBLAS<S>
 
     private var view: TensorFlatView<S>

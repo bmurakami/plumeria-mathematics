@@ -32,6 +32,23 @@ private func tensor(_ values: [[[Double]]]) -> TensorDenseBLAS<Double> {
     #expect(tensor.elements == [1.0, -1.0, 2.0, 0.0, 3.0, -3.0])
 }
 
+@Test func TensorDenseBLAS_elementwiseArithmetic() {
+    let left = tensor([
+        [[1.0, -1.0], [2.0, 0.0]],
+        [[0.0, 2.0], [-2.0, 1.0]]
+    ])
+    let right = tensor([
+        [[2.0, 1.0], [-1.0, 3.0]],
+        [[-3.0, 0.0], [1.0, -2.0]]
+    ])
+    let sum = left + right
+    let negative = -left
+
+    #expect(sum.elements == [3.0, -3.0, 1.0, -1.0, 0.0, 2.0, 3.0, -1.0])
+    #expect(negative.elements == [-1.0, 0.0, -2.0, 2.0, 1.0, -2.0, 0.0, -1.0])
+    #expect(sum.isApproximatelyEqual(to: sum, relativeTolerance: 1e-12))
+}
+
 @Test func TensorDenseBLAS_outerProduct() {
     let left = TensorDenseBLAS<Double>(shape: [2], elements: [2.0, -1.0])
     let right = TensorDenseBLAS<Double>(shape: [3], elements: [3.0, 0.0, -2.0])
