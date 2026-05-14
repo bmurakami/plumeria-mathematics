@@ -26,11 +26,31 @@ public func solveLinearDense<M: PluMatrix, V: PluVector>(_ A: M, _ b: V, blasImp
             x = bArray as! [V.S]
         }
     case is Complex.Type:
-        fatalError("Not yet implemented")
+        var AArray = interleaved(A.flatten() as! [Complex])
+        var bArray = interleaved(b.toArray() as! [Complex])
+
+        switch blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate:
+            let _ = AccelerateOperations.zgesv(Int32(n), &AArray, &bArray)
+            x = complexValues(bArray) as! [V.S]
+        #endif
+        case .openBLAS:
+            let _ = OpenBLASOperations.zgesv(Int32(n), &AArray, &bArray)
+            x = complexValues(bArray) as! [V.S]
+        }
 
     default:
         fatalError("Unsupported scalar type")
     }
 
     return V(x)
+}
+
+private func interleaved(_ values: [Complex]) -> [Double] {
+    values.flatMap { [$0.real, $0.imaginary] }
+}
+
+private func complexValues(_ values: [Double]) -> [Complex] {
+    stride(from: 0, to: values.count, by: 2).map { Complex(values[$0], values[$0 + 1]) }
 }

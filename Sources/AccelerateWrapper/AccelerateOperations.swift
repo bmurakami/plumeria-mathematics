@@ -111,5 +111,29 @@ public struct AccelerateOperations {
         Accelerate.dgesv_(&nMutable, &nrhs, a, &lda, &ipiv, b, &ldb, &info)
         return info
     }
+
+    public static func zgesv(
+        _ n: Int32,
+        _ a: inout [Double],
+        _ b: inout [Double]
+    ) -> Int32 {
+        var nMutable = n
+        var nrhs = Int32(1)
+        var lda = n
+        var ipiv = Array<Int32>(repeating: 0, count: Int(n))
+        var ldb = n
+        var info = Int32(0)
+
+        a.withUnsafeMutableBufferPointer { a in
+            b.withUnsafeMutableBufferPointer { b in
+                Accelerate.zgesv_(
+                    &nMutable, &nrhs,
+                    OpaquePointer(UnsafeMutableRawPointer(a.baseAddress!)), &lda, &ipiv,
+                    OpaquePointer(UnsafeMutableRawPointer(b.baseAddress!)), &ldb, &info
+                )
+            }
+        }
+        return info
+    }
 }
 #endif
