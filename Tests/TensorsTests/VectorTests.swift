@@ -24,6 +24,15 @@ let b = [-4.5, 5.6]
     #expect(v[1] == Complex(b[0], b[1]))
 }
 
+@Test func VectorDenseReference_physicsOperations() {
+    let v = VectorDenseReference<Double>([3.0, 4.0, 12.0])
+    let w = VectorDenseReference<Double>([2.0, -1.0, 3.0])
+
+    #expect(v.magnitude() == 13.0)
+    #expect(v.dot(w) == 38.0)
+    #expect(v.cross(w) == VectorDenseReference<Double>([24.0, 15.0, -11.0]))
+}
+
 @Test func VectorDenseReference_negative() {
     let v = -VectorDenseReference<Double>(a)
     #expect(v.toArray() == [-1.2, 3.4])
