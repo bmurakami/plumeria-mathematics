@@ -1,11 +1,9 @@
-public protocol TensorElementwiseArithmetic: PluTensor, TensorStructure {
-    associatedtype S: PluScalar
-
+public protocol TensorArithmeticReference: TensorArithmetic, TensorStructure where S: PluScalar {
     init(shape: [Int], initialValue: S)
     subscript(_ indices: [Int]) -> S { get set }
 }
 
-extension TensorElementwiseArithmetic where Magnitude == S.Magnitude {
+extension TensorArithmeticReference where Magnitude == S.Magnitude {
     public static func + (lhs: Self, rhs: Self) -> Self {
         precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
         var result = Self(shape: lhs.shape, initialValue: .zero)
@@ -58,6 +56,7 @@ extension TensorElementwiseArithmetic where Magnitude == S.Magnitude {
     }
 
     private static func indexCombinations(for shape: [Int]) -> [[Int]] {
+        // Example: indexCombinations(for: [2, 3]) returns [[0, 0], [1, 0], [0, 1], [1, 1], [0, 2], [1, 2]].
         if shape.isEmpty { return [[]] }
         if shape.contains(0) { return [] }
         return (0..<shape.reduce(1, *)).map { flatIndex in

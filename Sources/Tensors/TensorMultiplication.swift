@@ -1,4 +1,4 @@
-public protocol TensorContraction: TensorStructure {
+public protocol TensorMultiplication: TensorStructure {
     associatedtype S: PluScalar
     associatedtype MatrixImplementation: PluMatrix where MatrixImplementation.S == S
 
@@ -6,8 +6,8 @@ public protocol TensorContraction: TensorStructure {
     subscript(_ indices: [Int]) -> S { get set }
 }
 
-extension TensorContraction {
-    public func times<T: TensorContraction>(_ other: T, contract axes: [(left: Int, right: Int)]) -> Self
+extension TensorMultiplication {
+    public func times<T: TensorMultiplication>(_ other: T, contract axes: [(left: Int, right: Int)]) -> Self
     where T.S == S {
         validateContraction(axes, with: other)
         let leftContractedAxes = Set(axes.map(\.left))
@@ -81,7 +81,7 @@ extension TensorContraction {
         return matrix
     }
 
-    private func validateContraction<T: TensorContraction>(_ axes: [(left: Int, right: Int)], with other: T)
+    private func validateContraction<T: TensorMultiplication>(_ axes: [(left: Int, right: Int)], with other: T)
     where T.S == S {
         var leftAxes = Set<Int>()
         var rightAxes = Set<Int>()

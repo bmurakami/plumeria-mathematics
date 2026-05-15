@@ -1,4 +1,6 @@
-public struct VectorBase<Implementation: PluVector>: PluVector, TensorElementwiseArithmetic {
+public struct VectorBase<Implementation: PluVector>: PluVector, TensorArithmeticReference {
+    public typealias S = Implementation.S
+
     private var implementation: Implementation
     public var size: Int { implementation.size }
 
@@ -36,7 +38,9 @@ public struct VectorBase<Implementation: PluVector>: PluVector, TensorElementwis
     public func toArray(round: Bool) -> [Implementation.S] { implementation.toArray(round: round) }
 }
 
-public struct MatrixBase<Implementation: PluMatrix>: PluMatrix, TensorElementwiseArithmetic {
+public struct MatrixBase<Implementation: PluMatrix>: PluMatrix, TensorArithmeticReference {
+    public typealias S = Implementation.S
+
     private var implementation: Implementation
     public var rows: Int { implementation.rows }
     public var columns: Int { implementation.columns }

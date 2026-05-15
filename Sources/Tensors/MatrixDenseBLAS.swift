@@ -1,7 +1,7 @@
 import AccelerateWrapper
 import OpenBLASWrapper
 
-public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorElementwiseArithmetic {
+public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorArithmeticReference {
     private var view: TensorFlatView<S>
     public var blasImplementation: BLAS
     

@@ -11,7 +11,7 @@ private func mixedScalarIndexCombinations(for shape: [Int]) -> [[Int]] {
     }
 }
 
-public func * <T: TensorElementwiseArithmetic>(tensor: T, scalar: Complex) -> TensorDenseBLAS<Complex>
+public func * <T: TensorArithmeticReference>(tensor: T, scalar: Complex) -> TensorDenseBLAS<Complex>
 where T.S == Double {
     var result = TensorDenseBLAS<Complex>(shape: tensor.shape, initialValue: .zero)
     for index in mixedScalarIndexCombinations(for: tensor.shape) {
@@ -20,12 +20,12 @@ where T.S == Double {
     return result
 }
 
-public func * <T: TensorElementwiseArithmetic>(scalar: Complex, tensor: T) -> TensorDenseBLAS<Complex>
+public func * <T: TensorArithmeticReference>(scalar: Complex, tensor: T) -> TensorDenseBLAS<Complex>
 where T.S == Double {
     tensor * scalar
 }
 
-public func / <T: TensorElementwiseArithmetic>(tensor: T, scalar: Complex) -> TensorDenseBLAS<Complex>
+public func / <T: TensorArithmeticReference>(tensor: T, scalar: Complex) -> TensorDenseBLAS<Complex>
 where T.S == Double {
     var result = TensorDenseBLAS<Complex>(shape: tensor.shape, initialValue: .zero)
     for index in mixedScalarIndexCombinations(for: tensor.shape) {
@@ -34,7 +34,7 @@ where T.S == Double {
     return result
 }
 
-public func * <T: TensorElementwiseArithmetic>(tensor: T, scalar: Double) -> T where T.S == Complex {
+public func * <T: TensorArithmeticReference>(tensor: T, scalar: Double) -> T where T.S == Complex {
     var result = T(shape: tensor.shape, initialValue: .zero)
     for index in mixedScalarIndexCombinations(for: tensor.shape) {
         result[index] = tensor[index] * scalar
@@ -42,11 +42,11 @@ public func * <T: TensorElementwiseArithmetic>(tensor: T, scalar: Double) -> T w
     return result
 }
 
-public func * <T: TensorElementwiseArithmetic>(scalar: Double, tensor: T) -> T where T.S == Complex {
+public func * <T: TensorArithmeticReference>(scalar: Double, tensor: T) -> T where T.S == Complex {
     tensor * scalar
 }
 
-public func / <T: TensorElementwiseArithmetic>(tensor: T, scalar: Double) -> T where T.S == Complex {
+public func / <T: TensorArithmeticReference>(tensor: T, scalar: Double) -> T where T.S == Complex {
     var result = T(shape: tensor.shape, initialValue: .zero)
     for index in mixedScalarIndexCombinations(for: tensor.shape) {
         result[index] = tensor[index] / scalar

@@ -1,7 +1,7 @@
 import Testing
 @testable import Tensors
 
-private struct TestTensor<S: PluScalar>: TensorContraction {
+private struct TestTensor<S: PluScalar>: TensorMultiplication {
     typealias MatrixImplementation = MatrixDenseReference<S>
 
     var shape: [Int]
@@ -34,7 +34,7 @@ private struct TestTensor<S: PluScalar>: TensorContraction {
     }
 }
 
-@Test func TensorContraction_outerProduct() {
+@Test func TensorMultiplication_outerProduct() {
     let left = TestTensor<Double>(shape: [2], elements: [2.0, 3.0])
     let right = TestTensor<Double>(shape: [3], elements: [5.0, 7.0, 11.0])
     let product = left.times(right, contract: [])
@@ -43,7 +43,7 @@ private struct TestTensor<S: PluScalar>: TensorContraction {
     #expect(product.elements == [10.0, 15.0, 14.0, 21.0, 22.0, 33.0])
 }
 
-@Test func TensorContraction_dotProductReturnsRankZeroTensor() {
+@Test func TensorMultiplication_dotProductReturnsRankZeroTensor() {
     let left = TestTensor<Double>(shape: [3], elements: [2.0, 3.0, 5.0])
     let right = TestTensor<Double>(shape: [3], elements: [7.0, 11.0, 13.0])
     let product = left.times(right, contract: [(left: 0, right: 0)])
@@ -54,7 +54,7 @@ private struct TestTensor<S: PluScalar>: TensorContraction {
     #expect(product[[]] == 112.0)
 }
 
-@Test func TensorContraction_matrixVectorContraction() {
+@Test func TensorMultiplication_matrixVectorContraction() {
     let matrix = TestTensor<Double>(shape: [2, 3], elements: [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
     let vector = TestTensor<Double>(shape: [3], elements: [7.0, 11.0, 13.0])
     let product = matrix.times(vector, contract: [(left: 1, right: 0)])
@@ -63,7 +63,7 @@ private struct TestTensor<S: PluScalar>: TensorContraction {
     #expect(product.elements == [68.0, 161.0])
 }
 
-@Test func TensorContraction_matrixMatrixContraction() {
+@Test func TensorMultiplication_matrixMatrixContraction() {
     let left = TestTensor<Double>(shape: [2, 3], elements: [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
     let right = TestTensor<Double>(shape: [3, 2], elements: [7.0, 9.0, 11.0, 8.0, 10.0, 12.0])
     let product = left.times(right, contract: [(left: 1, right: 0)])
@@ -72,7 +72,7 @@ private struct TestTensor<S: PluScalar>: TensorContraction {
     #expect(product.elements == [58.0, 139.0, 64.0, 154.0])
 }
 
-@Test func TensorContraction_multiAxisContraction() {
+@Test func TensorMultiplication_multiAxisContraction() {
     let left = TestTensor<Double>(shape: [2, 3, 4], elements: Array(1...24).map(Double.init))
     let right = TestTensor<Double>(shape: [3, 5, 4], elements: Array(1...60).map(Double.init))
     let product = left.times(right, contract: [(left: 1, right: 0), (left: 2, right: 2)])
