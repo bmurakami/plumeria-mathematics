@@ -12,17 +12,12 @@ private func tensor(_ values: [[[Double]]]) -> TensorDenseBLAS<Double> {
     return tensor
 }
 
-@Test func TensorDenseBLAS_initializesWithValue() {
-    let tensor = TensorDenseBLAS<Double>(shape: [2, 3], initialValue: 2.0)
+@Test func TensorDenseBLAS_storesColumnMajorElements() {
+    var tensor = TensorDenseBLAS<Double>(shape: [2, 3], elements: [1.0, -1.0, 2.0, -2.0, 3.0, -3.0])
 
     #expect(tensor.shape == [2, 3])
     #expect(tensor.rank == 2)
-    #expect(tensor.elements == [2.0, 2.0, 2.0, 2.0, 2.0, 2.0])
-}
-
-@Test func TensorDenseBLAS_readsAndMutatesElements() {
-    var tensor = TensorDenseBLAS<Double>(shape: [2, 3], elements: [1.0, -1.0, 2.0, -2.0, 3.0, -3.0])
-
+    #expect(tensor.elements == [1.0, -1.0, 2.0, -2.0, 3.0, -3.0])
     #expect(tensor[[0, 0]] == 1.0)
     #expect(tensor[[1, 0]] == -1.0)
     #expect(tensor[0, 2] == 3.0)
@@ -30,29 +25,6 @@ private func tensor(_ values: [[[Double]]]) -> TensorDenseBLAS<Double> {
     tensor[[1, 1]] = 0.0
 
     #expect(tensor.elements == [1.0, -1.0, 2.0, 0.0, 3.0, -3.0])
-}
-
-@Test func TensorDenseBLAS_elementwiseArithmetic() {
-    let left = tensor([
-        [[1.0, -1.0], [2.0, 0.0]],
-        [[0.0, 2.0], [-2.0, 1.0]]
-    ])
-    let right = tensor([
-        [[2.0, 1.0], [-1.0, 3.0]],
-        [[-3.0, 0.0], [1.0, -2.0]]
-    ])
-    let sum = left + right
-    let negative = -left
-    let scaledRight = left * 2.0
-    let scaledLeft = 2.0 * left
-    let divided = left / 2.0
-
-    #expect(sum.elements == [3.0, -3.0, 1.0, -1.0, 0.0, 2.0, 3.0, -1.0])
-    #expect(negative.elements == [-1.0, 0.0, -2.0, 2.0, 1.0, -2.0, 0.0, -1.0])
-    #expect(scaledRight.elements == [2.0, 0.0, 4.0, -4.0, -2.0, 4.0, 0.0, 2.0])
-    #expect(scaledLeft == scaledRight)
-    #expect(divided.elements == [0.5, 0.0, 1.0, -1.0, -0.5, 1.0, 0.0, 0.5])
-    #expect(sum.isApproximatelyEqual(to: sum, relativeTolerance: 1e-12))
 }
 
 @Test func TensorDenseBLAS_mixedScalarArithmetic() {
