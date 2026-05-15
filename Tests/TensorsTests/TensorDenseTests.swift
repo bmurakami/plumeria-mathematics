@@ -1,9 +1,8 @@
 import Testing
 @testable import Tensors
 
-protocol TensorDenseTestImplementation: TensorArithmetic, TensorStructure where S == Double, Magnitude == Double {
+protocol TensorDenseTestImplementation: TensorArithmetic, TensorMultiplication where S == Double, Magnitude == Double {
     init(shape: [Int], initialValue: Double)
-    subscript(_ indices: [Int]) -> Double { get set }
 }
 
 extension TensorDenseReference: TensorDenseTestImplementation where S == Double {}
@@ -34,6 +33,13 @@ enum TensorImplementation: CaseIterable, CustomStringConvertible {
         }
     }
 
+    func checkNestedArrayInitializer() {
+        switch self {
+        case .reference: verifyNestedArrayInitializer(TensorDenseReference<Double>.self)
+        case .blas: verifyNestedArrayInitializer(TensorDenseBLAS<Double>.self)
+        }
+    }
+
     func checkRankZeroTensors() {
         switch self {
         case .reference: verifyRankZeroTensors(TensorDenseReference<Double>.self)
@@ -45,6 +51,34 @@ enum TensorImplementation: CaseIterable, CustomStringConvertible {
         switch self {
         case .reference: verifyElementwiseArithmetic(TensorDenseReference<Double>.self)
         case .blas: verifyElementwiseArithmetic(TensorDenseBLAS<Double>.self)
+        }
+    }
+
+    func checkIndexMultiply() {
+        switch self {
+        case .reference: verifyIndexMultiply(TensorDenseReference<Double>.self)
+        case .blas: verifyIndexMultiply(TensorDenseBLAS<Double>.self)
+        }
+    }
+
+    func checkStringMultiply() {
+        switch self {
+        case .reference: verifyStringMultiply(TensorDenseReference<Double>.self)
+        case .blas: verifyStringMultiply(TensorDenseBLAS<Double>.self)
+        }
+    }
+
+    func checkOuterMultiply() {
+        switch self {
+        case .reference: verifyOuterMultiply(TensorDenseReference<Double>.self)
+        case .blas: verifyOuterMultiply(TensorDenseBLAS<Double>.self)
+        }
+    }
+
+    func checkPermute() {
+        switch self {
+        case .reference: verifyPermute(TensorDenseReference<Double>.self)
+        case .blas: verifyPermute(TensorDenseBLAS<Double>.self)
         }
     }
 }
@@ -60,18 +94,40 @@ func TensorDense_readsAndMutatesElements(implementation: TensorImplementation) {
 }
 
 @Test(arguments: TensorImplementation.allCases)
-func TensorDense_supportsRankZeroTensors(implementation: TensorImplementation) {
-    implementation.checkRankZeroTensors()
+func TensorDense_nestedArrayInitializer(implementation: TensorImplementation) {
+    implementation.checkNestedArrayInitializer()
 }
+
+@Test(arguments: TensorImplementation.allCases)
+func TensorDense_supportsRankZeroTensors(implementation: TensorImplementation) { implementation.checkRankZeroTensors() }
 
 @Test(arguments: TensorImplementation.allCases)
 func TensorDense_elementwiseArithmetic(implementation: TensorImplementation) {
     implementation.checkElementwiseArithmetic()
 }
 
+@Test(arguments: TensorImplementation.allCases)
+func TensorDense_indexMultiply(implementation: TensorImplementation) {
+    implementation.checkIndexMultiply()
+}
+
+@Test(arguments: TensorImplementation.allCases)
+func TensorDense_stringMultiply(implementation: TensorImplementation) {
+    implementation.checkStringMultiply()
+}
+
+@Test(arguments: TensorImplementation.allCases)
+func TensorDense_outerMultiply(implementation: TensorImplementation) {
+    implementation.checkOuterMultiply()
+}
+
+@Test(arguments: TensorImplementation.allCases)
+func TensorDense_permute(implementation: TensorImplementation) {
+    implementation.checkPermute()
+}
+
 private func verifyInitializesWithValue<T: TensorDenseTestImplementation>(_ type: T.Type) {
     let tensor = T(shape: [2, 3], initialValue: 2.0)
-
     #expect(tensor.shape == [2, 3])
     #expect(tensor.rank == 2)
     #expect(tensor[[0, 0]] == 2.0)
@@ -89,13 +145,26 @@ private func verifyReadsAndMutatesElements<T: TensorDenseTestImplementation>(_ t
     #expect(tensor[[0, 2]] == 3.0)
 }
 
+private func verifyNestedArrayInitializer<T: TensorDenseTestImplementation>(_ type: T.Type) {
+    let values: TensorNestedArray<Double> = [
+        [[1.0, -1.0], [2.0, 0.0]],
+        [[0.0, 2.0], [-2.0, 1.0]],
+        [[3.0, 1.0], [1.0, -3.0]]
+    ]
+    let tensor = T(values)
+
+    #expect(tensor.shape == [3, 2, 2])
+    #expect(tensor.rank == 3)
+    #expect(tensor[[0, 0, 0]] == 1.0)
+    #expect(tensor[[1, 1, 0]] == -2.0)
+    #expect(tensor[[2, 1, 1]] == -3.0)
+}
+
 private func verifyRankZeroTensors<T: TensorDenseTestImplementation>(_ type: T.Type) {
     var tensor = T(shape: [], initialValue: 7.0)
-
     #expect(tensor.shape == [])
     #expect(tensor.rank == 0)
     #expect(tensor[[]] == 7.0)
-
     tensor[[]] = -2.0
     #expect(tensor[[]] == -2.0)
 }
@@ -122,6 +191,76 @@ private func verifyElementwiseArithmetic<T: TensorDenseTestImplementation>(_ typ
     #expect(scaledLeft == scaledRight)
     #expect(divided[[0, 0, 1]] == -0.5)
     #expect(sum.isApproximatelyEqual(to: sum, relativeTolerance: 1e-12, norm: { _ in 0.0 }))
+}
+
+private func verifyIndexMultiply<T: TensorDenseTestImplementation>(_ type: T.Type) {
+    let i = TensorIndex("i"), j = TensorIndex("j"), k = TensorIndex("k")
+    let leftValues: TensorNestedArray<Double> = [
+        [1.0, 2.0, 0.0],
+        [-1.0, 3.0, 1.0]
+    ]
+    let rightValues: TensorNestedArray<Double> = [
+        [2.0, 1.0],
+        [0.0, -1.0],
+        [3.0, 2.0]
+    ]
+    let product = multiply(T(leftValues), [i, j], T(rightValues), [j, k])
+
+    #expect(product.shape == [2, 2])
+    #expect(product[[0, 0]] == 2.0)
+    #expect(product[[1, 0]] == 1.0)
+    #expect(product[[0, 1]] == -1.0)
+    #expect(product[[1, 1]] == -2.0)
+}
+
+private func verifyPermute<T: TensorDenseTestImplementation>(_ type: T.Type) {
+    let i = TensorIndex("i"), j = TensorIndex("j"), k = TensorIndex("k")
+    let values: TensorNestedArray<Double> = [
+        [[1.0, -1.0], [2.0, 0.0], [3.0, 1.0]],
+        [[0.0, 2.0], [-2.0, 1.0], [1.0, -3.0]]
+    ]
+    let indexed = permute(T(values), from: [i, j, k], to: [j, i, k])
+    let string = permute(T(values), "ijk -> jik")
+
+    #expect(indexed.shape == [3, 2, 2])
+    #expect(string.shape == indexed.shape)
+    #expect(indexed[[1, 0, 0]] == 2.0)
+    #expect(indexed[[2, 1, 1]] == -3.0)
+    #expect(string == indexed)
+}
+
+private func verifyStringMultiply<T: TensorDenseTestImplementation>(_ type: T.Type) {
+    let leftValues: TensorNestedArray<Double> = [
+        [1.0, 2.0, 0.0],
+        [-1.0, 3.0, 1.0]
+    ]
+    let rightValues: TensorNestedArray<Double> = [
+        [2.0, 1.0],
+        [0.0, -1.0],
+        [3.0, 2.0]
+    ]
+    let product = multiply(T(leftValues), T(rightValues), "ij, jk")
+
+    #expect(product.shape == [2, 2])
+    #expect(product[[0, 0]] == 2.0)
+    #expect(product[[1, 0]] == 1.0)
+    #expect(product[[0, 1]] == -1.0)
+    #expect(product[[1, 1]] == -2.0)
+}
+
+private func verifyOuterMultiply<T: TensorDenseTestImplementation>(_ type: T.Type) {
+    let i = TensorIndex("i"), j = TensorIndex("j"), k = TensorIndex("k"), l = TensorIndex("l")
+    let leftValues: TensorNestedArray<Double> = [[1.0, 2.0], [-1.0, 0.0]]
+    let rightValues: TensorNestedArray<Double> = [[2.0, 1.0], [0.0, -1.0], [3.0, 2.0]]
+    let indexed = multiply(T(leftValues), [i, j], T(rightValues), [k, l])
+    let string = multiply(T(leftValues), T(rightValues), "ij, kl")
+
+    #expect(indexed.shape == [2, 2, 3, 2])
+    #expect(string.shape == indexed.shape)
+    #expect(indexed[[0, 0, 0, 0]] == 2.0)
+    #expect(indexed[[1, 0, 2, 1]] == -2.0)
+    #expect(indexed[[0, 1, 1, 1]] == -2.0)
+    #expect(string == indexed)
 }
 
 private func rank3Tensor<T: TensorDenseTestImplementation>(_ type: T.Type, values: [[[Double]]]) -> T {

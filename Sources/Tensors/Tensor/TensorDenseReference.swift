@@ -1,40 +1,14 @@
-public indirect enum TensorNestedArray<S: PluScalar>: Equatable {
-    case scalar(S)
-    case array([TensorNestedArray<S>])
-}
+public struct TensorDenseReference<S: PluScalar>: PluTensor, TensorStructure, TensorMultiplication,
+    TensorArithmeticReference {
+    public typealias MatrixImplementation = MatrixDenseReference<S>
 
-extension TensorNestedArray: ExpressibleByArrayLiteral {
-    public typealias ArrayLiteralElement = TensorNestedArray<S>
-
-    public init(arrayLiteral elements: TensorNestedArray<S>...) {
-        self = .array(elements)
-    }
-}
-
-extension TensorNestedArray: ExpressibleByIntegerLiteral where S: ExpressibleByIntegerLiteral {
-    public typealias IntegerLiteralType = S.IntegerLiteralType
-
-    public init(integerLiteral value: S.IntegerLiteralType) {
-        self = .scalar(S(integerLiteral: value))
-    }
-}
-
-extension TensorNestedArray: ExpressibleByFloatLiteral where S: ExpressibleByFloatLiteral {
-    public typealias FloatLiteralType = S.FloatLiteralType
-
-    public init(floatLiteral value: S.FloatLiteralType) {
-        self = .scalar(S(floatLiteral: value))
-    }
-}
-
-public struct TensorDenseReference<S: PluScalar>: PluTensor, TensorStructure, TensorArithmeticReference {
     private var storage: TensorNestedArray<S>
 
     public let shape: [Int]
     public var rank: Int { shape.count }
 
     public init(_ values: TensorNestedArray<S>) {
-        self.shape = Self.shape(of: values)
+        self.shape = values.shape
         self.storage = values
     }
 
@@ -61,21 +35,6 @@ public struct TensorDenseReference<S: PluScalar>: PluTensor, TensorStructure, Te
     }
 
     public func toNestedArray() -> TensorNestedArray<S> { storage }
-
-    private static func shape(of storage: TensorNestedArray<S>) -> [Int] {
-        switch storage {
-        case .scalar:
-            return []
-        case .array(let children):
-            precondition(!children.isEmpty, "Cannot infer tensor shape from an empty nested array")
-            let childShape = shape(of: children[0])
-            precondition(
-                children.allSatisfy { shape(of: $0) == childShape },
-                "Tensor nested arrays must be rectangular"
-            )
-            return [children.count] + childShape
-        }
-    }
 
     private static func storage(shape: [Int], initialValue: S) -> TensorNestedArray<S> {
         guard let size = shape.first else { return .scalar(initialValue) }

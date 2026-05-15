@@ -38,6 +38,11 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticRef
         
         self.values = values
     }
+
+    public init(_ values: TensorNestedArray<S>) {
+        precondition(values.shape.count == 2, "Matrix nested array must have rank 2")
+        self.init(Self.rows(from: values))
+    }
         
     public func times<V: PluVector>(_ v: V) -> V where S == V.S {
         precondition(self.columns == v.size, "Matrix columns don't match vector size")
@@ -98,6 +103,13 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticRef
             return flattened
         } else {
             return Array(values.joined())
+        }
+    }
+
+    private static func rows(from values: TensorNestedArray<S>) -> [[S]] {
+        let shape = values.shape
+        return (0..<shape[0]).map { row in
+            (0..<shape[1]).map { column in values[[row, column]] }
         }
     }
     

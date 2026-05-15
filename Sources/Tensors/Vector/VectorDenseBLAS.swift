@@ -22,6 +22,11 @@ public struct VectorDenseBLAS<S: PluScalar>: PluVector, TensorArithmeticBLAS {
         self.elements = values
     }
 
+    public init(_ values: TensorNestedArray<S>) {
+        precondition(values.shape.count == 1, "Vector nested array must have rank 1")
+        self.init(values.columnMajorElements())
+    }
+
     public func toArray(round: Bool) -> [S] {
         if round {
             return elements.map { $0.round() }

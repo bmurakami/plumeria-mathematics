@@ -24,6 +24,10 @@ public struct TensorFlatView<Scalar: PluScalar>: TensorView, Equatable {
         let strides = Self.columnMajorStrides(for: shape)
         self.init(storage: TensorStorage(elements), offset: 0, shape: shape, strides: strides)
     }
+
+    public init(_ values: TensorNestedArray<Scalar>) {
+        self.init(shape: values.shape, elements: values.columnMajorElements())
+    }
     
     public init(storage: TensorStorage<Scalar>, offset: Int, shape: [Int], strides: [Int]) {
         precondition(offset >= 0, "Tensor view offset must be non-negative")

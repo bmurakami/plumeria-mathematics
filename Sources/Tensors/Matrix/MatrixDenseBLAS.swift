@@ -46,6 +46,12 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorArithmeticBLAS {
         self.blasImplementation = .openBLAS
     }
 
+    public init(_ values: TensorNestedArray<S>) {
+        precondition(values.shape.count == 2, "Matrix nested array must have rank 2")
+        self.view = TensorFlatView(values)
+        self.blasImplementation = .openBLAS
+    }
+
     public var elements: [S] {
         get { viewElements(columnMajorOrder: true) }
         set {

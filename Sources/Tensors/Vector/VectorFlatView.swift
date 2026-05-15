@@ -18,6 +18,11 @@ public struct VectorFlatView<Scalar: PluScalar>: VectorView, Equatable {
     public init(_ elements: [Scalar]) {
         self.init(view: TensorFlatView(shape: [elements.count], elements: elements))
     }
+
+    public init(_ values: TensorNestedArray<Scalar>) {
+        precondition(values.shape.count == 1, "Vector nested array must have rank 1")
+        self.init(values.columnMajorElements())
+    }
     
     public subscript(_ indices: [Int]) -> Scalar {
         get {

@@ -37,9 +37,17 @@ import Testing
 @Test func Complex_plumeriaScalarProperties() {
     let z = Complex(3.0, 4.0)
 
+    #expect(Complex.i == Complex(0.0, 1.0))
     #expect(z.star == Complex(3.0, -4.0))
     #expect(z.mod == 5.0)
     #expect(z.arg.isApproximatelyEqual(to: 0.9272952180016122, relativeTolerance: 1e-15))
+}
+
+@Test func Complex_imaginaryUnitSupportsLocalMathNotation() {
+    let i = Complex.i
+    let z = 1.2 + 3.4 * i
+
+    #expect(z == Complex(1.2, 3.4))
 }
 
 @Test func PluScalar_roundsWithPrecision() {

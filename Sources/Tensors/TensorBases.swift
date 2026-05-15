@@ -24,6 +24,10 @@ public struct VectorBase<Implementation: PluVector>: PluVector, TensorArithmetic
         self.implementation = Implementation(elements)
     }
 
+    public init(_ values: TensorNestedArray<Implementation.S>) {
+        self.implementation = Implementation(values)
+    }
+
     public init(shape: [Int], initialValue: Implementation.S) {
         precondition(shape.count == 1, "Vector shape must have rank 1")
         precondition(shape[0] >= 0, "Vector size must be non-negative")
@@ -73,6 +77,10 @@ public struct MatrixBase<Implementation: PluMatrix>: PluMatrix, TensorArithmetic
     }
 
     public init(_ values: [[Implementation.S]]) {
+        self.implementation = Implementation(values)
+    }
+
+    public init(_ values: TensorNestedArray<Implementation.S>) {
         self.implementation = Implementation(values)
     }
 
