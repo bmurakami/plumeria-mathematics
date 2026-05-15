@@ -53,3 +53,30 @@ public func / <T: TensorArithmeticReference>(tensor: T, scalar: Double) -> T whe
     }
     return result
 }
+
+public func * <T: TensorArithmeticBLAS>(tensor: T, scalar: Complex) -> TensorDenseBLAS<Complex>
+where T.S == Double {
+    TensorDenseBLAS<Complex>(shape: tensor.shape, elements: tensor.elements.map { $0 * scalar })
+}
+
+public func * <T: TensorArithmeticBLAS>(scalar: Complex, tensor: T) -> TensorDenseBLAS<Complex>
+where T.S == Double {
+    tensor * scalar
+}
+
+public func / <T: TensorArithmeticBLAS>(tensor: T, scalar: Complex) -> TensorDenseBLAS<Complex>
+where T.S == Double {
+    TensorDenseBLAS<Complex>(shape: tensor.shape, elements: tensor.elements.map { $0 / scalar })
+}
+
+public func * <T: TensorArithmeticBLAS>(tensor: T, scalar: Double) -> T where T.S == Complex {
+    tensor * Complex(scalar, 0.0)
+}
+
+public func * <T: TensorArithmeticBLAS>(scalar: Double, tensor: T) -> T where T.S == Complex {
+    tensor * scalar
+}
+
+public func / <T: TensorArithmeticBLAS>(tensor: T, scalar: Double) -> T where T.S == Complex {
+    tensor / Complex(scalar, 0.0)
+}

@@ -1,11 +1,14 @@
-public struct TensorDenseBLAS<S: PluScalar>: TensorMultiplication, TensorArithmeticReference, Equatable {
+public struct TensorDenseBLAS<S: PluScalar>: TensorMultiplication, TensorArithmeticBLAS, Equatable {
     public typealias MatrixImplementation = MatrixDenseBLAS<S>
 
     private var view: TensorFlatView<S>
 
     public var shape: [Int] { view.shape }
     public var rank: Int { view.rank }
-    public var elements: [S] { view.elements }
+    public var elements: [S] {
+        get { view.elements }
+        set { view = TensorFlatView(shape: shape, elements: newValue) }
+    }
 
     public init(shape: [Int], initialValue: S = .zero) {
         self.view = TensorFlatView(shape: shape, elements: Array(repeating: initialValue, count: shape.reduce(1, *)))
