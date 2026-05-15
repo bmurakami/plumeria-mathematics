@@ -1,4 +1,4 @@
-public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorElementwiseArithmetic {
+public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticReference {
     private var values: [[S]]
     
     // MARK: - PluMatrix conformance

@@ -89,6 +89,38 @@ public enum OpenBLASOperations {
         }
     }
 
+    public static func daxpy(_ n: Int32, _ x: inout [Double], _ y: inout [Double]) {
+        let alpha = 1.0
+        let inc = Int32(1)
+        COpenBLAS.cblas_daxpy(n, alpha, x, inc, &y, inc)
+    }
+
+    public static func dscal(_ n: Int32, _ alpha: Double, _ x: inout [Double]) {
+        let inc = Int32(1)
+        COpenBLAS.cblas_dscal(n, alpha, &x, inc)
+    }
+
+    public static func zaxpy(_ n: Int32, _ x: inout [Double], _ y: inout [Double]) {
+        var alpha = [1.0, 0.0]
+        let inc = Int32(1)
+        alpha.withUnsafeMutableBufferPointer { alpha in
+            x.withUnsafeMutableBufferPointer { x in
+                y.withUnsafeMutableBufferPointer { y in
+                    COpenBLAS.cblas_zaxpy(n, alpha.baseAddress, x.baseAddress, inc, y.baseAddress, inc)
+                }
+            }
+        }
+    }
+
+    public static func zscal(_ n: Int32, _ alpha: inout [Double], _ x: inout [Double]) {
+        let inc = Int32(1)
+        alpha.withUnsafeMutableBufferPointer { alpha in
+            x.withUnsafeMutableBufferPointer { x in
+                COpenBLAS.cblas_zscal(n, alpha.baseAddress, x.baseAddress, inc)
+            }
+        }
+    }
+
     // MARK: - LAPACK
     public static func dgesv(
         _ n: Int32,

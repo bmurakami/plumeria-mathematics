@@ -16,14 +16,18 @@ public protocol ComplexScalar: PluScalar {
 
 extension Double: PluScalar {
     // MARK: - PluScalar conformance
+    public typealias S = Double
+
     public func round(precision: Int = 14) -> Double {
         let multiplier = Foundation.pow(10.0, Double(precision))
         return (self * multiplier).rounded() / multiplier
     }
 }
 
-extension Complex: PluTensor, PluScalar, ComplexScalar {
+extension Complex: TensorArithmetic, PluTensor, PluScalar, ComplexScalar {
     // MARK: - ComplexScalar conformance
+    public typealias S = Complex
+
     public var star: Complex { conjugate }
     public var mod: Double { length }
     public var arg: Double { phase }

@@ -1,4 +1,4 @@
-public struct VectorDenseReference<S: PluScalar>: PluVector, TensorElementwiseArithmetic {
+public struct VectorDenseReference<S: PluScalar>: PluVector, TensorArithmeticReference {
     public var elements: [S]
     
     // MARK: - PluVector conformance

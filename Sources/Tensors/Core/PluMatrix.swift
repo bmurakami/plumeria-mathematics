@@ -4,9 +4,7 @@ import AccelerateWrapper
 import OpenBLASWrapper
 #endif
 
-public protocol PluMatrix: PluTensor, TensorStructure {
-    associatedtype S: PluScalar
-    
+public protocol PluMatrix: PluTensor, TensorStructure where S: PluScalar {
     var rows: Int { get }
     var columns: Int { get }
     subscript(i: Int, j: Int) -> S { get set }

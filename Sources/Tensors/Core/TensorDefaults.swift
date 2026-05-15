@@ -1,4 +1,4 @@
-public typealias Vector<S: PluScalar> = VectorBase<VectorDenseReference<S>>
+public typealias Vector<S: PluScalar> = VectorDenseBLAS<S>
 public typealias Matrix<S: PluScalar> = MatrixBase<MatrixDenseBLAS<S>>
 
 public typealias DenseVectorDouble = Vector<Double>
