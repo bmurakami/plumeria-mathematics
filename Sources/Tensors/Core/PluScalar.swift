@@ -28,6 +28,8 @@ extension Complex: TensorArithmetic, PluTensor, PluScalar, ComplexScalar {
     // MARK: - ComplexScalar conformance
     public typealias S = Complex
 
+    public static let i = Complex(0.0, 1.0)
+
     public var star: Complex { conjugate }
     public var mod: Double { length }
     public var arg: Double { phase }
