@@ -34,6 +34,13 @@ enum TensorImplementation: CaseIterable, CustomStringConvertible {
         }
     }
 
+    func checkNestedArrayInitializer() {
+        switch self {
+        case .reference: verifyNestedArrayInitializer(TensorDenseReference<Double>.self)
+        case .blas: verifyNestedArrayInitializer(TensorDenseBLAS<Double>.self)
+        }
+    }
+
     func checkRankZeroTensors() {
         switch self {
         case .reference: verifyRankZeroTensors(TensorDenseReference<Double>.self)
@@ -60,9 +67,12 @@ func TensorDense_readsAndMutatesElements(implementation: TensorImplementation) {
 }
 
 @Test(arguments: TensorImplementation.allCases)
-func TensorDense_supportsRankZeroTensors(implementation: TensorImplementation) {
-    implementation.checkRankZeroTensors()
+func TensorDense_nestedArrayInitializer(implementation: TensorImplementation) {
+    implementation.checkNestedArrayInitializer()
 }
+
+@Test(arguments: TensorImplementation.allCases)
+func TensorDense_supportsRankZeroTensors(implementation: TensorImplementation) { implementation.checkRankZeroTensors() }
 
 @Test(arguments: TensorImplementation.allCases)
 func TensorDense_elementwiseArithmetic(implementation: TensorImplementation) {
@@ -71,7 +81,6 @@ func TensorDense_elementwiseArithmetic(implementation: TensorImplementation) {
 
 private func verifyInitializesWithValue<T: TensorDenseTestImplementation>(_ type: T.Type) {
     let tensor = T(shape: [2, 3], initialValue: 2.0)
-
     #expect(tensor.shape == [2, 3])
     #expect(tensor.rank == 2)
     #expect(tensor[[0, 0]] == 2.0)
@@ -89,13 +98,26 @@ private func verifyReadsAndMutatesElements<T: TensorDenseTestImplementation>(_ t
     #expect(tensor[[0, 2]] == 3.0)
 }
 
+private func verifyNestedArrayInitializer<T: TensorDenseTestImplementation>(_ type: T.Type) {
+    let values: TensorNestedArray<Double> = [
+        [[1.0, -1.0], [2.0, 0.0]],
+        [[0.0, 2.0], [-2.0, 1.0]],
+        [[3.0, 1.0], [1.0, -3.0]]
+    ]
+    let tensor = T(values)
+
+    #expect(tensor.shape == [3, 2, 2])
+    #expect(tensor.rank == 3)
+    #expect(tensor[[0, 0, 0]] == 1.0)
+    #expect(tensor[[1, 1, 0]] == -2.0)
+    #expect(tensor[[2, 1, 1]] == -3.0)
+}
+
 private func verifyRankZeroTensors<T: TensorDenseTestImplementation>(_ type: T.Type) {
     var tensor = T(shape: [], initialValue: 7.0)
-
     #expect(tensor.shape == [])
     #expect(tensor.rank == 0)
     #expect(tensor[[]] == 7.0)
-
     tensor[[]] = -2.0
     #expect(tensor[[]] == -2.0)
 }

@@ -26,6 +26,13 @@ enum MatrixImplementation: CaseIterable, CustomStringConvertible {
         }
     }
 
+    func checkNestedArrayInitializer() {
+        switch self {
+        case .reference: verifyNestedArrayInitializer(MatrixDenseReference<Double>.self)
+        case .blas: verifyNestedArrayInitializer(MatrixDenseBLAS<Double>.self)
+        }
+    }
+
     func checkVectorMultiplication() {
         switch self {
         case .reference: verifyVectorMultiplication(MatrixDenseReference<Double>.self)
@@ -108,6 +115,11 @@ func MatrixDense_initializerWithRowsAndColumns(implementation: MatrixImplementat
 }
 
 @Test(arguments: MatrixImplementation.allCases)
+func MatrixDense_nestedArrayInitializer(implementation: MatrixImplementation) {
+    implementation.checkNestedArrayInitializer()
+}
+
+@Test(arguments: MatrixImplementation.allCases)
 func MatrixDense_vectorMultiplication(implementation: MatrixImplementation) {
     implementation.checkVectorMultiplication()
 }
@@ -178,6 +190,15 @@ private func verifyInitializerWithRowsAndColumns<M: PluMatrix>(_ type: M.Type) w
     }
     matrix[1, 2] = 3.14
     #expect(matrix[1, 2] == 3.14)
+}
+
+private func verifyNestedArrayInitializer<M: PluMatrix>(_ type: M.Type) where M.S == Double {
+    let values: TensorNestedArray<Double> = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
+    let matrix = M(values)
+
+    #expect(matrix.shape == [2, 3])
+    #expect(matrix.rank == 2)
+    #expect(matrix.toArray() == [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
 }
 
 private func verifyVectorMultiplication<M: PluMatrix>(_ type: M.Type) where M.S == Double {

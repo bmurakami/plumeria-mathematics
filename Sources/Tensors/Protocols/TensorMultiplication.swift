@@ -1,5 +1,4 @@
 public protocol TensorMultiplication: TensorStructure {
-    associatedtype S: PluScalar
     associatedtype MatrixImplementation: PluMatrix where MatrixImplementation.S == S
 
     init(shape: [Int], initialValue: S)

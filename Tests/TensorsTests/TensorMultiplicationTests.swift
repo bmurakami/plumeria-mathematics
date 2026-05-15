@@ -18,6 +18,11 @@ private struct TestTensor<S: PluScalar>: TensorMultiplication {
         self.elements = elements
     }
 
+    init(_ values: TensorNestedArray<S>) {
+        self.shape = values.shape
+        self.elements = values.columnMajorElements()
+    }
+
     subscript(_ indices: [Int]) -> S {
         get { elements[Self.linearIndex(indices, shape: shape)] }
         set { elements[Self.linearIndex(indices, shape: shape)] = newValue }

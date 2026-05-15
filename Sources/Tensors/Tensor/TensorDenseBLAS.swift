@@ -18,6 +18,10 @@ public struct TensorDenseBLAS<S: PluScalar>: TensorMultiplication, TensorArithme
         self.view = TensorFlatView(shape: shape, elements: elements)
     }
 
+    public init(_ values: TensorNestedArray<S>) {
+        self.init(shape: values.shape, elements: values.columnMajorElements())
+    }
+
     public subscript(_ indices: [Int]) -> S {
         get { view[indices] }
         set { view[indices] = newValue }

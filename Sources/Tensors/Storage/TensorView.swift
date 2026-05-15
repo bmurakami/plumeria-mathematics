@@ -1,4 +1,4 @@
-public protocol TensorView: TensorStructure {
+public protocol TensorView: TensorStructure where S == Scalar {
     associatedtype Scalar: PluScalar
     
     var elements: [Scalar] { get }

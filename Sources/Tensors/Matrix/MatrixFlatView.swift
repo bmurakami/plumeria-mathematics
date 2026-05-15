@@ -22,6 +22,11 @@ public struct MatrixFlatView<Scalar: PluScalar>: MatrixView, Equatable {
         let elements = (0..<columns).flatMap { column in (0..<rows).map { row in values[row][column] } }
         self.init(view: TensorFlatView(shape: [rows, columns], elements: elements))
     }
+
+    public init(_ values: TensorNestedArray<Scalar>) {
+        precondition(values.shape.count == 2, "Matrix nested array must have rank 2")
+        self.init(view: TensorFlatView(values))
+    }
     
     public subscript(_ indices: [Int]) -> Scalar {
         get {

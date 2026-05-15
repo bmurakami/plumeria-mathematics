@@ -29,6 +29,13 @@ enum VectorImplementation: CaseIterable, CustomStringConvertible {
         }
     }
 
+    func checkNestedArrayInitializer() {
+        switch self {
+        case .reference: verifyNestedArrayInitializer(VectorDenseReference<Double>.self)
+        case .blas: verifyNestedArrayInitializer(VectorDenseBLAS<Double>.self)
+        }
+    }
+
     func checkPhysicsOperations() {
         switch self {
         case .reference: verifyPhysicsOperations(VectorDenseReference<Double>.self)
@@ -66,39 +73,30 @@ enum VectorImplementation: CaseIterable, CustomStringConvertible {
 }
 
 @Test(arguments: VectorImplementation.allCases)
-func VectorDense_initDouble(implementation: VectorImplementation) {
-    implementation.checkDoubleInit()
+func VectorDense_initDouble(implementation: VectorImplementation) { implementation.checkDoubleInit() }
+
+@Test(arguments: VectorImplementation.allCases)
+func VectorDense_initComplex(implementation: VectorImplementation) { implementation.checkComplexInit() }
+
+@Test(arguments: VectorImplementation.allCases)
+func VectorDense_nestedArrayInitializer(implementation: VectorImplementation) {
+    implementation.checkNestedArrayInitializer()
 }
 
 @Test(arguments: VectorImplementation.allCases)
-func VectorDense_initComplex(implementation: VectorImplementation) {
-    implementation.checkComplexInit()
-}
+func VectorDense_physicsOperations(implementation: VectorImplementation) { implementation.checkPhysicsOperations() }
 
 @Test(arguments: VectorImplementation.allCases)
-func VectorDense_physicsOperations(implementation: VectorImplementation) {
-    implementation.checkPhysicsOperations()
-}
+func VectorDense_arithmetic(implementation: VectorImplementation) { implementation.checkArithmetic() }
 
 @Test(arguments: VectorImplementation.allCases)
-func VectorDense_arithmetic(implementation: VectorImplementation) {
-    implementation.checkArithmetic()
-}
+func VectorDense_complexArithmetic(implementation: VectorImplementation) { implementation.checkComplexArithmetic() }
 
 @Test(arguments: VectorImplementation.allCases)
-func VectorDense_complexArithmetic(implementation: VectorImplementation) {
-    implementation.checkComplexArithmetic()
-}
+func VectorDense_toArray(implementation: VectorImplementation) { implementation.checkToArray() }
 
 @Test(arguments: VectorImplementation.allCases)
-func VectorDense_toArray(implementation: VectorImplementation) {
-    implementation.checkToArray()
-}
-
-@Test(arguments: VectorImplementation.allCases)
-func VectorDense_tensorStructure(implementation: VectorImplementation) {
-    implementation.checkTensorStructure()
-}
+func VectorDense_tensorStructure(implementation: VectorImplementation) { implementation.checkTensorStructure() }
 
 @Test func DefaultVector_aliasUsesRecommendedImplementation() {
     let vector = Vector<Double>([1.0, 2.0, 3.0])
@@ -125,6 +123,14 @@ private func verifyComplexInit<V: PluVector>(_ type: V.Type) where V.S == Comple
     #expect(v[1].real == b[0])
     #expect(v[1].imaginary == b[1])
     #expect(v[1] == Complex(b[0], b[1]))
+}
+
+private func verifyNestedArrayInitializer<V: PluVector>(_ type: V.Type) where V.S == Double {
+    let values: TensorNestedArray<Double> = [1.0, -2.0, 3.0]
+    let vector = V(values)
+    #expect(vector.shape == [3])
+    #expect(vector.rank == 1)
+    #expect(vector.toArray() == [1.0, -2.0, 3.0])
 }
 
 private func verifyPhysicsOperations<V: PluVector>(_ type: V.Type) where V.S == Double {
