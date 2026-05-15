@@ -1,4 +1,7 @@
-public struct TensorDenseReference<S: PluScalar>: PluTensor, TensorStructure, TensorArithmeticReference {
+public struct TensorDenseReference<S: PluScalar>: PluTensor, TensorStructure, TensorMultiplication,
+    TensorArithmeticReference {
+    public typealias MatrixImplementation = MatrixDenseReference<S>
+
     private var storage: TensorNestedArray<S>
 
     public let shape: [Int]
