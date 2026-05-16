@@ -8,7 +8,7 @@ let package = Package(
     name: "PlumeriaMathematics",
     platforms: [.macOS(.v15)],
     products: [
-        .library(name: "PlumeriaMathematics", targets: ["PlumeriaMathematics"]),
+        .library(name: "PlumeriaMathematics", type: .dynamic, targets: ["PlumeriaMathematics"]),
         .executable(name: "PlumeriaBenchmarks", targets: ["PlumeriaBenchmarks"]),
     ],
     dependencies: [.package(url: "https://github.com/apple/swift-numerics", from: "1.0.0")],
