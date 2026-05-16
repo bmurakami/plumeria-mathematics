@@ -49,9 +49,9 @@ extension TensorArithmeticBLAS where Magnitude == S.Magnitude {
     private static func sum(_ left: [S], _ right: [S]) -> [S] {
         switch S.self {
         case is Double.Type:
-            var x = right as! [Double]
+            let x = right as! [Double]
             var y = left as! [Double]
-            axpy(Int32(y.count), &x, &y)
+            axpy(Int32(y.count), x, &y)
             return y as! [S]
         case is Complex.Type:
             var x = interleaved(right as! [Complex])
@@ -79,11 +79,11 @@ extension TensorArithmeticBLAS where Magnitude == S.Magnitude {
         }
     }
 
-    private static func axpy(_ n: Int32, _ x: inout [Double], _ y: inout [Double]) {
+    private static func axpy(_ n: Int32, _ x: [Double], _ y: inout [Double]) {
         #if canImport(Accelerate)
-        AccelerateOperations.daxpy(n, &x, &y)
+        AccelerateOperations.daxpy(n, x, &y)
         #else
-        OpenBLASOperations.daxpy(n, &x, &y)
+        OpenBLASOperations.daxpy(n, x, &y)
         #endif
     }
 

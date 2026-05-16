@@ -7,6 +7,7 @@ public struct TensorFlatView<Scalar: PluScalar>: TensorView, Equatable {
     public var count: Int { shape.reduce(1, *) }
     public var elements: [Scalar] { (0..<count).map { self[tensorIndices(forFlatIndex: $0)] } }
     public var isContiguous: Bool { strides == Self.columnMajorStrides(for: shape) }
+    public var contiguousElements: [Scalar]? { isContiguous && offset == 0 ? storage.elements : nil }
     
     public init(shape: [Int]) {
         precondition(shape.allSatisfy { $0 >= 0 }, "Tensor shape dimensions must be non-negative")
