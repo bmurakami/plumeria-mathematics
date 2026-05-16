@@ -1,3 +1,8 @@
+#if canImport(Accelerate)
+import AccelerateWrapper
+#endif
+import OpenBLASWrapper
+
 public struct VectorDenseBLAS<S: PluScalar>: PluVector, TensorArithmeticBLAS {
     public var elements: [S]
 
@@ -57,5 +62,15 @@ public struct VectorDenseBLAS<S: PluScalar>: PluVector, TensorArithmeticBLAS {
                      "Vector shape \(shape) requires \(shape[0]) elements, but got \(elements.count)")
 
         self.init(elements)
+    }
+}
+
+extension VectorDenseBLAS where S == Double {
+    public func magnitude() -> Double {
+        #if canImport(Accelerate)
+        return AccelerateOperations.dnrm2(Int32(size), elements)
+        #else
+        return OpenBLASOperations.dnrm2(Int32(size), elements)
+        #endif
     }
 }

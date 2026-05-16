@@ -6,7 +6,7 @@ public struct TensorDenseBLAS<S: PluScalar>: TensorMultiplication, TensorArithme
     public var shape: [Int] { view.shape }
     public var rank: Int { view.rank }
     public var elements: [S] {
-        get { view.elements }
+        get { view.contiguousElements ?? view.elements }
         set { view = TensorFlatView(shape: shape, elements: newValue) }
     }
 

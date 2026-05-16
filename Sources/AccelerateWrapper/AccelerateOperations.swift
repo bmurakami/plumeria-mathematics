@@ -4,17 +4,25 @@ import Accelerate
 public struct AccelerateOperations {
     public static func dgemv(
         _ m: Int32, _ n: Int32,
-        _ a: UnsafeMutablePointer<Double>,
-        _ x: UnsafeMutablePointer<Double>,
-        _ y: UnsafeMutablePointer<Double>
+        _ a: [Double],
+        _ x: [Double],
+        _ y: inout [Double]
     ) {
         let alpha: Double = 1.0
         let beta = 0.0
         let lda = Int32(m)
         let incx = Int32(1)
         let incy = Int32(1)
-
-        Accelerate.cblas_dgemv(CblasColMajor, CblasNoTrans, m, n, alpha, a, lda, x, incx, beta, y, incy)
+        a.withUnsafeBufferPointer { a in
+            x.withUnsafeBufferPointer { x in
+                y.withUnsafeMutableBufferPointer { y in
+                    Accelerate.cblas_dgemv(
+                        CblasColMajor, CblasNoTrans, m, n, alpha, a.baseAddress!, lda, x.baseAddress!, incx,
+                        beta, y.baseAddress!, incy
+                    )
+                }
+            }
+        }
     }
 
     public static func zgemv(
@@ -51,16 +59,25 @@ public struct AccelerateOperations {
     
     public static func dgemm(
         _ m: Int32, _ n: Int32, _ k: Int32,
-        _ a: UnsafeMutablePointer<Double>,
-        _ b: UnsafeMutablePointer<Double>,
-        _ c: UnsafeMutablePointer<Double>
+        _ a: [Double],
+        _ b: [Double],
+        _ c: inout [Double]
     ) {
         let alpha: Double = 1.0
         let beta = 0.0
         let lda = m
         let ldb = k
         let ldc = m
-        Accelerate.cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)
+        a.withUnsafeBufferPointer { a in
+            b.withUnsafeBufferPointer { b in
+                c.withUnsafeMutableBufferPointer { c in
+                    Accelerate.cblas_dgemm(
+                        CblasColMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha, a.baseAddress!, lda,
+                        b.baseAddress!, ldb, beta, c.baseAddress!, ldc
+                    )
+                }
+            }
+        }
     }
 
     public static func zgemm(
@@ -95,15 +112,26 @@ public struct AccelerateOperations {
         }
     }
 
-    public static func daxpy(_ n: Int32, _ x: inout [Double], _ y: inout [Double]) {
+    public static func daxpy(_ n: Int32, _ x: [Double], _ y: inout [Double]) {
         let alpha = 1.0
         let inc = Int32(1)
-        Accelerate.cblas_daxpy(n, alpha, x, inc, &y, inc)
+        x.withUnsafeBufferPointer { x in
+            y.withUnsafeMutableBufferPointer { y in
+                Accelerate.cblas_daxpy(n, alpha, x.baseAddress!, inc, y.baseAddress!, inc)
+            }
+        }
     }
 
     public static func dscal(_ n: Int32, _ alpha: Double, _ x: inout [Double]) {
         let inc = Int32(1)
         Accelerate.cblas_dscal(n, alpha, &x, inc)
+    }
+
+    public static func dnrm2(_ n: Int32, _ x: [Double]) -> Double {
+        let inc = Int32(1)
+        return x.withUnsafeBufferPointer { x in
+            Accelerate.cblas_dnrm2(n, x.baseAddress!, inc)
+        }
     }
 
     public static func zaxpy(_ n: Int32, _ x: inout [Double], _ y: inout [Double]) {
