@@ -7,7 +7,10 @@ import PackageDescription
 let package = Package(
     name: "PlumeriaMathematics",
     platforms: [.macOS(.v15)],
-    products: [.library(name: "PlumeriaMathematics", type: .dynamic, targets: ["PlumeriaMathematics"])],
+    products: [
+        .library(name: "PlumeriaMathematics", type: .dynamic, targets: ["PlumeriaMathematics"]),
+        .executable(name: "PlumeriaBenchmarks", targets: ["PlumeriaBenchmarks"]),
+    ],
     dependencies: [.package(url: "https://github.com/apple/swift-numerics", from: "1.0.0")],
     targets: [
         .systemLibrary(name: "COpenBLAS", path: "Sources/COpenBLAS"),
@@ -19,6 +22,7 @@ let package = Package(
         .target(name: "LinearSolvers", dependencies: ["Tensors"],
                 linkerSettings: [.unsafeFlags(["\(Context.packageDirectory)/Sources/COpenBLAS/lib/libopenblas.a"])]),
         .target(name: "PlumeriaMathematics", dependencies: ["Tensors", "LinearSolvers"]),
+        .executableTarget(name: "PlumeriaBenchmarks", dependencies: ["PlumeriaMathematics"], exclude: ["README.md"]),
         .testTarget(name: "TensorsTests", dependencies: ["Tensors"]),
         .testTarget(name: "LinearSolversTests", dependencies: ["LinearSolvers"]),
     ]
