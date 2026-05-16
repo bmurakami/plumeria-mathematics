@@ -7,7 +7,7 @@ import PackageDescription
 let package = Package(
     name: "PlumeriaMathematics",
     platforms: [.macOS(.v15)],
-    products: [.library(name: "PlumeriaMathematics", targets: ["PlumeriaMathematics"])],
+    products: [.library(name: "PlumeriaMathematics", type: .dynamic, targets: ["PlumeriaMathematics"])],
     dependencies: [.package(url: "https://github.com/apple/swift-numerics", from: "1.0.0")],
     targets: [
         .systemLibrary(name: "COpenBLAS", path: "Sources/COpenBLAS"),
