@@ -1,14 +1,18 @@
 import AccelerateWrapper
 import OpenBLASWrapper
 
-public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorArithmeticBLAS {
+public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorArithmeticBLAS, MatrixColumnMajorInitializable {
     private var view: TensorFlatView<S>
     public var blasImplementation: BLAS
     
     private func value(row: Int, column: Int) -> S { view[[row, column]] }
     private mutating func setValue(_ value: S, row: Int, column: Int) { view[[row, column]] = value }
 
-    init(rows: Int, columns: Int, values: [S], blasImplementation: BLAS = BLAS.default) {
+    public init(rows: Int, columns: Int, values: [S]) {
+        self.init(rows: rows, columns: columns, values: values, blasImplementation: BLAS.default)
+    }
+
+    init(rows: Int, columns: Int, values: [S], blasImplementation: BLAS) {
         self.view = TensorFlatView(shape: [rows, columns], elements: values)
         self.blasImplementation = blasImplementation
     }

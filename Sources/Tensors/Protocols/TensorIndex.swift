@@ -17,12 +17,14 @@ public func multiply<L: TensorMultiplication, R: TensorMultiplication>(
     precondition(rightIndices.count == right.rank, "Right index count must match tensor rank")
     precondition(Set(leftIndices).count == leftIndices.count, "Left indices must not repeat")
     precondition(Set(rightIndices).count == rightIndices.count, "Right indices must not repeat")
-    let rightAxisByIndex = Dictionary(uniqueKeysWithValues: rightIndices.enumerated().map { ($0.element, $0.offset) })
-    let axes = leftIndices.enumerated().compactMap { leftAxis, index -> (left: Int, right: Int)? in
-        guard let rightAxis = rightAxisByIndex[index] else { return nil }
-        return (leftAxis, rightAxis)
+    let rightPositionByIndex = Dictionary(
+        uniqueKeysWithValues: rightIndices.enumerated().map { ($0.element, $0.offset) }
+    )
+    let contractedIndices = leftIndices.enumerated().compactMap { leftPosition, index -> (left: Int, right: Int)? in
+        guard let rightPosition = rightPositionByIndex[index] else { return nil }
+        return (leftPosition, rightPosition)
     }
-    return left.times(right, contract: axes)
+    return left.times(right, contract: contractedIndices)
 }
 
 public func multiply<L: TensorMultiplication, R: TensorMultiplication>(
@@ -48,13 +50,17 @@ public func permute<T: TensorMultiplication>(
     precondition(destinationIndices.count == tensor.rank, "Destination index count must match tensor rank")
     precondition(Set(sourceIndices).count == sourceIndices.count, "Source indices must not repeat")
     precondition(Set(destinationIndices) == Set(sourceIndices), "Destination indices must permute source indices")
-    let sourceAxisByIndex = Dictionary(uniqueKeysWithValues: sourceIndices.enumerated().map { ($0.element, $0.offset) })
-    let sourceAxes = destinationIndices.map { sourceAxisByIndex[$0]! }
-    let resultShape = sourceAxes.map { tensor.shape[$0] }
+    let sourcePositionByIndex = Dictionary(
+        uniqueKeysWithValues: sourceIndices.enumerated().map { ($0.element, $0.offset) }
+    )
+    let sourcePositions = destinationIndices.map { sourcePositionByIndex[$0]! }
+    let resultShape = sourcePositions.map { tensor.shape[$0] }
     var result = T(shape: resultShape, initialValue: .zero)
     for resultIndex in indexCombinations(for: resultShape) {
         var sourceIndex = Array(repeating: 0, count: tensor.rank)
-        for (resultAxis, sourceAxis) in sourceAxes.enumerated() { sourceIndex[sourceAxis] = resultIndex[resultAxis] }
+        for (resultPosition, sourcePosition) in sourcePositions.enumerated() {
+            sourceIndex[sourcePosition] = resultIndex[resultPosition]
+        }
         result[resultIndex] = tensor[sourceIndex]
     }
     return result

@@ -1,4 +1,4 @@
-public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticReference {
+public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticReference, MatrixColumnMajorInitializable {
     private var values: [[S]]
     
     // MARK: - PluMatrix conformance
@@ -23,6 +23,13 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticRef
 
     public init(rows: Int, columns: Int, initialValue: S = .zero) {
         values = Array(repeating: Array(repeating: initialValue, count: columns), count: rows)
+    }
+
+    public init(rows: Int, columns: Int, values: [S]) {
+        precondition(values.count == rows * columns, "Matrix value count must match matrix shape")
+        self.values = (0..<rows).map { row in
+            (0..<columns).map { column in values[row + rows * column] }
+        }
     }
 
     public init(shape: [Int], initialValue: S) {

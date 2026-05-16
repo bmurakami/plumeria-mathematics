@@ -1,33 +1,41 @@
-public protocol TensorMultiplication: TensorStructure {
-    associatedtype MatrixImplementation: PluMatrix where MatrixImplementation.S == S
+public protocol MatrixColumnMajorInitializable: PluMatrix {
+    init(rows: Int, columns: Int, values: [S])
+}
 
+public protocol TensorMultiplication: TensorStructure {
+    associatedtype MatrixImplementation: MatrixColumnMajorInitializable where MatrixImplementation.S == S
+
+    var elements: [S] { get }
     init(shape: [Int], initialValue: S)
     subscript(_ indices: [Int]) -> S { get set }
 }
 
 extension TensorMultiplication {
-    public func times<T: TensorMultiplication>(_ other: T, contract axes: [(left: Int, right: Int)]) -> Self
+    public func times<T: TensorMultiplication>(_ other: T, contract indices: [(left: Int, right: Int)]) -> Self
     where T.S == S {
-        validateContraction(axes, with: other)
-        let leftContractedAxes = Set(axes.map(\.left))
-        let rightContractedAxes = Set(axes.map(\.right))
-        let leftFreeAxes = (0..<rank).filter { !leftContractedAxes.contains($0) }
-        let rightFreeAxes = (0..<other.rank).filter { !rightContractedAxes.contains($0) }
-        let leftFreeShape = leftFreeAxes.map { shape[$0] }
-        let rightFreeShape = rightFreeAxes.map { other.shape[$0] }
-        let contractShape = axes.map { shape[$0.left] }
+        validateContraction(indices, with: other)
+        let leftContractedIndices = Set(indices.map(\.left))
+        let rightContractedIndices = Set(indices.map(\.right))
+        let leftFreeIndices = (0..<rank).filter { !leftContractedIndices.contains($0) }
+        let rightFreeIndices = (0..<other.rank).filter { !rightContractedIndices.contains($0) }
+        let leftFreeShape = leftFreeIndices.map { shape[$0] }
+        let rightFreeShape = rightFreeIndices.map { other.shape[$0] }
+        let contractShape = indices.map { shape[$0.left] }
         let resultShape = leftFreeShape + rightFreeShape
         var result = Self(shape: resultShape, initialValue: .zero)
         let leftRows = Self.countElements(for: leftFreeShape)
         let shared = Self.countElements(for: contractShape)
         let rightColumns = Self.countElements(for: rightFreeShape)
         if Self.countElements(for: resultShape) == 0 || shared == 0 { return result }
-        let leftMatrix = matricizedLeftTensor(freeAxes: leftFreeAxes, contractAxes: axes.map(\.left))
-        let rightMatrix = other.matricizedRightTensor(freeAxes: rightFreeAxes, contractAxes: axes.map(\.right))
+        let leftMatrix = matricizedLeftTensor(freeIndices: leftFreeIndices, contractIndices: indices.map(\.left))
+        let rightMatrix = other.matricizedRightTensor(
+            freeIndices: rightFreeIndices,
+            contractIndices: indices.map(\.right)
+        )
         let product = leftMatrix * rightMatrix
         for resultIndex in Self.indexCombinations(for: resultShape) {
-            let leftFreeIndex = Array(resultIndex.prefix(leftFreeAxes.count))
-            let rightFreeIndex = Array(resultIndex.dropFirst(leftFreeAxes.count))
+            let leftFreeIndex = Array(resultIndex.prefix(leftFreeIndices.count))
+            let rightFreeIndex = Array(resultIndex.dropFirst(leftFreeIndices.count))
             let row = Self.linearIndex(leftFreeIndex, shape: leftFreeShape)
             let column = Self.linearIndex(rightFreeIndex, shape: rightFreeShape)
             precondition(row < leftRows && column < rightColumns, "Tensor contraction output index is out of bounds")
@@ -36,9 +44,16 @@ extension TensorMultiplication {
         return result
     }
 
-    private func matricizedLeftTensor(freeAxes: [Int], contractAxes: [Int]) -> MatrixImplementation {
-        let freeShape = freeAxes.map { shape[$0] }
-        let contractShape = contractAxes.map { shape[$0] }
+    private func matricizedLeftTensor(freeIndices: [Int], contractIndices: [Int]) -> MatrixImplementation {
+        let freeShape = freeIndices.map { shape[$0] }
+        let contractShape = contractIndices.map { shape[$0] }
+        if freeIndices + contractIndices == Array(0..<rank) {
+            return MatrixImplementation(
+                rows: Self.countElements(for: freeShape),
+                columns: Self.countElements(for: contractShape),
+                values: elements
+            )
+        }
         var matrix = MatrixImplementation(
             rows: Self.countElements(for: freeShape),
             columns: Self.countElements(for: contractShape),
@@ -47,8 +62,8 @@ extension TensorMultiplication {
         for freeIndex in Self.indexCombinations(for: freeShape) {
             for contractIndex in Self.indexCombinations(for: contractShape) {
                 var tensorIndex = Array(repeating: 0, count: rank)
-                for (position, axis) in freeAxes.enumerated() { tensorIndex[axis] = freeIndex[position] }
-                for (position, axis) in contractAxes.enumerated() { tensorIndex[axis] = contractIndex[position] }
+                for (position, index) in freeIndices.enumerated() { tensorIndex[index] = freeIndex[position] }
+                for (position, index) in contractIndices.enumerated() { tensorIndex[index] = contractIndex[position] }
                 matrix[
                     Self.linearIndex(freeIndex, shape: freeShape),
                     Self.linearIndex(contractIndex, shape: contractShape)
@@ -58,9 +73,16 @@ extension TensorMultiplication {
         return matrix
     }
 
-    private func matricizedRightTensor(freeAxes: [Int], contractAxes: [Int]) -> MatrixImplementation {
-        let freeShape = freeAxes.map { shape[$0] }
-        let contractShape = contractAxes.map { shape[$0] }
+    private func matricizedRightTensor(freeIndices: [Int], contractIndices: [Int]) -> MatrixImplementation {
+        let freeShape = freeIndices.map { shape[$0] }
+        let contractShape = contractIndices.map { shape[$0] }
+        if contractIndices + freeIndices == Array(0..<rank) {
+            return MatrixImplementation(
+                rows: Self.countElements(for: contractShape),
+                columns: Self.countElements(for: freeShape),
+                values: elements
+            )
+        }
         var matrix = MatrixImplementation(
             rows: Self.countElements(for: contractShape),
             columns: Self.countElements(for: freeShape),
@@ -69,8 +91,8 @@ extension TensorMultiplication {
         for contractIndex in Self.indexCombinations(for: contractShape) {
             for freeIndex in Self.indexCombinations(for: freeShape) {
                 var tensorIndex = Array(repeating: 0, count: rank)
-                for (position, axis) in contractAxes.enumerated() { tensorIndex[axis] = contractIndex[position] }
-                for (position, axis) in freeAxes.enumerated() { tensorIndex[axis] = freeIndex[position] }
+                for (position, index) in contractIndices.enumerated() { tensorIndex[index] = contractIndex[position] }
+                for (position, index) in freeIndices.enumerated() { tensorIndex[index] = freeIndex[position] }
                 matrix[
                     Self.linearIndex(contractIndex, shape: contractShape),
                     Self.linearIndex(freeIndex, shape: freeShape)
@@ -80,16 +102,19 @@ extension TensorMultiplication {
         return matrix
     }
 
-    private func validateContraction<T: TensorMultiplication>(_ axes: [(left: Int, right: Int)], with other: T)
+    private func validateContraction<T: TensorMultiplication>(_ indices: [(left: Int, right: Int)], with other: T)
     where T.S == S {
-        var leftAxes = Set<Int>()
-        var rightAxes = Set<Int>()
-        for axisPair in axes {
-            precondition(axisPair.left >= 0 && axisPair.left < rank, "Left contraction axis is out of bounds")
-            precondition(axisPair.right >= 0 && axisPair.right < other.rank, "Right contraction axis is out of bounds")
-            precondition(leftAxes.insert(axisPair.left).inserted, "Left contraction axes must be unique")
-            precondition(rightAxes.insert(axisPair.right).inserted, "Right contraction axes must be unique")
-            precondition(shape[axisPair.left] == other.shape[axisPair.right], "Contracted dimensions must match")
+        var leftIndices = Set<Int>()
+        var rightIndices = Set<Int>()
+        for indexPair in indices {
+            precondition(indexPair.left >= 0 && indexPair.left < rank, "Left contraction index is out of bounds")
+            precondition(
+                indexPair.right >= 0 && indexPair.right < other.rank,
+                "Right contraction index is out of bounds"
+            )
+            precondition(leftIndices.insert(indexPair.left).inserted, "Left contraction indices must be unique")
+            precondition(rightIndices.insert(indexPair.right).inserted, "Right contraction indices must be unique")
+            precondition(shape[indexPair.left] == other.shape[indexPair.right], "Contracted dimensions must match")
         }
     }
 
