@@ -14,20 +14,16 @@ Then add the library product to your target:
 .product(name: "PlumeriaMathematics", package: "plumeria-mathematics")
 ```
 
-## Platform Artifacts
+## GitHub Releases
 
-Tagged releases publish archives for every CI-supported platform:
+Version tags create GitHub releases. They do not publish Plumeria Mathematics binary archives.
 
-- `plumeria-mathematics-<version>-darwin-m1.tar.gz`: Apple Silicon Macs.
-- `plumeria-mathematics-<version>-linux-x86_64.tar.gz`: typical Intel/AMD Linux computers.
-- `plumeria-mathematics-<version>-linux-aarch64.tar.gz`: Raspberry Pi 3-5 and generic 64-bit ARM Linux machines.
-- `plumeria-mathematics-<version>-linux-neoverse_v2.tar.gz`: AWS Graviton4 and similar Neoverse V2 ARM servers.
+SwiftPM source dependencies are the supported release path. Platform-specific native OpenBLAS
+dependencies are handled separately by the `BuildScripts/install-pluscilib-*` scripts.
 
-Each archive contains:
+To publish a release:
 
-- `lib/`: the built `libPlumeriaMathematics` dynamic library.
-- `Modules/`: Swift module, documentation, and source-info files emitted by the compiler.
-- `include/`: generated Swift headers and module maps from the release build.
-- `metadata/`: version, platform, Swift compiler version, and host information.
-
-The `.sha256` file next to each archive records the archive checksum.
+```bash
+git tag 0.1.1
+git push origin 0.1.1
+```
