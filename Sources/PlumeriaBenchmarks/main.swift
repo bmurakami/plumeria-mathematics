@@ -154,14 +154,21 @@ func benchmarkVectors() -> Double {
 func benchmarkMatrices() -> Double {
     print("Matrix")
     let addRows = matrixRows(rows: 256, columns: 256)
+    let largeAddRows = matrixRows(rows: 1_024, columns: 1_024)
     let vector = VectorDenseBLAS(vectorValues(count: 384))
+    let largeVector = VectorDenseBLAS(vectorValues(count: 1_536))
     let mvRows = matrixRows(rows: 384, columns: 384)
+    let largeMVRows = matrixRows(rows: 1_536, columns: 1_536)
     let mmLeftRows = matrixRows(rows: 128, columns: 128)
     let mmRightRows = matrixRows(rows: 128, columns: 128)
     let referenceAdd = MatrixDenseReference(addRows)
     let blasAdd = MatrixDenseBLAS(addRows)
+    let referenceLargeAdd = MatrixDenseReference(largeAddRows)
+    let blasLargeAdd = MatrixDenseBLAS(largeAddRows)
     let referenceMV = MatrixDenseReference(mvRows)
     let blasMV = MatrixDenseBLAS(mvRows)
+    let referenceLargeMV = MatrixDenseReference(largeMVRows)
+    let blasLargeMV = MatrixDenseBLAS(largeMVRows)
     let referenceMMLeft = MatrixDenseReference(mmLeftRows)
     let referenceMMRight = MatrixDenseReference(mmRightRows)
     let blasMMLeft = MatrixDenseBLAS(mmLeftRows)
@@ -174,11 +181,25 @@ func benchmarkMatrices() -> Double {
         let result = blasAdd + blasAdd
         return result[0, 0] + result[result.rows - 1, result.columns - 1]
     })
+    checksum += compareBenchmark("add", "1,024x1,024", samples: 3, reference: {
+        let result = referenceLargeAdd + referenceLargeAdd
+        return result[0, 0] + result[result.rows - 1, result.columns - 1]
+    }, blas: {
+        let result = blasLargeAdd + blasLargeAdd
+        return result[0, 0] + result[result.rows - 1, result.columns - 1]
+    })
     checksum += compareBenchmark("matrix-vector multiply", "384x384", reference: {
         let result = referenceMV * vector
         return result[0] + result[result.size - 1]
     }, blas: {
         let result = blasMV * vector
+        return result[0] + result[result.size - 1]
+    })
+    checksum += compareBenchmark("matrix-vector multiply", "1,536x1,536", samples: 3, reference: {
+        let result = referenceLargeMV * largeVector
+        return result[0] + result[result.size - 1]
+    }, blas: {
+        let result = blasLargeMV * largeVector
         return result[0] + result[result.size - 1]
     })
     checksum += compareBenchmark("matrix-matrix multiply", "128x128", reference: {
@@ -199,12 +220,20 @@ func benchmarkTensors() -> Double {
     var referenceRight = TensorDenseReference<Double>(shape: [16, 16], initialValue: 0.0)
     var blasLeft = TensorDenseBLAS<Double>(shape: [16, 24, 16], initialValue: 0.0)
     var blasRight = TensorDenseBLAS<Double>(shape: [16, 16], initialValue: 0.0)
+    var referenceLargeLeft = TensorDenseReference<Double>(shape: [32, 32, 32], initialValue: 0.0)
+    var referenceLargeRight = TensorDenseReference<Double>(shape: [32, 32], initialValue: 0.0)
+    var blasLargeLeft = TensorDenseBLAS<Double>(shape: [32, 32, 32], initialValue: 0.0)
+    var blasLargeRight = TensorDenseBLAS<Double>(shape: [32, 32], initialValue: 0.0)
     fillTensor(&referenceAdd)
     fillTensor(&blasAdd)
     fillTensor(&referenceLeft)
     fillTensor(&referenceRight)
     fillTensor(&blasLeft)
     fillTensor(&blasRight)
+    fillTensor(&referenceLargeLeft)
+    fillTensor(&referenceLargeRight)
+    fillTensor(&blasLargeLeft)
+    fillTensor(&blasLargeRight)
     var checksum = 0.0
     checksum += compareBenchmark("add", "40x40x10", iterations: 3, reference: {
         let result = referenceAdd + referenceAdd
@@ -219,6 +248,13 @@ func benchmarkTensors() -> Double {
     }, blas: {
         let result = multiply(blasLeft, ["i", "j", "k"], blasRight, ["k", "l"])
         return result[[0, 0, 0]] + result[[15, 23, 15]]
+    })
+    checksum += compareBenchmark("contraction", "32x32x32,32x32", samples: 3, reference: {
+        let result = multiply(referenceLargeLeft, ["i", "j", "k"], referenceLargeRight, ["k", "l"])
+        return result[[0, 0, 0]] + result[[31, 31, 31]]
+    }, blas: {
+        let result = multiply(blasLargeLeft, ["i", "j", "k"], blasLargeRight, ["k", "l"])
+        return result[[0, 0, 0]] + result[[31, 31, 31]]
     })
     return checksum
 }

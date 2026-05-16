@@ -22,7 +22,7 @@ let package = Package(
         .target(name: "LinearSolvers", dependencies: ["Tensors"],
                 linkerSettings: [.unsafeFlags(["\(Context.packageDirectory)/Sources/COpenBLAS/lib/libopenblas.a"])]),
         .target(name: "PlumeriaMathematics", dependencies: ["Tensors", "LinearSolvers"]),
-        .executableTarget(name: "PlumeriaBenchmarks", dependencies: ["PlumeriaMathematics"]),
+        .executableTarget(name: "PlumeriaBenchmarks", dependencies: ["PlumeriaMathematics"], exclude: ["README.md"]),
         .testTarget(name: "TensorsTests", dependencies: ["Tensors"]),
         .testTarget(name: "LinearSolversTests", dependencies: ["LinearSolvers"]),
     ]
