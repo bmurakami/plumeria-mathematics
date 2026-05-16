@@ -6,27 +6,36 @@ struct TimedResult {
     let median: Double
 }
 
-func runBenchmark(
-    _ operation: String,
-    _ implementation: String,
-    _ size: String,
+func measure(
     samples: Int = 5,
     iterations: Int = 1,
     operation body: () -> Double
-) -> Double {
-    var total = body()
+) -> (TimedResult, Double) {
+    var checksum = body()
     var times: [Double] = []
     for _ in 0..<samples {
         let start = DispatchTime.now().uptimeNanoseconds
-        var checksum = 0.0
-        for _ in 0..<iterations { checksum += body() }
+        var sampleChecksum = 0.0
+        for _ in 0..<iterations { sampleChecksum += body() }
         let end = DispatchTime.now().uptimeNanoseconds
-        total += checksum
+        checksum += sampleChecksum
         times.append(Double(end - start) / Double(iterations) / 1_000_000.0)
     }
-    let result = summarize(times)
-    print("\(operation),\(implementation),\(size),\(samples),\(format(result.best)),\(format(result.median))")
-    return total
+    return (summarize(times), checksum)
+}
+
+func compareBenchmark(
+    _ operation: String,
+    _ size: String,
+    samples: Int = 5,
+    iterations: Int = 1,
+    reference: () -> Double,
+    blas: () -> Double
+) -> Double {
+    let (referenceResult, referenceChecksum) = measure(samples: samples, iterations: iterations, operation: reference)
+    let (blasResult, blasChecksum) = measure(samples: samples, iterations: iterations, operation: blas)
+    printBenchmark(operation, size, reference: referenceResult, blas: blasResult)
+    return referenceChecksum + blasChecksum
 }
 
 func summarize(_ values: [Double]) -> TimedResult {
@@ -36,6 +45,24 @@ func summarize(_ values: [Double]) -> TimedResult {
 
 func format(_ value: Double) -> String {
     String(format: "%.4f", value)
+}
+
+func printBenchmark(_ operation: String, _ size: String, reference: TimedResult, blas: TimedResult) {
+    print("  \(operation) \(size)")
+    print("    reference: median \(format(reference.median)) ms, best \(format(reference.best)) ms")
+    print("    BLAS:      median \(format(blas.median)) ms, best \(format(blas.best)) ms")
+    print("    ratio:     \(ratio(reference: reference.median, blas: blas.median))")
+    print("")
+}
+
+func ratio(reference: Double, blas: Double) -> String {
+    if reference == 0 && blas == 0 { return "same speed" }
+    if reference == 0 { return "reference faster" }
+    if blas == 0 { return "BLAS faster" }
+    if reference < blas {
+        return "reference \(format(blas / reference))x faster"
+    }
+    return "BLAS \(format(reference / blas))x faster"
 }
 
 func commandOutput(_ command: String, _ arguments: [String]) -> String {
@@ -94,6 +121,7 @@ func indexCombinations(for shape: [Int]) -> [[Int]] {
 }
 
 func benchmarkVectors() -> Double {
+    print("Vector")
     let small = vectorValues(count: 10_000)
     let large = vectorValues(count: 100_000)
     let referenceSmall = VectorDenseReference(small)
@@ -101,32 +129,30 @@ func benchmarkVectors() -> Double {
     let blasSmall = VectorDenseBLAS(small)
     let blasLarge = VectorDenseBLAS(large)
     var checksum = 0.0
-    checksum += runBenchmark("vector add", "reference", "10000", iterations: 20) {
+    checksum += compareBenchmark("add", "10,000", iterations: 20, reference: {
         let result = referenceSmall + referenceSmall
         return result[0] + result[result.size - 1]
-    }
-    checksum += runBenchmark("vector add", "blas", "10000", iterations: 20) {
+    }, blas: {
         let result = blasSmall + blasSmall
         return result[0] + result[result.size - 1]
-    }
-    checksum += runBenchmark("vector scale", "reference", "100000", iterations: 10) {
+    })
+    checksum += compareBenchmark("scale", "100,000", iterations: 10, reference: {
         let result = referenceLarge * 1.25
         return result[0] + result[result.size - 1]
-    }
-    checksum += runBenchmark("vector scale", "blas", "100000", iterations: 10) {
+    }, blas: {
         let result = blasLarge * 1.25
         return result[0] + result[result.size - 1]
-    }
-    checksum += runBenchmark("vector magnitude", "reference", "100000", iterations: 10) {
+    })
+    checksum += compareBenchmark("magnitude", "100,000", iterations: 10, reference: {
         referenceLarge.magnitude()
-    }
-    checksum += runBenchmark("vector magnitude", "blas", "100000", iterations: 10) {
+    }, blas: {
         blasLarge.magnitude()
-    }
+    })
     return checksum
 }
 
 func benchmarkMatrices() -> Double {
+    print("Matrix")
     let addRows = matrixRows(rows: 256, columns: 256)
     let vector = VectorDenseBLAS(vectorValues(count: 384))
     let mvRows = matrixRows(rows: 384, columns: 384)
@@ -141,34 +167,32 @@ func benchmarkMatrices() -> Double {
     let blasMMLeft = MatrixDenseBLAS(mmLeftRows)
     let blasMMRight = MatrixDenseBLAS(mmRightRows)
     var checksum = 0.0
-    checksum += runBenchmark("matrix add", "reference", "256x256", iterations: 5) {
+    checksum += compareBenchmark("add", "256x256", iterations: 5, reference: {
         let result = referenceAdd + referenceAdd
         return result[0, 0] + result[result.rows - 1, result.columns - 1]
-    }
-    checksum += runBenchmark("matrix add", "blas", "256x256", iterations: 5) {
+    }, blas: {
         let result = blasAdd + blasAdd
         return result[0, 0] + result[result.rows - 1, result.columns - 1]
-    }
-    checksum += runBenchmark("matrix-vector multiply", "reference", "384x384") {
+    })
+    checksum += compareBenchmark("matrix-vector multiply", "384x384", reference: {
         let result = referenceMV * vector
         return result[0] + result[result.size - 1]
-    }
-    checksum += runBenchmark("matrix-vector multiply", "blas", "384x384") {
+    }, blas: {
         let result = blasMV * vector
         return result[0] + result[result.size - 1]
-    }
-    checksum += runBenchmark("matrix-matrix multiply", "reference", "128x128") {
+    })
+    checksum += compareBenchmark("matrix-matrix multiply", "128x128", reference: {
         let result = referenceMMLeft * referenceMMRight
         return result[0, 0] + result[result.rows - 1, result.columns - 1]
-    }
-    checksum += runBenchmark("matrix-matrix multiply", "blas", "128x128") {
+    }, blas: {
         let result = blasMMLeft * blasMMRight
         return result[0, 0] + result[result.rows - 1, result.columns - 1]
-    }
+    })
     return checksum
 }
 
 func benchmarkTensors() -> Double {
+    print("Tensor")
     var referenceAdd = TensorDenseReference<Double>(shape: [40, 40, 10], initialValue: 0.0)
     var blasAdd = TensorDenseBLAS<Double>(shape: [40, 40, 10], initialValue: 0.0)
     var referenceLeft = TensorDenseReference<Double>(shape: [16, 24, 16], initialValue: 0.0)
@@ -182,22 +206,20 @@ func benchmarkTensors() -> Double {
     fillTensor(&blasLeft)
     fillTensor(&blasRight)
     var checksum = 0.0
-    checksum += runBenchmark("tensor add", "reference", "40x40x10", iterations: 3) {
+    checksum += compareBenchmark("add", "40x40x10", iterations: 3, reference: {
         let result = referenceAdd + referenceAdd
         return result[[0, 0, 0]] + result[[39, 39, 9]]
-    }
-    checksum += runBenchmark("tensor add", "blas", "40x40x10", iterations: 3) {
+    }, blas: {
         let result = blasAdd + blasAdd
         return result[[0, 0, 0]] + result[[39, 39, 9]]
-    }
-    checksum += runBenchmark("tensor contraction", "reference", "16x24x16,16x16") {
+    })
+    checksum += compareBenchmark("contraction", "16x24x16,16x16", reference: {
         let result = multiply(referenceLeft, ["i", "j", "k"], referenceRight, ["k", "l"])
         return result[[0, 0, 0]] + result[[15, 23, 15]]
-    }
-    checksum += runBenchmark("tensor contraction", "blas", "16x24x16,16x16") {
+    }, blas: {
         let result = multiply(blasLeft, ["i", "j", "k"], blasRight, ["k", "l"])
         return result[[0, 0, 0]] + result[[15, 23, 15]]
-    }
+    })
     return checksum
 }
 
@@ -205,8 +227,8 @@ let swiftVersion = commandOutput("/usr/bin/env", ["swift", "--version"])
 let platform = commandOutput("/usr/bin/env", ["uname", "-m"])
 
 print("PlumeriaBenchmarks")
-print("swift,\(swiftVersion)")
-print("platform,\(platform)")
-print("operation,implementation,size,samples,best_ms,median_ms")
+print("Swift: \(swiftVersion)")
+print("Platform: \(platform)")
+print("")
 let blackHole = benchmarkVectors() + benchmarkMatrices() + benchmarkTensors()
-print("blackHole,\(blackHole)")
+print("Checksum: \(blackHole)")

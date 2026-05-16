@@ -9,8 +9,9 @@ Run benchmarks explicitly in release mode:
 swift run -c release PlumeriaBenchmarks
 ```
 
-Benchmarks are not correctness tests and do not run with `swift test`. Timings depend on hardware,
-operating system, Swift version, BLAS backend, and thermal state.
+Benchmarks print absolute times and reference-vs-BLAS ratios. They are not correctness tests and do
+not run with `swift test`. Timings depend on hardware, operating system, Swift version, BLAS backend,
+and thermal state.
 
 Current benchmark groups:
 
