@@ -21,7 +21,7 @@ public struct VectorFlatView<Scalar: PluScalar>: VectorView, Equatable {
 
     public init(_ values: TensorNestedArray<Scalar>) {
         precondition(values.shape.count == 1, "Vector nested array must have rank 1")
-        self.init(values.columnMajorElements())
+        self.init(values.flatten())
     }
     
     public subscript(_ indices: [Int]) -> Scalar {

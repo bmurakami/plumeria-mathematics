@@ -27,7 +27,7 @@ public struct TensorFlatView<Scalar: PluScalar>: TensorView, Equatable {
     }
 
     public init(_ values: TensorNestedArray<Scalar>) {
-        self.init(shape: values.shape, elements: values.columnMajorElements())
+        self.init(shape: values.shape, elements: values.flatten())
     }
     
     public init(storage: TensorStorage<Scalar>, offset: Int, shape: [Int], strides: [Int]) {

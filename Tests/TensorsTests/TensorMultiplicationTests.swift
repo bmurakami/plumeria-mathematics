@@ -20,7 +20,7 @@ private struct TestTensor<S: PluScalar>: TensorMultiplication {
 
     init(_ values: TensorNestedArray<S>) {
         self.shape = values.shape
-        self.elements = values.columnMajorElements()
+        self.elements = values.flatten()
     }
 
     subscript(_ indices: [Int]) -> S {

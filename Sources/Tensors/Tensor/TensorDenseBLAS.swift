@@ -19,7 +19,7 @@ public struct TensorDenseBLAS<S: PluScalar>: TensorMultiplication, TensorArithme
     }
 
     public init(_ values: TensorNestedArray<S>) {
-        self.init(shape: values.shape, elements: values.columnMajorElements())
+        self.init(shape: values.shape, elements: values.flatten())
     }
 
     public subscript(_ indices: [Int]) -> S {

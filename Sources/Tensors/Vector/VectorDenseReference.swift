@@ -25,7 +25,7 @@ public struct VectorDenseReference<S: PluScalar>: PluVector, TensorArithmeticRef
 
     public init(_ values: TensorNestedArray<S>) {
         precondition(values.shape.count == 1, "Vector nested array must have rank 1")
-        self.init(values.columnMajorElements())
+        self.init(values.flatten())
     }
     
     public func toArray(round: Bool) -> [S] {

@@ -6,7 +6,7 @@ public struct TensorDenseReference<S: PluScalar>: PluTensor, TensorStructure, Te
 
     public let shape: [Int]
     public var rank: Int { shape.count }
-    public var elements: [S] { storage.columnMajorElements() }
+    public var elements: [S] { storage.flatten() }
 
     public init(_ values: TensorNestedArray<S>) {
         self.shape = values.shape

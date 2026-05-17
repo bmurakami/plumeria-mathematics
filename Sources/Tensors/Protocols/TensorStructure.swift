@@ -18,19 +18,20 @@ public enum TensorNestedArray<S: PluScalar>: Equatable {
         switch (self, indices.first) {
         case (.scalar(let value), nil):
             return value
-        case (.array(let children), .some(let index)):
-            precondition(index >= 0 && index < children.count, "Tensor index out of bounds")
-            return children[index][Array(indices.dropFirst())]
+        case (.array(let subtensor), .some(let index)):
+            precondition(index >= 0 && index < subtensor.count, "Tensor index out of bounds")
+            return subtensor[index][Array(indices.dropFirst())]
         default:
             preconditionFailure("Tensor index rank must match tensor rank")
         }
     }
 
-    public func columnMajorElements() -> [S] {
+    public func flatten() -> [S] {
         Self.indexCombinations(for: shape).map { self[$0] }
     }
 
     private static func indexCombinations(for shape: [Int]) -> [[Int]] {
+        // E.g., indexCombinations(for: [2, 3]) -> [[0, 0], [1, 0], [0, 1], [1, 1], [0, 2], [1, 2]]
         if shape.isEmpty { return [[]] }
         if shape.contains(0) { return [] }
         return (0..<shape.reduce(1, *)).map { flatIndex in
