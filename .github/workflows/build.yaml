@@ -20,6 +20,8 @@ jobs:
 
   build-linux-aarch64:
     runs-on: ubuntu-24.04-arm
+    env:
+      LIBRARY_PATH: ${{ github.workspace }}/Sources/COpenBLAS/lib
     steps:
     - uses: actions/checkout@v4
     - name: Build
@@ -29,6 +31,8 @@ jobs:
 
   build-linux-neoverse_v2:  
     runs-on: ubuntu-24.04-arm
+    env:
+      LIBRARY_PATH: ${{ github.workspace }}/Sources/COpenBLAS/lib
     steps:
     - uses: actions/checkout@v4
     - name: Build
@@ -40,6 +44,8 @@ jobs:
 
   build-linux-x86_64:  
     runs-on: ubuntu-24.04
+    env:
+      LIBRARY_PATH: ${{ github.workspace }}/Sources/COpenBLAS/lib
     steps:
     - uses: actions/checkout@v4
     - name: Build
