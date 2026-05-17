@@ -8,9 +8,9 @@ public struct TensorDenseReference<S: PluScalar>: PluTensor, TensorStructure, Te
     public var rank: Int { shape.count }
     public var elements: [S] { storage.flatten() }
 
-    public init(_ values: TensorNestedArray<S>) {
-        self.shape = values.shape
-        self.storage = values
+    public init(_ elements: TensorNestedArray<S>) {
+        self.shape = elements.shape
+        self.storage = elements
     }
 
     public init(shape: [Int], initialValue: S = .zero) {
@@ -49,11 +49,11 @@ public struct TensorDenseReference<S: PluScalar>: PluTensor, TensorStructure, Te
             }
             return value
         }
-        guard case .array(let children) = storage else {
+        guard case .array(let subtensors) = storage else {
             preconditionFailure("Tensor index rank must match tensor rank")
         }
-        precondition(index >= 0 && index < children.count, "Tensor index out of bounds")
-        return value(in: children[index], at: Array(indices.dropFirst()))
+        precondition(index >= 0 && index < subtensors.count, "Tensor index out of bounds")
+        return value(in: subtensors[index], at: Array(indices.dropFirst()))
     }
 
     private static func setValue(_ value: S, in storage: inout TensorNestedArray<S>, at indices: [Int]) {
@@ -61,11 +61,11 @@ public struct TensorDenseReference<S: PluScalar>: PluTensor, TensorStructure, Te
             storage = .scalar(value)
             return
         }
-        guard case .array(var children) = storage else {
+        guard case .array(var subtensors) = storage else {
             preconditionFailure("Tensor index rank must match tensor rank")
         }
-        precondition(index >= 0 && index < children.count, "Tensor index out of bounds")
-        setValue(value, in: &children[index], at: Array(indices.dropFirst()))
-        storage = .array(children)
+        precondition(index >= 0 && index < subtensors.count, "Tensor index out of bounds")
+        setValue(value, in: &subtensors[index], at: Array(indices.dropFirst()))
+        storage = .array(subtensors)
     }
 }
