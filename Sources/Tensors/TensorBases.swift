@@ -61,6 +61,7 @@ public struct MatrixBase<Implementation: PluMatrix>: TensorArithmeticReference {
 extension MatrixBase: PluMatrix {
     public var rows: Int { implementation.rows }
     public var columns: Int { implementation.columns }
+    public var det: Implementation.S { implementation.det }
 
     public subscript(i: Int, j: Int) -> Implementation.S {
         get { implementation[i, j] }
@@ -106,8 +107,18 @@ extension MatrixBase: PluMatrix {
         MatrixBase(implementation.transpose())
     }
 
+    public func inverse() -> MatrixBase<Implementation> {
+        MatrixBase(implementation.inverse())
+    }
+
     public func toArray(round: Bool) -> [[Implementation.S]] { implementation.toArray(round: round) }
     public func flatten(columnMajorOrder: Bool) -> [Implementation.S] {
         implementation.flatten(columnMajorOrder: columnMajorOrder)
+    }
+}
+
+extension MatrixBase where Implementation == MatrixDenseBLAS<Double> {
+    public func eigen() -> Eigen {
+        implementation.eigen()
     }
 }

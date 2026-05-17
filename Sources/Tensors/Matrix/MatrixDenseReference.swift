@@ -1,22 +1,23 @@
-public struct MatrixDenseReference<S: PluScalar>: TensorArithmeticReference, MatrixColumnMajorInitializable {
-    private var values: [[S]]
+public struct MatrixDenseReference<S: PluScalar>: MatrixArithmeticReference, TensorArithmeticReference,
+    MatrixColumnMajorInitializable {
+    private var elements: [[S]]
 
     public init(_ values: [[S]]) {
-        precondition(!values.isEmpty && !values[0].isEmpty)
-        precondition(values.allSatisfy({ $0.count == values[0].count }))
-        self.values = values
+        precondition(!values.isEmpty && !values[0].isEmpty, "The matrix cannot be empty")
+        precondition(values.allSatisfy({ $0.count == values[0].count }), "The matrix is malformed")
+        self.elements = values
     }
 }
 
 // MARK: - PluMatrix
 
 extension MatrixDenseReference: PluMatrix {
-    public var rows: Int { return values.count }
-    public var columns: Int { return values[0].count }
+    public var rows: Int { return elements.count }
+    public var columns: Int { return elements[0].count }
 
     public subscript(i: Int, j: Int) -> S {
-        get { return values[i][j] }
-        set { values[i][j] = newValue }
+        get { return elements[i][j] }
+        set { elements[i][j] = newValue }
     }
 
     public subscript(_ indices: [Int]) -> S {
@@ -31,12 +32,12 @@ extension MatrixDenseReference: PluMatrix {
     }
 
     public init(rows: Int, columns: Int, initialValue: S = .zero) {
-        values = Array(repeating: Array(repeating: initialValue, count: columns), count: rows)
+        elements = Array(repeating: Array(repeating: initialValue, count: columns), count: rows)
     }
 
     public init(rows: Int, columns: Int, values: [S]) {
         precondition(values.count == rows * columns, "Matrix value count must match matrix shape")
-        self.values = (0..<rows).map { row in
+        self.elements = (0..<rows).map { row in
             (0..<columns).map { column in values[row + rows * column] }
         }
     }
@@ -54,9 +55,9 @@ extension MatrixDenseReference: PluMatrix {
 
     public func toArray(round: Bool) -> [[S]] {
         if round {
-            return values.map { $0.map { $0.round() }}
+            return elements.map { $0.map { $0.round() }}
         }
-        return values
+        return elements
     }
 
     public func flatten(columnMajorOrder: Bool) -> [S] {
@@ -64,12 +65,12 @@ extension MatrixDenseReference: PluMatrix {
         if columnMajorOrder {
             for i in 0..<rows {
                 for j in 0..<columns {
-                    flattened[i + rows * j] = values[i][j]
+                    flattened[i + rows * j] = elements[i][j]
                 }
             }
             return flattened
         }
-        return Array(values.joined())
+        return Array(elements.joined())
     }
 }
 
@@ -81,7 +82,7 @@ extension MatrixDenseReference {
         for i in 0..<self.rows {
             var x: S = .zero
             for j in 0..<self.columns {
-                x = x + values[i][j] * v[j]
+                x = x + elements[i][j] * v[j]
             }
             sum.append(x)
         }
@@ -95,7 +96,7 @@ extension MatrixDenseReference {
             for j in 0..<m.columns {
                 var sum = S.zero
                 for k in 0..<columns {
-                    sum += values[i][k] * m[k, j]
+                    sum += elements[i][k] * m[k, j]
                 }
                 product[i, j] = sum
             }
@@ -106,10 +107,10 @@ extension MatrixDenseReference {
 
 extension MatrixDenseReference {
     public func transpose() -> Self {
-        var mt = MatrixDenseReference(rows: self.columns, columns: self.rows, initialValue: values[0][0])
+        var mt = MatrixDenseReference(rows: self.columns, columns: self.rows, initialValue: elements[0][0])
         for i in 0..<self.rows {
             for j in 0..<self.columns {
-                mt[j, i] = values[i][j]
+                mt[j, i] = elements[i][j]
             }
         }
         return mt

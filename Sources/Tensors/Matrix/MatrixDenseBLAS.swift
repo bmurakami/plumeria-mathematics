@@ -1,7 +1,8 @@
 import AccelerateWrapper
 import OpenBLASWrapper
 
-public struct MatrixDenseBLAS<S: PluScalar>: TensorArithmeticBLAS, MatrixColumnMajorInitializable, Equatable {
+public struct MatrixDenseBLAS<S: PluScalar>: MatrixArithmeticReference, TensorArithmeticBLAS,
+    MatrixColumnMajorInitializable, Equatable { // Temporary until determinant and inverse use LAPACK.
     private var view: TensorFlatView<S>
     public var blasImplementation: BLAS
 
@@ -283,5 +284,51 @@ extension MatrixDenseBLAS {
 
     private static func complexValues(_ values: [Double]) -> [Complex] {
         stride(from: 0, to: values.count, by: 2).map { Complex(values[$0], values[$0 + 1]) }
+    }
+
+}
+
+extension MatrixDenseBLAS where S == Double {
+    public func eigen() -> Eigen {
+        precondition(rows == columns, "Eigen decomposition requires a square matrix")
+        let n = Int32(rows)
+        var matrix = flatten()
+        var real = Array(repeating: 0.0, count: rows)
+        var imaginary = Array(repeating: 0.0, count: rows)
+        var vectors = Array(repeating: 0.0, count: rows * columns)
+        #if canImport(Accelerate)
+        let info = AccelerateOperations.dgeev(n, &matrix, &real, &imaginary, &vectors)
+        #else
+        let info = OpenBLASOperations.dgeev(n, &matrix, &real, &imaginary, &vectors)
+        #endif
+        precondition(info == 0, "Eigen decomposition failed with LAPACK info \(info)")
+        return Eigen(values: eigenvalues(real: real, imaginary: imaginary),
+                     vectors: eigenvectors(real: real, imaginary: imaginary, vectors: vectors))
+    }
+
+    private func eigenvalues(real: [Double], imaginary: [Double]) -> [Complex] {
+        zip(real, imaginary).map { Complex($0, $1) }
+    }
+
+    private func eigenvectors(real: [Double], imaginary: [Double], vectors: [Double]) -> MatrixDenseBLAS<Complex> {
+        var result = MatrixDenseBLAS<Complex>(rows: rows, columns: columns, initialValue: .zero)
+        var column = 0
+        while column < columns {
+            if imaginary[column] == 0.0 {
+                for row in 0..<rows {
+                    result[row, column] = Complex(vectors[row + rows * column], 0.0)
+                }
+                column += 1
+            } else {
+                for row in 0..<rows {
+                    let realPart = vectors[row + rows * column]
+                    let imaginaryPart = vectors[row + rows * (column + 1)]
+                    result[row, column] = Complex(realPart, imaginaryPart)
+                    result[row, column + 1] = Complex(realPart, -imaginaryPart)
+                }
+                column += 2
+            }
+        }
+        return result
     }
 }
