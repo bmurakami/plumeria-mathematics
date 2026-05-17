@@ -6,11 +6,11 @@ public enum TensorNestedArray<S: PluScalar>: Equatable {
         switch self {
         case .scalar:
             return []
-        case .array(let children):
-            precondition(!children.isEmpty, "Cannot infer tensor shape from an empty nested array")
-            let childShape = children[0].shape
-            precondition(children.allSatisfy { $0.shape == childShape }, "Tensor nested arrays must be rectangular")
-            return [children.count] + childShape
+        case .array(let subtensor):
+            precondition(!subtensor.isEmpty, "Cannot infer tensor shape from an empty nested array")
+            let subtensorShape = subtensor[0].shape
+            precondition(subtensor.allSatisfy { $0.shape == subtensorShape }, "Tensor nested arrays must be rectangular")
+            return [subtensor.count] + subtensorShape
         }
     }
 
