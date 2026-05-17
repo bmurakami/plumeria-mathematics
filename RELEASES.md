@@ -2,32 +2,33 @@
 
 ## SwiftPM
 
-To use Plumeria Mathematics in another Swift package, add the GitHub package URL and version:
+To use Plumeria Mathematics (PluMath) in another Swift package, add the GitHub package to your `dependencies`
+list in your `Package.swift` file.
 
 ```swift
 .package(url: "https://github.com/bmurakami/plumeria-mathematics.git", from: "0.1.0")
 ```
 
-Then add the library product to your target:
+Then declare the library product to your target's `dependencies` list:
 
 ```swift
 .product(name: "PlumeriaMathematics", package: "plumeria-mathematics")
 ```
 
-## Platform Artifacts
+## Plumeria Scientific Libraries
 
-Tagged releases publish archives for every CI-supported platform:
+PluMath uses platform-specific binaries from Plumeria Scientific Libraries hosted on GitHub. The
+`BuildScripts/install-pluscilib-*` scripts are called by GitHub Actions, which downloads the correct
+binary libraries and copies them to PluMath's `Sources` directory.
 
-- `plumeria-mathematics-<version>-darwin-m1.tar.gz`: Apple Silicon Macs.
-- `plumeria-mathematics-<version>-linux-x86_64.tar.gz`: typical Intel/AMD Linux computers.
-- `plumeria-mathematics-<version>-linux-aarch64.tar.gz`: Raspberry Pi 3-5 and generic 64-bit ARM Linux machines.
-- `plumeria-mathematics-<version>-linux-neoverse_v2.tar.gz`: AWS Graviton4 and similar Neoverse V2 ARM servers.
+If PluMath was manually cloned, the build script for your platform must manually be invoked before
+building with SwiftPM or Xcode.
 
-Each archive contains:
+## GitHub Releases
 
-- `lib/`: the built `libPlumeriaMathematics` dynamic library.
-- `Modules/`: Swift module, documentation, and source-info files emitted by the compiler.
-- `include/`: generated Swift headers and module maps from the release build.
-- `metadata/`: version, platform, Swift compiler version, and host information.
+Pushing a tag creates a GitHub release. To publish a release:
 
-The `.sha256` file next to each archive records the archive checksum.
+```bash
+git tag 0.1.1
+git push origin 0.1.1
+```
