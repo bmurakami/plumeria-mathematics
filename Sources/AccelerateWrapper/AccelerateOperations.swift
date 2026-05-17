@@ -164,7 +164,6 @@ public struct AccelerateOperations {
         }
     }
 
-    // MARK: - LAPACK
     public static func dgesv(
         _ n: Int32,
         _ a: UnsafeMutablePointer<Double>,

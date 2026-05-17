@@ -1,13 +1,14 @@
-public struct TensorDenseReference<S: PluScalar>: PluTensor, TensorStructure, TensorMultiplication,
-    TensorArithmeticReference {
-    public typealias MatrixImplementation = MatrixDenseReference<S>
-
+public struct TensorDenseReference<S: PluScalar>: TensorArithmeticReference, PluTensor {
     private var storage: TensorNestedArray<S>
 
     public let shape: [Int]
     public var rank: Int { shape.count }
     public var elements: [S] { storage.flatten() }
+}
 
+// MARK: - TensorStructure
+
+extension TensorDenseReference: TensorStructure {
     public init(_ elements: TensorNestedArray<S>) {
         self.shape = elements.shape
         self.storage = elements
@@ -18,7 +19,9 @@ public struct TensorDenseReference<S: PluScalar>: PluTensor, TensorStructure, Te
         self.shape = shape
         self.storage = Self.storage(shape: shape, initialValue: initialValue)
     }
+}
 
+extension TensorDenseReference {
     public subscript(_ indices: [Int]) -> S {
         get {
             precondition(indices.count == rank, "Tensor index rank must match tensor rank")
@@ -36,7 +39,15 @@ public struct TensorDenseReference<S: PluScalar>: PluTensor, TensorStructure, Te
     }
 
     public func toNestedArray() -> TensorNestedArray<S> { storage }
+}
 
+// MARK: - TensorMultiplication
+
+extension TensorDenseReference: TensorMultiplication {
+    public typealias MatrixImplementation = MatrixDenseReference<S>
+}
+
+extension TensorDenseReference {
     private static func storage(shape: [Int], initialValue: S) -> TensorNestedArray<S> {
         guard let size = shape.first else { return .scalar(initialValue) }
         return .array((0..<size).map { _ in storage(shape: Array(shape.dropFirst()), initialValue: initialValue) })

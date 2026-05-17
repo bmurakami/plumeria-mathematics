@@ -1,16 +1,21 @@
-public struct VectorFlatView<Scalar: PluScalar>: VectorView, Equatable {
+public struct VectorFlatView<Scalar: PluScalar>: Equatable {
     var view: TensorFlatView<Scalar>
+
+    public init(view: TensorFlatView<Scalar>) {
+        precondition(view.rank == 1, "VectorFlatView requires rank 1")
+        self.view = view
+    }
+}
+
+// MARK: - VectorView
+
+extension VectorFlatView: VectorView {
     public var size: Int { view.shape[0] }
     public var shape: [Int] { view.shape }
     public var rank: Int { view.rank }
     public var elements: [Scalar] { (0..<size).map { self[$0] } }
     public var isContiguous: Bool { view.isContiguous }
-    
-    public init(view: TensorFlatView<Scalar>) {
-        precondition(view.rank == 1, "VectorFlatView requires rank 1")
-        self.view = view
-    }
-    
+
     public init(size: Int) {
         self.init(view: TensorFlatView(shape: [size]))
     }
@@ -51,7 +56,9 @@ public struct VectorFlatView<Scalar: PluScalar>: VectorView, Equatable {
     public func slice(_ range: SliceRange) -> VectorFlatView<Scalar> {
         VectorFlatView(view: view.slice(range))
     }
-    
+}
+
+extension VectorFlatView {
     public static func == (lhs: VectorFlatView<Scalar>, rhs: VectorFlatView<Scalar>) -> Bool {
         lhs.shape == rhs.shape && lhs.elements == rhs.elements
     }

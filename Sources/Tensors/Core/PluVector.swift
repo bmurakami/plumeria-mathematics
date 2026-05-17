@@ -14,7 +14,9 @@ extension PluVector {
     public func toArray() -> [S] {
         return toArray(round: false)
     }
+}
 
+extension PluVector {
     public func magnitude() -> S.Magnitude {
         toArray().map { $0.magnitude * $0.magnitude }.reduce(.zero, +).squareRoot()
     }

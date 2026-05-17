@@ -45,12 +45,16 @@ public enum TensorNestedArray<S: PluScalar>: Equatable {
     }
 }
 
+// MARK: - Array Literals
+
 extension TensorNestedArray: ExpressibleByArrayLiteral {
     public typealias ArrayLiteralElement = TensorNestedArray<S>
     public init(arrayLiteral elements: TensorNestedArray<S>...) {
         self = .array(elements)
     }
 }
+
+// MARK: - Integer Literals
 
 extension TensorNestedArray: ExpressibleByIntegerLiteral where S: ExpressibleByIntegerLiteral {
     public typealias IntegerLiteralType = S.IntegerLiteralType
@@ -59,12 +63,16 @@ extension TensorNestedArray: ExpressibleByIntegerLiteral where S: ExpressibleByI
     }
 }
 
+// MARK: - Float Literals
+
 extension TensorNestedArray: ExpressibleByFloatLiteral where S: ExpressibleByFloatLiteral {
     public typealias FloatLiteralType = S.FloatLiteralType
     public init(floatLiteral value: S.FloatLiteralType) {
         self = .scalar(S(floatLiteral: value))
     }
 }
+
+// MARK: - TensorStructure
 
 public protocol TensorStructure {
     associatedtype S: PluScalar

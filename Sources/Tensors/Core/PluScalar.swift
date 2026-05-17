@@ -15,7 +15,6 @@ public protocol ComplexScalar: PluScalar {
 }
 
 extension Double: PluScalar {
-    // MARK: - PluScalar conformance
     public typealias S = Double
 
     public func round(precision: Int = 14) -> Double {
@@ -24,20 +23,22 @@ extension Double: PluScalar {
     }
 }
 
-extension Complex: TensorArithmetic, PluTensor, PluScalar, ComplexScalar {
-    // MARK: - ComplexScalar conformance
+extension Complex: TensorArithmetic, PluTensor, PluScalar {
     public typealias S = Complex
 
     public static let i = Complex(0.0, 1.0)
 
-    public var star: Complex { conjugate }
-    public var mod: Double { length }
-    public var arg: Double { phase }
-
-    // MARK: - PluScalar conformance
     public func round(precision: Int = 14) -> Complex {
         return Complex(real.round(precision: precision), imaginary.round(precision: precision))
     }
+}
+
+// MARK: - ComplexScalar
+
+extension Complex: ComplexScalar {
+    public var star: Complex { conjugate }
+    public var mod: Double { length }
+    public var arg: Double { phase }
 }
 
 public func + (left: Double, right: Complex) -> Complex {

@@ -1,10 +1,19 @@
-public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticReference, MatrixColumnMajorInitializable {
+public struct MatrixDenseReference<S: PluScalar>: TensorArithmeticReference, MatrixColumnMajorInitializable {
     private var values: [[S]]
-    
-    // MARK: - PluMatrix conformance
+
+    public init(_ values: [[S]]) {
+        precondition(!values.isEmpty && !values[0].isEmpty)
+        precondition(values.allSatisfy({ $0.count == values[0].count }))
+        self.values = values
+    }
+}
+
+// MARK: - PluMatrix
+
+extension MatrixDenseReference: PluMatrix {
     public var rows: Int { return values.count }
     public var columns: Int { return values[0].count }
-        
+
     public subscript(i: Int, j: Int) -> S {
         get { return values[i][j] }
         set { values[i][j] = newValue }
@@ -35,25 +44,38 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticRef
     public init(shape: [Int], initialValue: S) {
         precondition(shape.count == 2, "MatrixDenseReference shape must have rank 2")
         precondition(shape.allSatisfy { $0 >= 0 }, "Matrix shape dimensions must be non-negative")
-
         self.init(rows: shape[0], columns: shape[1], initialValue: initialValue)
-    }
-    
-    public init(_ values: [[S]]) {
-        precondition(!values.isEmpty && !values[0].isEmpty)
-        precondition(values.allSatisfy({ $0.count == values[0].count }))
-        
-        self.values = values
     }
 
     public init(_ values: TensorNestedArray<S>) {
         precondition(values.shape.count == 2, "Matrix nested array must have rank 2")
         self.init(Self.rows(from: values))
     }
-        
+
+    public func toArray(round: Bool) -> [[S]] {
+        if round {
+            return values.map { $0.map { $0.round() }}
+        }
+        return values
+    }
+
+    public func flatten(columnMajorOrder: Bool) -> [S] {
+        var flattened = Array(repeating: S.zero, count: rows * columns)
+        if columnMajorOrder {
+            for i in 0..<rows {
+                for j in 0..<columns {
+                    flattened[i + rows * j] = values[i][j]
+                }
+            }
+            return flattened
+        }
+        return Array(values.joined())
+    }
+}
+
+extension MatrixDenseReference {
     public func times<V: PluVector>(_ v: V) -> V where S == V.S {
         precondition(self.columns == v.size, "Matrix columns don't match vector size")
-
         var sum: [S] = []
         sum.reserveCapacity(self.rows)
         for i in 0..<self.rows {
@@ -63,7 +85,6 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticRef
             }
             sum.append(x)
         }
-
         return V(sum)
     }
 
@@ -81,7 +102,9 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticRef
         }
         return product
     }
+}
 
+extension MatrixDenseReference {
     public func transpose() -> Self {
         var mt = MatrixDenseReference(rows: self.columns, columns: self.rows, initialValue: values[0][0])
         for i in 0..<self.rows {
@@ -91,27 +114,6 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticRef
         }
         return mt
     }
-    
-    public func toArray(round: Bool) -> [[S]] {
-        if round {
-            return values.map { $0.map { $0.round() }}
-        }
-        return values
-    }
-    
-    public func flatten(columnMajorOrder: Bool) -> [S] {
-        var flattened = Array(repeating: S.zero, count: rows * columns)
-        if columnMajorOrder {
-            for i in 0..<rows {
-                for j in 0..<columns {
-                    flattened[i + rows * j] = values[i][j]
-                }
-            }
-            return flattened
-        } else {
-            return Array(values.joined())
-        }
-    }
 
     private static func rows(from values: TensorNestedArray<S>) -> [[S]] {
         let shape = values.shape
@@ -119,5 +121,4 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticRef
             (0..<shape[1]).map { column in values[[row, column]] }
         }
     }
-    
 }

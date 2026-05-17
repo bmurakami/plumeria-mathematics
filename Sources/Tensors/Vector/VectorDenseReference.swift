@@ -1,9 +1,17 @@
-public struct VectorDenseReference<S: PluScalar>: PluVector, TensorArithmeticReference {
+public struct VectorDenseReference<S: PluScalar>: TensorArithmeticReference {
     public var elements: [S]
-    
-    // MARK: - PluVector conformance
+
+    public init(_ values: [S]) {
+        self.elements = values
+    }
+}
+
+// MARK: - PluVector
+
+extension VectorDenseReference: PluVector {
     public var size: Int { elements.count }
-    public  subscript(i: Int) -> S {
+
+    public subscript(i: Int) -> S {
         get { return elements[i] }
         set { elements[i] = newValue }
     }
@@ -17,10 +25,6 @@ public struct VectorDenseReference<S: PluScalar>: PluVector, TensorArithmeticRef
             precondition(indices.count == 1, "Vector index rank must be 1")
             self[indices[0]] = newValue
         }
-    }
-
-    public init(_ values: [S]) {
-        self.elements = values
     }
 
     public init(_ values: TensorNestedArray<S>) {
@@ -59,5 +63,4 @@ public struct VectorDenseReference<S: PluScalar>: PluVector, TensorArithmeticRef
         
         self.init(elements)
     }
-
 }

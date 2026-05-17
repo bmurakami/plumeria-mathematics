@@ -1,7 +1,6 @@
 import COpenBLAS
 
 public enum OpenBLASOperations {
-    // MARK: - BLAS
     public static func dgemv(
         _ m: Int32, _ n: Int32,
         _ a: [Double],
@@ -149,7 +148,6 @@ public enum OpenBLASOperations {
         }
     }
 
-    // MARK: - LAPACK
     public static func dgesv(
         _ n: Int32,
         _ a: UnsafeMutablePointer<Double>,

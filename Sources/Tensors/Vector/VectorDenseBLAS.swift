@@ -3,10 +3,19 @@ import AccelerateWrapper
 #endif
 import OpenBLASWrapper
 
-public struct VectorDenseBLAS<S: PluScalar>: PluVector, TensorArithmeticBLAS {
+public struct VectorDenseBLAS<S: PluScalar>: TensorArithmeticBLAS {
     public var elements: [S]
 
+    public init(_ values: [S]) {
+        self.elements = values
+    }
+}
+
+// MARK: - PluVector
+
+extension VectorDenseBLAS: PluVector {
     public var size: Int { elements.count }
+
     public subscript(i: Int) -> S {
         get { elements[i] }
         set { elements[i] = newValue }
@@ -21,10 +30,6 @@ public struct VectorDenseBLAS<S: PluScalar>: PluVector, TensorArithmeticBLAS {
             precondition(indices.count == 1, "Vector index rank must be 1")
             self[indices[0]] = newValue
         }
-    }
-
-    public init(_ values: [S]) {
-        self.elements = values
     }
 
     public init(_ values: TensorNestedArray<S>) {

@@ -2,8 +2,10 @@ public struct TensorIndex: Hashable, ExpressibleByStringLiteral {
     public let symbol: String
 
     public init(_ symbol: String) {
-        precondition(!symbol.isEmpty, "Tensor index symbol must not be empty"); self.symbol = symbol
+        precondition(!symbol.isEmpty, "Tensor index symbol must not be empty")
+        self.symbol = symbol
     }
+
     public init(stringLiteral value: String) { self.init(value) }
 }
 
@@ -38,8 +40,6 @@ public func multiply<L: TensorMultiplication, R: TensorMultiplication>(
     precondition(operands.count == 2, "Tensor multiplication notation must contain two operands")
     return multiply(left, tensorIndices(operands[0]), right, tensorIndices(operands[1]))
 }
-
-private func tensorIndices(_ symbols: Substring) -> [TensorIndex] { symbols.map { TensorIndex(String($0)) } }
 
 public func permute<T: TensorMultiplication>(
     _ tensor: T,
@@ -76,6 +76,8 @@ public func permute<T: TensorMultiplication>(_ tensor: T, _ notation: String) ->
     precondition(!destination.contains("->"), "Tensor permutation notation must contain one output clause")
     return permute(tensor, from: tensorIndices(source), to: tensorIndices(destination))
 }
+
+private func tensorIndices(_ symbols: Substring) -> [TensorIndex] { symbols.map { TensorIndex(String($0)) } }
 
 private func indexCombinations(for shape: [Int]) -> [[Int]] {
     if shape.isEmpty { return [[]] }

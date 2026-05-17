@@ -1,27 +1,39 @@
-public struct TensorFlatView<Scalar: PluScalar>: TensorView, Equatable {
+public struct TensorFlatView<Scalar: PluScalar>: Equatable {
     public var storage: TensorStorage<Scalar>
     public var offset: Int
     public var shape: [Int]
     public var strides: [Int]
+
+    public init(storage: TensorStorage<Scalar>, offset: Int, shape: [Int], strides: [Int]) {
+        precondition(offset >= 0, "Tensor view offset must be non-negative")
+        precondition(shape.allSatisfy { $0 >= 0 }, "Tensor shape dimensions must be non-negative")
+        precondition(shape.count == strides.count, "Tensor shape and strides must have the same rank")
+        self.storage = storage
+        self.offset = offset
+        self.shape = shape
+        self.strides = strides
+    }
+}
+
+// MARK: - TensorView
+
+extension TensorFlatView: TensorView {
     public var rank: Int { shape.count }
     public var count: Int { shape.reduce(1, *) }
     public var elements: [Scalar] { (0..<count).map { self[tensorIndices(forFlatIndex: $0)] } }
     public var isContiguous: Bool { strides == Self.columnMajorStrides(for: shape) }
     public var contiguousElements: [Scalar]? { isContiguous && offset == 0 ? storage.elements : nil }
-    
+
     public init(shape: [Int]) {
         precondition(shape.allSatisfy { $0 >= 0 }, "Tensor shape dimensions must be non-negative")
-        
         self.init(shape: shape, elements: Array(repeating: .zero, count: shape.reduce(1, *)))
     }
-    
+
     public init(shape: [Int], elements: [Scalar]) {
         precondition(shape.allSatisfy { $0 >= 0 }, "Tensor shape dimensions must be non-negative")
-        
         let count = shape.reduce(1, *)
         precondition(count == elements.count,
                      "Tensor shape \(shape) requires \(count) elements, but got \(elements.count)")
-        
         let strides = Self.columnMajorStrides(for: shape)
         self.init(storage: TensorStorage(elements), offset: 0, shape: shape, strides: strides)
     }
@@ -29,18 +41,7 @@ public struct TensorFlatView<Scalar: PluScalar>: TensorView, Equatable {
     public init(_ values: TensorNestedArray<Scalar>) {
         self.init(shape: values.shape, elements: values.flatten())
     }
-    
-    public init(storage: TensorStorage<Scalar>, offset: Int, shape: [Int], strides: [Int]) {
-        precondition(offset >= 0, "Tensor view offset must be non-negative")
-        precondition(shape.allSatisfy { $0 >= 0 }, "Tensor shape dimensions must be non-negative")
-        precondition(shape.count == strides.count, "Tensor shape and strides must have the same rank")
-        
-        self.storage = storage
-        self.offset = offset
-        self.shape = shape
-        self.strides = strides
-    }
-    
+
     public subscript(_ indices: [Int]) -> Scalar {
         get { storage[linearIndex(indices)] }
         set {
@@ -57,7 +58,9 @@ public struct TensorFlatView<Scalar: PluScalar>: TensorView, Equatable {
     public subscript(_ indices: TensorSliceIndex...) -> TensorFlatView<Scalar> {
         slice(indices)
     }
-    
+}
+
+extension TensorFlatView {
     public func slice(_ ranges: [SliceRange]) -> TensorFlatView<Scalar> {
         precondition(ranges.count == rank, "Slice rank must match tensor rank")
         for (dimension, range) in ranges.enumerated() {
@@ -118,7 +121,15 @@ public struct TensorFlatView<Scalar: PluScalar>: TensorView, Equatable {
         precondition(view.rank == 2, "Tensor slice result must have rank 2")
         return MatrixFlatView(view: view)
     }
-    
+}
+
+extension TensorFlatView {
+    public static func == (lhs: TensorFlatView<Scalar>, rhs: TensorFlatView<Scalar>) -> Bool {
+        lhs.shape == rhs.shape && lhs.elements == rhs.elements
+    }
+}
+
+extension TensorFlatView {
     private static func columnMajorStrides(for shape: [Int]) -> [Int] {
         var strides = Array(repeating: 0, count: shape.count)
         if !shape.isEmpty {
@@ -160,9 +171,5 @@ public struct TensorFlatView<Scalar: PluScalar>: TensorView, Equatable {
         if !isKnownUniquelyReferenced(&storage) {
             storage = TensorStorage(storage.elements)
         }
-    }
-    
-    public static func == (lhs: TensorFlatView<Scalar>, rhs: TensorFlatView<Scalar>) -> Bool {
-        lhs.shape == rhs.shape && lhs.elements == rhs.elements
     }
 }

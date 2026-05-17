@@ -33,6 +33,9 @@ extension PluMatrix {
     public var shape: [Int] { [rows, columns] }
     public var rank: Int { 2 }
     public var t: Self { transpose() }
+}
+
+extension PluMatrix {
     public var tr: S {
         precondition(rows == columns, "Trace requires a square matrix")
         var sum = S.zero

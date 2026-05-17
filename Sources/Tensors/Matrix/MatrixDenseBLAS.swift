@@ -1,12 +1,9 @@
 import AccelerateWrapper
 import OpenBLASWrapper
 
-public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorArithmeticBLAS, MatrixColumnMajorInitializable {
+public struct MatrixDenseBLAS<S: PluScalar>: TensorArithmeticBLAS, MatrixColumnMajorInitializable, Equatable {
     private var view: TensorFlatView<S>
     public var blasImplementation: BLAS
-    
-    private func value(row: Int, column: Int) -> S { view[[row, column]] }
-    private mutating func setValue(_ value: S, row: Int, column: Int) { view[[row, column]] = value }
 
     public init(rows: Int, columns: Int, values: [S]) {
         self.init(rows: rows, columns: columns, values: values, blasImplementation: BLAS.default)
@@ -16,22 +13,50 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorArithmeticBLAS, Ma
         self.view = TensorFlatView(shape: [rows, columns], elements: values)
         self.blasImplementation = blasImplementation
     }
-    
+
     init(view: TensorFlatView<S>, blasImplementation: BLAS = BLAS.default) {
         precondition(view.rank == 2, "MatrixDenseBLAS view must have rank 2")
         self.view = view
         self.blasImplementation = blasImplementation
     }
-    
-    // MARK: - PluMatrix conformance
+}
+
+// MARK: - PluMatrix
+
+extension MatrixDenseBLAS: PluMatrix {
     public var rows: Int { view.shape[0] }
     public var columns: Int { view.shape[1] }
-    
+    public var shape: [Int] { [rows, columns] }
+    public var rank: Int { shape.count }
+
+    public var elements: [S] {
+        get { columnMajorElements() }
+        set {
+            precondition(newValue.count == rows * columns, "Matrix element count must match matrix shape")
+            view = TensorFlatView(shape: shape, elements: newValue)
+        }
+    }
+
     public subscript(i: Int, j: Int) -> S {
         get { value(row: i, column: j) }
         set { setValue(newValue, row: i, column: j) }
     }
-    
+
+    public subscript(_ indices: [Int]) -> S {
+        get {
+            precondition(indices.count == 2, "MatrixDenseBLAS index rank must be 2")
+            precondition(indices[0] >= 0 && indices[0] < rows, "Matrix row index out of bounds")
+            precondition(indices[1] >= 0 && indices[1] < columns, "Matrix column index out of bounds")
+            return value(row: indices[0], column: indices[1])
+        }
+        set {
+            precondition(indices.count == 2, "MatrixDenseBLAS index rank must be 2")
+            precondition(indices[0] >= 0 && indices[0] < rows, "Matrix row index out of bounds")
+            precondition(indices[1] >= 0 && indices[1] < columns, "Matrix column index out of bounds")
+            setValue(newValue, row: indices[0], column: indices[1])
+        }
+    }
+
     public init(rows: Int, columns: Int, initialValue: S = S.zero) {
         let elements = Array(repeating: initialValue, count: rows * columns)
         self.view = TensorFlatView(shape: [rows, columns], elements: elements)
@@ -42,9 +67,7 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorArithmeticBLAS, Ma
         let rows = values.count
         let columns = values[0].count
         let elements = (0..<columns).flatMap { column in
-            (0..<rows).map { row in
-                values[row][column]
-            }
+            (0..<rows).map { row in values[row][column] }
         }
         self.view = TensorFlatView(shape: [rows, columns], elements: elements)
         self.blasImplementation = .default
@@ -56,114 +79,95 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorArithmeticBLAS, Ma
         self.blasImplementation = .default
     }
 
-    public var elements: [S] {
-        get { columnMajorElements() }
-        set {
-            precondition(newValue.count == rows * columns, "Matrix element count must match matrix shape")
-            view = TensorFlatView(shape: shape, elements: newValue)
-        }
-    }
-    
-    public var shape: [Int] { [rows, columns] }
-    public var rank: Int { shape.count }
-    
     public init(shape: [Int]) {
         precondition(shape.count == 2, "MatrixDenseBLAS shape must have rank 2")
         precondition(shape.allSatisfy { $0 >= 0 }, "Matrix shape dimensions must be non-negative")
-        
         self.init(rows: shape[0], columns: shape[1])
     }
 
     public init(shape: [Int], initialValue: S) {
         precondition(shape.count == 2, "MatrixDenseBLAS shape must have rank 2")
         precondition(shape.allSatisfy { $0 >= 0 }, "Matrix shape dimensions must be non-negative")
-
         self.init(rows: shape[0], columns: shape[1], initialValue: initialValue)
     }
-    
+
     public init(shape: [Int], elements: [S]) {
         precondition(shape.count == 2, "MatrixDenseBLAS shape must have rank 2")
         precondition(shape.allSatisfy { $0 >= 0 }, "Matrix shape dimensions must be non-negative")
         let count = shape.reduce(1, *)
         precondition(count == elements.count,
                      "Matrix shape \(shape) requires \(count) elements, but got \(elements.count)")
-        
         self.init(rows: shape[0], columns: shape[1], values: elements)
     }
-    
-    public subscript(_ indices: [Int]) -> S {
-        get {
-            precondition(indices.count == 2, "MatrixDenseBLAS index rank must be 2")
-            precondition(indices[0] >= 0 && indices[0] < rows, "Matrix row index out of bounds")
-            precondition(indices[1] >= 0 && indices[1] < columns, "Matrix column index out of bounds")
-            
-            return value(row: indices[0], column: indices[1])
-        }
-        set {
-            precondition(indices.count == 2, "MatrixDenseBLAS index rank must be 2")
-            precondition(indices[0] >= 0 && indices[0] < rows, "Matrix row index out of bounds")
-            precondition(indices[1] >= 0 && indices[1] < columns, "Matrix column index out of bounds")
-            
-            setValue(newValue, row: indices[0], column: indices[1])
+
+    public func toArray(round: Bool = false) -> [[S]] {
+        (0..<rows).map { row in
+            (0..<columns).map { column in
+                let value = value(row: row, column: column)
+                return round ? value.round() : value
+            }
         }
     }
-    
+
+    public func flatten(columnMajorOrder: Bool = true) -> [S] {
+        columnMajorOrder ? columnMajorElements() : viewElements(columnMajorOrder: false)
+    }
+}
+
+extension MatrixDenseBLAS {
     public func slice(rows: SliceRange, columns: SliceRange) -> MatrixDenseBLAS<S> {
         MatrixDenseBLAS(view: view.slice(rows: rows, columns: columns), blasImplementation: blasImplementation)
     }
-    
+
     public func slice(row: Int, columns: SliceRange) -> VectorFlatView<S> {
         MatrixFlatView(view: view).slice(row: row, columns: columns)
     }
-    
+
     public func slice(rows: SliceRange, column: Int) -> VectorFlatView<S> {
         MatrixFlatView(view: view).slice(rows: rows, column: column)
     }
-    
+
     public subscript(rows: Range<Int>, columns: Range<Int>) -> MatrixDenseBLAS<S> {
         slice(rows: SliceRange(rows), columns: SliceRange(columns))
     }
-    
+
     public subscript(rows: Range<Int>, columns: TensorSliceIndex) -> MatrixDenseBLAS<S> {
         slice(rows: SliceRange(rows), columns: columns.sliceRange(dimensionSize: self.columns))
     }
-    
+
     public subscript(rows: TensorSliceIndex, columns: Range<Int>) -> MatrixDenseBLAS<S> {
         slice(rows: rows.sliceRange(dimensionSize: self.rows), columns: SliceRange(columns))
     }
-    
+
     public subscript(rows: TensorSliceIndex, columns: TensorSliceIndex) -> MatrixDenseBLAS<S> {
-        slice(
-            rows: rows.sliceRange(dimensionSize: self.rows),
-            columns: columns.sliceRange(dimensionSize: self.columns)
-        )
+        slice(rows: rows.sliceRange(dimensionSize: self.rows), columns: columns.sliceRange(dimensionSize: self.columns))
     }
-    
+
     public subscript(row: Int, columns: Range<Int>) -> VectorFlatView<S> {
         slice(row: row, columns: SliceRange(columns))
     }
-    
+
     public subscript(row: Int, columns: TensorSliceIndex) -> VectorFlatView<S> {
         slice(row: row, columns: columns.sliceRange(dimensionSize: self.columns))
     }
-    
+
     public subscript(rows: Range<Int>, column: Int) -> VectorFlatView<S> {
         slice(rows: SliceRange(rows), column: column)
     }
-    
+
     public subscript(rows: TensorSliceIndex, column: Int) -> VectorFlatView<S> {
         slice(rows: rows.sliceRange(dimensionSize: self.rows), column: column)
     }
+}
 
+extension MatrixDenseBLAS {
     public func times<V: PluVector>(_ v: V) -> V where V.S == S {
         precondition(columns == v.size, "Number of columns in matrix must equal size of vector")
-        
         switch S.self {
         case is Double.Type:
             let A = columnMajorElements() as! [Double]
             let x = vectorElements(v) as! [Double]
             var y = Array(repeating: 0.0, count: rows)
-
             switch blasImplementation {
             #if canImport(Accelerate)
             case .accelerate:
@@ -172,13 +176,11 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorArithmeticBLAS, Ma
             case .openBLAS:
                 OpenBLASOperations.dgemv(Int32(rows), Int32(columns), A, x, &y)
             }
-
             return V(y as! [S])
         case is Complex.Type:
             var A = MatrixDenseBLAS.interleaved(flatten() as! [Complex])
             var x = MatrixDenseBLAS.interleaved(v.toArray(round: false) as! [Complex])
             var y = Array(repeating: 0.0, count: rows * 2)
-
             switch blasImplementation {
             #if canImport(Accelerate)
             case .accelerate:
@@ -187,7 +189,6 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorArithmeticBLAS, Ma
             case .openBLAS:
                 OpenBLASOperations.zgemv(Int32(rows), Int32(columns), &A, &x, &y)
             }
-
             return V(MatrixDenseBLAS.complexValues(y) as! [S])
         default:
             fatalError("Unsupported scalar type")
@@ -227,7 +228,9 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorArithmeticBLAS, Ma
             fatalError("Unsupported scalar type")
         }
     }
+}
 
+extension MatrixDenseBLAS {
     public func transpose() -> MatrixDenseBLAS<S> {
         var transposed = MatrixDenseBLAS(rows: columns, columns: rows)
         for row in 0..<rows {
@@ -237,24 +240,18 @@ public struct MatrixDenseBLAS<S: PluScalar>: PluMatrix, TensorArithmeticBLAS, Ma
         }
         return transposed
     }
- 
-    public func toArray(round: Bool = false) -> [[S]] {
-        (0..<rows).map { row in
-            (0..<columns).map { column in
-                let value = value(row: row, column: column)
-                return round ? value.round() : value
-            }
-        }
-    }
-    
-    public func flatten(columnMajorOrder: Bool = true) -> [S] {
-        columnMajorOrder ? columnMajorElements() : viewElements(columnMajorOrder: false)
-    }
-    
+}
+
+extension MatrixDenseBLAS {
     public static func == (lhs: MatrixDenseBLAS<S>, rhs: MatrixDenseBLAS<S>) -> Bool {
         lhs.shape == rhs.shape && lhs.elements == rhs.elements && lhs.blasImplementation == rhs.blasImplementation
     }
-    
+}
+
+extension MatrixDenseBLAS {
+    private func value(row: Int, column: Int) -> S { view[[row, column]] }
+    private mutating func setValue(_ value: S, row: Int, column: Int) { view[[row, column]] = value }
+
     private func viewElements(columnMajorOrder: Bool) -> [S] {
         var elements = Array(repeating: S.zero, count: rows * columns)
         for row in 0..<rows {
