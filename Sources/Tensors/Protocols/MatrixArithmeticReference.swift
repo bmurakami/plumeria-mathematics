@@ -83,9 +83,8 @@ extension MatrixArithmeticReference where Self: MatrixEigen, S == Double {
         ]))
     }
 
-    private func eigenvector(
-        a: Complex, b: Complex, c: Complex, d: Complex, value: Complex, fallbackColumn: Int
-    ) -> [Complex] {
+    private func eigenvector(a: Complex, b: Complex, c: Complex, d: Complex, value: Complex, fallbackColumn: Int)
+        -> [Complex] {
         let first = [b, value - a]
         if !isZero(first) { return first }
         let second = [value - d, c]

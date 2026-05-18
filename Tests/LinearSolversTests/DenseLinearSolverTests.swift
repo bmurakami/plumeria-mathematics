@@ -9,12 +9,12 @@ import Tensors
     // 2x - y + z = 3
     // x + 2y - z = 2
     // x + y - 4z = -9
-    
+
     let A = MatrixDenseBLAS([[2.0, -1, 1], [1, 2, -1], [1, 1, -4]])
     let b = VectorDenseReference([3.0, 2, -9])
     let v_actual = solveLinearDense(A, b)
     let v_expected = VectorDenseReference([1.0, 2, 3])
-    
+
     #expect(v_actual.isApproximatelyEqual(to: v_expected))
 }
 
@@ -25,7 +25,7 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
         let A: MatrixType = makeMatrix(size: n)
         let b = makeVector(size: n)
         let v = solveLinearDense(A, b)
-        
+
         #expect((A * v).isApproximatelyEqual(to: b, relativeTolerance: 1e-12))
     }
 }
@@ -62,7 +62,7 @@ func solveLinearDense_correctness_largeMatrices<MatrixType: PluMatrix>(matrixTyp
         let A: MatrixDenseBLAS<Double> = makeMatrix(size: n)
         let b = makeVector(size: n)
         let v = solveLinearDense(A, b)
-        
+
         #expect((A * v).isApproximatelyEqual(to: b, relativeTolerance: 1e-8))
     }
 }

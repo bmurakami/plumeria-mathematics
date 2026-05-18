@@ -2,7 +2,7 @@ public protocol PluMatrix: PluTensor, TensorStructure, MatrixArithmetic where S:
     var rows: Int { get }
     var columns: Int { get }
     subscript(i: Int, j: Int) -> S { get set }
-    
+
     init(rows: Int, columns: Int, initialValue: S)
     init(_ elements: [[S]])
 

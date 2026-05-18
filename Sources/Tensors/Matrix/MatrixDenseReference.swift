@@ -55,7 +55,7 @@ extension MatrixDenseReference: PluMatrix {
 
     public func toArray(round: Bool) -> [[S]] {
         if round {
-            return elements.map { $0.map { $0.round() }}
+            return elements.map { $0.map { $0.round() } }
         }
         return elements
     }

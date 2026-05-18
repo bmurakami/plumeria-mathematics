@@ -19,7 +19,7 @@ extension VectorFlatView: VectorView {
     public init(size: Int) {
         self.init(view: TensorFlatView(shape: [size]))
     }
-    
+
     public init(_ elements: [Scalar]) {
         self.init(view: TensorFlatView(shape: [elements.count], elements: elements))
     }
@@ -28,7 +28,7 @@ extension VectorFlatView: VectorView {
         precondition(values.shape.count == 1, "Vector nested array must have rank 1")
         self.init(values.flatten())
     }
-    
+
     public subscript(_ indices: [Int]) -> Scalar {
         get {
             precondition(indices.count == 1, "VectorFlatView index rank must be 1")
@@ -39,20 +39,20 @@ extension VectorFlatView: VectorView {
             self[indices[0]] = newValue
         }
     }
-    
+
     public subscript(index: Int) -> Scalar {
         get { view[[index]] }
         set { view[[index]] = newValue }
     }
-    
+
     public subscript(range: Range<Int>) -> VectorFlatView<Scalar> {
         slice(SliceRange(range))
     }
-    
+
     public subscript(index: TensorSliceIndex) -> VectorFlatView<Scalar> {
         slice(index.sliceRange(dimensionSize: size))
     }
-    
+
     public func slice(_ range: SliceRange) -> VectorFlatView<Scalar> {
         VectorFlatView(view: view.slice(range))
     }

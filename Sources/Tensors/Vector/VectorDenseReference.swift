@@ -31,21 +31,21 @@ extension VectorDenseReference: PluVector {
         precondition(values.shape.count == 1, "Vector nested array must have rank 1")
         self.init(values.flatten())
     }
-    
+
     public func toArray(round: Bool) -> [S] {
         if round {
             return elements.map { $0.round() }
         }
         return elements
     }
-    
+
     public var shape: [Int] { [size] }
     public var rank: Int { shape.count }
-    
+
     public init(shape: [Int]) {
         precondition(shape.count == 1, "Vector shape must have rank 1")
         precondition(shape[0] >= 0, "Vector size must be non-negative")
-        
+
         self.init(Array(repeating: .zero, count: shape[0]))
     }
 
@@ -55,12 +55,12 @@ extension VectorDenseReference: PluVector {
 
         self.init(Array(repeating: initialValue, count: shape[0]))
     }
-    
+
     public init(shape: [Int], elements: [S]) {
         precondition(shape.count == 1, "Vector shape must have rank 1")
         precondition(shape[0] == elements.count,
                      "Vector shape \(shape) requires \(shape[0]) elements, but got \(elements.count)")
-        
+
         self.init(elements)
     }
 }

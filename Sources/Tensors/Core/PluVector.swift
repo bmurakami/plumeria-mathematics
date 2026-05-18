@@ -1,9 +1,9 @@
 public protocol PluVector: PluTensor, TensorStructure where S: PluScalar {
     var size: Int { get }
     subscript(index: Int) -> S { get set }
-    
+
     init(_ elements: [S])
-    
+
     func toArray(round: Bool) -> [S]
 }
 

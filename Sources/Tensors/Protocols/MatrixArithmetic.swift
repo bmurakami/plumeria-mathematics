@@ -18,5 +18,5 @@ extension MatrixArithmetic where Self: PluMatrix {
     }
 }
 
-public func * <M: PluMatrix, V: PluVector>(left: M, right: V) -> V where M.S == V.S {return left.times(right) }
+public func * <M: PluMatrix, V: PluVector>(left: M, right: V) -> V where M.S == V.S { return left.times(right) }
 public func * <L: PluMatrix, R: PluMatrix>(left: L, right: R) -> L where L.S == R.S { return left.times(right) }

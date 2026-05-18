@@ -49,12 +49,12 @@ extension TensorFlatView: TensorView {
             storage[linearIndex(indices)] = newValue
         }
     }
-    
+
     public subscript(_ indices: Int...) -> Scalar {
         get { self[indices] }
         set { self[indices] = newValue }
     }
-    
+
     public subscript(_ indices: TensorSliceIndex...) -> TensorFlatView<Scalar> {
         slice(indices)
     }
@@ -69,31 +69,31 @@ extension TensorFlatView {
             precondition(range.start <= dimensionSize, "Slice start is out of bounds")
             precondition(range.length == 0 || lastIndex < dimensionSize, "Slice end is out of bounds")
         }
-        
+
         let newOffset = offset + zip(ranges, strides).map { $0.start * $1 }.reduce(0, +)
         let newShape = ranges.map(\.length)
         let newStrides = zip(ranges, strides).map { $0.step * $1 }
-        
+
         return TensorFlatView(storage: storage, offset: newOffset, shape: newShape, strides: newStrides)
     }
-    
+
     public func slice(_ range: SliceRange) -> TensorFlatView<Scalar> {
         precondition(rank == 1, "Vector slice requires rank 1")
         return slice([range])
     }
-    
+
     public func slice(rows: SliceRange, columns: SliceRange) -> TensorFlatView<Scalar> {
         precondition(rank == 2, "Matrix slice requires rank 2")
         return slice([rows, columns])
     }
-    
+
     public func slice(_ indices: [TensorSliceIndex]) -> TensorFlatView<Scalar> {
         precondition(indices.count == rank, "Slice rank must match tensor rank")
-        
+
         var newOffset = offset
         var newShape: [Int] = []
         var newStrides: [Int] = []
-        
+
         for (dimension, index) in indices.enumerated() {
             switch index {
             case .index:
@@ -106,16 +106,16 @@ extension TensorFlatView {
                 newStrides.append(range.step * strides[dimension])
             }
         }
-        
+
         return TensorFlatView(storage: storage, offset: newOffset, shape: newShape, strides: newStrides)
     }
-    
+
     public func vectorSlice(_ indices: TensorSliceIndex...) -> VectorFlatView<Scalar> {
         let view = slice(indices)
         precondition(view.rank == 1, "Tensor slice result must have rank 1")
         return VectorFlatView(view: view)
     }
-    
+
     public func matrixSlice(_ indices: TensorSliceIndex...) -> MatrixFlatView<Scalar> {
         let view = slice(indices)
         precondition(view.rank == 2, "Tensor slice result must have rank 2")
@@ -140,24 +140,24 @@ extension TensorFlatView {
         }
         return strides
     }
-    
+
     private func linearIndex(_ indices: [Int]) -> Int {
         precondition(indices.count == rank, "Tensor index rank \(indices.count) does not match tensor rank \(rank)")
-        
+
         for (dimension, index) in indices.enumerated() {
             precondition(index >= 0 && index < shape[dimension], "Tensor index out of bounds")
         }
-        
+
         return offset + zip(indices, strides).map(*).reduce(0, +)
     }
-    
+
     private func validate(range: SliceRange, dimension: Int) {
         let dimensionSize = shape[dimension]
         let lastIndex = range.start + (range.length - 1) * range.step
         precondition(range.start <= dimensionSize, "Slice start is out of bounds")
         precondition(range.length == 0 || lastIndex < dimensionSize, "Slice end is out of bounds")
     }
-    
+
     private func tensorIndices(forFlatIndex linearIndex: Int) -> [Int] {
         var remaining = linearIndex
         return shape.map { dimension in
@@ -166,7 +166,7 @@ extension TensorFlatView {
             return index
         }
     }
-    
+
     private mutating func ensureUniqueStorage() {
         if !isKnownUniquelyReferenced(&storage) {
             storage = TensorStorage(storage.elements)

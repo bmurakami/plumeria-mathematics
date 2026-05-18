@@ -8,7 +8,7 @@ public enum BLAS {
     case accelerate
     #endif
     case openBLAS
-    
+
     public static var `default`: BLAS {
         #if canImport(Accelerate)
         return .accelerate

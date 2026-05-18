@@ -10,7 +10,7 @@ import Testing
 @Test func Complex_arithmetic() {
     let a = Complex(1.2, -2.3)
     let b = Complex(3.4, 5.6)
-    
+
     #expect(a.real == 1.2)
     #expect(a.imaginary == -2.3)
     #expect(-a == Complex(-1.2, 2.3))

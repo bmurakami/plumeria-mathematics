@@ -9,7 +9,10 @@ public enum TensorNestedArray<S: PluScalar>: Equatable {
         case .array(let subtensor):
             precondition(!subtensor.isEmpty, "Cannot infer tensor shape from an empty nested array")
             let subtensorShape = subtensor[0].shape
-            precondition(subtensor.allSatisfy { $0.shape == subtensorShape }, "Tensor nested arrays must be rectangular")
+            precondition(
+                subtensor.allSatisfy { $0.shape == subtensorShape },
+                "Tensor nested arrays must be rectangular"
+            )
             return [subtensor.count] + subtensorShape
         }
     }
