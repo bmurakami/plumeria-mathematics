@@ -1,13 +1,23 @@
-public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticReference, MatrixColumnMajorInitializable {
-    private var values: [[S]]
-    
-    // MARK: - PluMatrix conformance
-    public var rows: Int { return values.count }
-    public var columns: Int { return values[0].count }
-        
+public struct MatrixDenseReference<S: PluScalar>: MatrixArithmeticReference, TensorArithmeticReference,
+    MatrixColumnMajorInitializable {
+    private var elements: [[S]]
+
+    public init(_ values: [[S]]) {
+        precondition(!values.isEmpty && !values[0].isEmpty, "The matrix cannot be empty")
+        precondition(values.allSatisfy({ $0.count == values[0].count }), "The matrix is malformed")
+        self.elements = values
+    }
+}
+
+// MARK: - PluMatrix
+
+extension MatrixDenseReference: PluMatrix {
+    public var rows: Int { return elements.count }
+    public var columns: Int { return elements[0].count }
+
     public subscript(i: Int, j: Int) -> S {
-        get { return values[i][j] }
-        set { values[i][j] = newValue }
+        get { return elements[i][j] }
+        set { elements[i][j] = newValue }
     }
 
     public subscript(_ indices: [Int]) -> S {
@@ -22,12 +32,12 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticRef
     }
 
     public init(rows: Int, columns: Int, initialValue: S = .zero) {
-        values = Array(repeating: Array(repeating: initialValue, count: columns), count: rows)
+        elements = Array(repeating: Array(repeating: initialValue, count: columns), count: rows)
     }
 
     public init(rows: Int, columns: Int, values: [S]) {
         precondition(values.count == rows * columns, "Matrix value count must match matrix shape")
-        self.values = (0..<rows).map { row in
+        self.elements = (0..<rows).map { row in
             (0..<columns).map { column in values[row + rows * column] }
         }
     }
@@ -35,35 +45,51 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticRef
     public init(shape: [Int], initialValue: S) {
         precondition(shape.count == 2, "MatrixDenseReference shape must have rank 2")
         precondition(shape.allSatisfy { $0 >= 0 }, "Matrix shape dimensions must be non-negative")
-
         self.init(rows: shape[0], columns: shape[1], initialValue: initialValue)
-    }
-    
-    public init(_ values: [[S]]) {
-        precondition(!values.isEmpty && !values[0].isEmpty)
-        precondition(values.allSatisfy({ $0.count == values[0].count }))
-        
-        self.values = values
     }
 
     public init(_ values: TensorNestedArray<S>) {
         precondition(values.shape.count == 2, "Matrix nested array must have rank 2")
         self.init(Self.rows(from: values))
     }
-        
+
+    public func toArray(round: Bool) -> [[S]] {
+        if round {
+            return elements.map { $0.map { $0.round() } }
+        }
+        return elements
+    }
+
+    public func flatten(columnMajorOrder: Bool) -> [S] {
+        var flattened = Array(repeating: S.zero, count: rows * columns)
+        if columnMajorOrder {
+            for i in 0..<rows {
+                for j in 0..<columns {
+                    flattened[i + rows * j] = elements[i][j]
+                }
+            }
+            return flattened
+        }
+        return Array(elements.joined())
+    }
+}
+
+extension MatrixDenseReference: MatrixEigen where S == Double {
+    public typealias Eigenvectors = MatrixDenseReference<Complex>
+}
+
+extension MatrixDenseReference {
     public func times<V: PluVector>(_ v: V) -> V where S == V.S {
         precondition(self.columns == v.size, "Matrix columns don't match vector size")
-
         var sum: [S] = []
         sum.reserveCapacity(self.rows)
         for i in 0..<self.rows {
             var x: S = .zero
             for j in 0..<self.columns {
-                x = x + values[i][j] * v[j]
+                x = x + elements[i][j] * v[j]
             }
             sum.append(x)
         }
-
         return V(sum)
     }
 
@@ -74,43 +100,24 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticRef
             for j in 0..<m.columns {
                 var sum = S.zero
                 for k in 0..<columns {
-                    sum += values[i][k] * m[k, j]
+                    sum += elements[i][k] * m[k, j]
                 }
                 product[i, j] = sum
             }
         }
         return product
     }
+}
 
+extension MatrixDenseReference {
     public func transpose() -> Self {
-        var mt = MatrixDenseReference(rows: self.columns, columns: self.rows, initialValue: values[0][0])
+        var mt = MatrixDenseReference(rows: self.columns, columns: self.rows, initialValue: elements[0][0])
         for i in 0..<self.rows {
             for j in 0..<self.columns {
-                mt[j, i] = values[i][j]
+                mt[j, i] = elements[i][j]
             }
         }
         return mt
-    }
-    
-    public func toArray(round: Bool) -> [[S]] {
-        if round {
-            return values.map { $0.map { $0.round() }}
-        }
-        return values
-    }
-    
-    public func flatten(columnMajorOrder: Bool) -> [S] {
-        var flattened = Array(repeating: S.zero, count: rows * columns)
-        if columnMajorOrder {
-            for i in 0..<rows {
-                for j in 0..<columns {
-                    flattened[i + rows * j] = values[i][j]
-                }
-            }
-            return flattened
-        } else {
-            return Array(values.joined())
-        }
     }
 
     private static func rows(from values: TensorNestedArray<S>) -> [[S]] {
@@ -119,5 +126,4 @@ public struct MatrixDenseReference<S: PluScalar>: PluMatrix, TensorArithmeticRef
             (0..<shape[1]).map { column in values[[row, column]] }
         }
     }
-    
 }

@@ -1,7 +1,16 @@
-public struct VectorBase<Implementation: PluVector>: PluVector, TensorArithmeticReference {
+public struct VectorBase<Implementation: PluVector>: TensorArithmeticReference {
     public typealias S = Implementation.S
 
     private var implementation: Implementation
+
+    public init(_ implementation: Implementation) {
+        self.implementation = implementation
+    }
+}
+
+// MARK: - PluVector
+
+extension VectorBase: PluVector {
     public var size: Int { implementation.size }
 
     public subscript(index: Int) -> Implementation.S {
@@ -31,23 +40,29 @@ public struct VectorBase<Implementation: PluVector>: PluVector, TensorArithmetic
     public init(shape: [Int], initialValue: Implementation.S) {
         precondition(shape.count == 1, "Vector shape must have rank 1")
         precondition(shape[0] >= 0, "Vector size must be non-negative")
-
         self.implementation = Implementation(Array(repeating: initialValue, count: shape[0]))
     }
+
+    public func toArray(round: Bool) -> [Implementation.S] { implementation.toArray(round: round) }
+    public func magnitude() -> Implementation.S.Magnitude { implementation.magnitude() }
+}
+
+public struct MatrixBase<Implementation: PluMatrix>: TensorArithmeticReference {
+    public typealias S = Implementation.S
+
+    private var implementation: Implementation
 
     public init(_ implementation: Implementation) {
         self.implementation = implementation
     }
-
-    public func toArray(round: Bool) -> [Implementation.S] { implementation.toArray(round: round) }
 }
 
-public struct MatrixBase<Implementation: PluMatrix>: PluMatrix, TensorArithmeticReference {
-    public typealias S = Implementation.S
+// MARK: - PluMatrix
 
-    private var implementation: Implementation
+extension MatrixBase: PluMatrix {
     public var rows: Int { implementation.rows }
     public var columns: Int { implementation.columns }
+    public var det: Implementation.S { implementation.det }
 
     public subscript(i: Int, j: Int) -> Implementation.S {
         get { implementation[i, j] }
@@ -72,7 +87,6 @@ public struct MatrixBase<Implementation: PluMatrix>: PluMatrix, TensorArithmetic
     public init(shape: [Int], initialValue: Implementation.S) {
         precondition(shape.count == 2, "Matrix shape must have rank 2")
         precondition(shape.allSatisfy { $0 >= 0 }, "Matrix shape dimensions must be non-negative")
-
         self.init(rows: shape[0], columns: shape[1], initialValue: initialValue)
     }
 
@@ -84,11 +98,8 @@ public struct MatrixBase<Implementation: PluMatrix>: PluMatrix, TensorArithmetic
         self.implementation = Implementation(values)
     }
 
-    public init(_ implementation: Implementation) {
-        self.implementation = implementation
-    }
-
     public func times<V: PluVector>(_ v: V) -> V where V.S == Implementation.S { implementation.times(v) }
+
     public func times<M: PluMatrix>(_ m: M) -> MatrixBase<Implementation> where M.S == Implementation.S {
         MatrixBase(implementation.times(m))
     }
@@ -97,8 +108,21 @@ public struct MatrixBase<Implementation: PluMatrix>: PluMatrix, TensorArithmetic
         MatrixBase(implementation.transpose())
     }
 
+    public func inverse() -> MatrixBase<Implementation> {
+        MatrixBase(implementation.inverse())
+    }
+
     public func toArray(round: Bool) -> [[Implementation.S]] { implementation.toArray(round: round) }
     public func flatten(columnMajorOrder: Bool) -> [Implementation.S] {
         implementation.flatten(columnMajorOrder: columnMajorOrder)
+    }
+}
+
+extension MatrixBase: MatrixEigen where Implementation: MatrixEigen, Implementation.S == Double {
+    public typealias Eigenvectors = MatrixBase<Implementation.Eigenvectors>
+
+    public func eigen() -> Eigen<Eigenvectors> {
+        let result = implementation.eigen()
+        return Eigen(values: result.values, vectors: MatrixBase<Implementation.Eigenvectors>(result.vectors))
     }
 }

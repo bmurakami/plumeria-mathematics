@@ -3,10 +3,9 @@ public enum TensorSliceIndex: Equatable, Sendable {
     case range(Range<Int>)
     case step(Range<Int>, by: Int)
     case all
-    
+
     func sliceRange(dimensionSize: Int) -> SliceRange {
         precondition(dimensionSize >= 0, "Dimension size must be non-negative")
-        
         switch self {
         case .index:
             preconditionFailure("Integer index cannot be used as a slice range")
@@ -18,10 +17,9 @@ public enum TensorSliceIndex: Equatable, Sendable {
             return SliceRange.all(length: dimensionSize)
         }
     }
-    
+
     func fixedIndex(dimensionSize: Int) -> Int {
         precondition(dimensionSize >= 0, "Dimension size must be non-negative")
-        
         switch self {
         case .index(let index):
             precondition(index >= 0 && index < dimensionSize, "Tensor index out of bounds")

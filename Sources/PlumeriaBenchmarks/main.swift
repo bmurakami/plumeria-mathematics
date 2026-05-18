@@ -6,11 +6,7 @@ struct TimedResult {
     let median: Double
 }
 
-func measure(
-    samples: Int = 5,
-    iterations: Int = 1,
-    operation body: () -> Double
-) -> (TimedResult, Double) {
+func measure(samples: Int = 5, iterations: Int = 1, operation body: () -> Double) -> (TimedResult, Double) {
     var checksum = body()
     var times: [Double] = []
     for _ in 0..<samples {
@@ -25,12 +21,8 @@ func measure(
 }
 
 func compareBenchmark(
-    _ operation: String,
-    _ size: String,
-    samples: Int = 5,
-    iterations: Int = 1,
-    reference: () -> Double,
-    blas: () -> Double
+    _ operation: String, _ size: String, samples: Int = 5, iterations: Int = 1,
+    reference: () -> Double, blas: () -> Double
 ) -> Double {
     let (referenceResult, referenceChecksum) = measure(samples: samples, iterations: iterations, operation: reference)
     let (blasResult, blasChecksum) = measure(samples: samples, iterations: iterations, operation: blas)

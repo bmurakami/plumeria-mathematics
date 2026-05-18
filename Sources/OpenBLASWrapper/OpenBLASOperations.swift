@@ -1,13 +1,7 @@
 import COpenBLAS
 
 public enum OpenBLASOperations {
-    // MARK: - BLAS
-    public static func dgemv(
-        _ m: Int32, _ n: Int32,
-        _ a: [Double],
-        _ x: [Double],
-        _ y: inout [Double]
-    ) {
+    public static func dgemv(_ m: Int32, _ n: Int32, _ a: [Double], _ x: [Double], _ y: inout [Double]) {
         let alpha: Double = 1.0
         let beta = 0.0
         let lda = Int32(m)
@@ -25,18 +19,12 @@ public enum OpenBLASOperations {
         }
     }
 
-    public static func zgemv(
-        _ m: Int32, _ n: Int32,
-        _ a: inout [Double],
-        _ x: inout [Double],
-        _ y: inout [Double]
-    ) {
+    public static func zgemv(_ m: Int32, _ n: Int32, _ a: inout [Double], _ x: inout [Double], _ y: inout [Double]) {
         var alpha = [1.0, 0.0]
         var beta = [0.0, 0.0]
         let lda = Int32(m)
         let incx = Int32(1)
         let incy = Int32(1)
-
         alpha.withUnsafeMutableBufferPointer { alpha in
             beta.withUnsafeMutableBufferPointer { beta in
                 a.withUnsafeMutableBufferPointer { a in
@@ -53,12 +41,9 @@ public enum OpenBLASOperations {
             }
         }
     }
-    
+
     public static func dgemm(
-        _ m: Int32, _ n: Int32, _ k: Int32,
-        _ a: [Double],
-        _ b: [Double],
-        _ c: inout [Double]
+        _ m: Int32, _ n: Int32, _ k: Int32, _ a: [Double], _ b: [Double], _ c: inout [Double]
     ) {
         let alpha: Double = 1.0
         let beta = 0.0
@@ -78,17 +63,13 @@ public enum OpenBLASOperations {
     }
 
     public static func zgemm(
-        _ m: Int32, _ n: Int32, _ k: Int32,
-        _ a: inout [Double],
-        _ b: inout [Double],
-        _ c: inout [Double]
+        _ m: Int32, _ n: Int32, _ k: Int32, _ a: inout [Double], _ b: inout [Double], _ c: inout [Double]
     ) {
         var alpha = [1.0, 0.0]
         var beta = [0.0, 0.0]
         let lda = m
         let ldb = k
         let ldc = m
-
         alpha.withUnsafeMutableBufferPointer { alpha in
             beta.withUnsafeMutableBufferPointer { beta in
                 a.withUnsafeMutableBufferPointer { a in
@@ -149,11 +130,8 @@ public enum OpenBLASOperations {
         }
     }
 
-    // MARK: - LAPACK
     public static func dgesv(
-        _ n: Int32,
-        _ a: UnsafeMutablePointer<Double>,
-        _ b: UnsafeMutablePointer<Double>
+        _ n: Int32, _ a: UnsafeMutablePointer<Double>, _ b: UnsafeMutablePointer<Double>
     ) -> Int32 {
         var nMutable = n
         var nrhs = Int32(1)
@@ -161,23 +139,17 @@ public enum OpenBLASOperations {
         var ipiv = Array<Int32>(repeating: 0, count: Int(n))
         var ldb = n
         var info = Int32(0)
-        
         COpenBLAS.dgesv_(&nMutable, &nrhs, a, &lda, &ipiv, b, &ldb, &info)
         return info
     }
 
-    public static func zgesv(
-        _ n: Int32,
-        _ a: inout [Double],
-        _ b: inout [Double]
-    ) -> Int32 {
+    public static func zgesv(_ n: Int32, _ a: inout [Double], _ b: inout [Double]) -> Int32 {
         var nMutable = n
         var nrhs = Int32(1)
         var lda = n
         var ipiv = Array<Int32>(repeating: 0, count: Int(n))
         var ldb = n
         var info = Int32(0)
-
         _ = a.withUnsafeMutableBufferPointer { a in
             b.withUnsafeMutableBufferPointer { b in
                 COpenBLAS.zgesv_(
@@ -192,11 +164,7 @@ public enum OpenBLASOperations {
 
     #if !canImport(Accelerate)
     public static func dgeev(
-        _ n: Int32,
-        _ a: inout [Double],
-        _ wr: inout [Double],
-        _ wi: inout [Double],
-        _ vr: inout [Double]
+        _ n: Int32, _ a: inout [Double], _ wr: inout [Double], _ wi: inout [Double], _ vr: inout [Double]
     ) -> Int32 {
         var jobvl = Int8(UnicodeScalar("N").value)
         var jobvr = Int8(UnicodeScalar("V").value)
@@ -208,7 +176,6 @@ public enum OpenBLASOperations {
         var workQuery = 0.0
         var lwork = Int32(-1)
         var info = Int32(0)
-
         COpenBLAS.dgeev_(&jobvl, &jobvr, &nMutable, &a, &lda, &wr, &wi, &vl, &ldvl, &vr, &ldvr,
                          &workQuery, &lwork, &info, 1, 1)
         lwork = Int32(workQuery)

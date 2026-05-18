@@ -6,11 +6,14 @@ public enum TensorNestedArray<S: PluScalar>: Equatable {
         switch self {
         case .scalar:
             return []
-        case .array(let children):
-            precondition(!children.isEmpty, "Cannot infer tensor shape from an empty nested array")
-            let childShape = children[0].shape
-            precondition(children.allSatisfy { $0.shape == childShape }, "Tensor nested arrays must be rectangular")
-            return [children.count] + childShape
+        case .array(let subtensor):
+            precondition(!subtensor.isEmpty, "Cannot infer tensor shape from an empty nested array")
+            let subtensorShape = subtensor[0].shape
+            precondition(
+                subtensor.allSatisfy { $0.shape == subtensorShape },
+                "Tensor nested arrays must be rectangular"
+            )
+            return [subtensor.count] + subtensorShape
         }
     }
 
@@ -18,19 +21,20 @@ public enum TensorNestedArray<S: PluScalar>: Equatable {
         switch (self, indices.first) {
         case (.scalar(let value), nil):
             return value
-        case (.array(let children), .some(let index)):
-            precondition(index >= 0 && index < children.count, "Tensor index out of bounds")
-            return children[index][Array(indices.dropFirst())]
+        case (.array(let subtensor), .some(let index)):
+            precondition(index >= 0 && index < subtensor.count, "Tensor index out of bounds")
+            return subtensor[index][Array(indices.dropFirst())]
         default:
             preconditionFailure("Tensor index rank must match tensor rank")
         }
     }
 
-    public func columnMajorElements() -> [S] {
+    public func flatten() -> [S] {
         Self.indexCombinations(for: shape).map { self[$0] }
     }
 
     private static func indexCombinations(for shape: [Int]) -> [[Int]] {
+        // E.g., indexCombinations(for: [2, 3]) -> [[0, 0], [1, 0], [0, 1], [1, 1], [0, 2], [1, 2]]
         if shape.isEmpty { return [[]] }
         if shape.contains(0) { return [] }
         return (0..<shape.reduce(1, *)).map { flatIndex in
@@ -64,6 +68,8 @@ extension TensorNestedArray: ExpressibleByFloatLiteral where S: ExpressibleByFlo
         self = .scalar(S(floatLiteral: value))
     }
 }
+
+// MARK: - TensorStructure
 
 public protocol TensorStructure {
     associatedtype S: PluScalar

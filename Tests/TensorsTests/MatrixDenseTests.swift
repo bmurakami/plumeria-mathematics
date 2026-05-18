@@ -256,7 +256,7 @@ private func verifyTensorStructure<M: PluMatrix>(_ type: M.Type) where M.S == Do
     #expect(matrix.rank == 2)
 }
 
-private func verifyApproximatelyEqual<M: PluMatrix>(_ type: M.Type) where M.S == Double, M.Magnitude == Double {
+private func verifyApproximatelyEqual<M: PluMatrix>(_ type: M.Type) where M.S == Double {
     let a = M([[1.0, 2.0], [3.0, 4.0]])
     let b = M([[1.0, 2.0], [3.0, 4.0 + 1e-14]])
     let c = M([[1.0, 2.0], [3.0, 5.0]])

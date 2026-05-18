@@ -12,7 +12,7 @@ private func mixedScalarIndexCombinations(for shape: [Int]) -> [[Int]] {
 }
 
 public func * <T: TensorArithmeticReference>(tensor: T, scalar: Complex) -> TensorDenseBLAS<Complex>
-where T.S == Double {
+    where T.S == Double {
     var result = TensorDenseBLAS<Complex>(shape: tensor.shape, initialValue: .zero)
     for index in mixedScalarIndexCombinations(for: tensor.shape) {
         result[index] = tensor[index] * scalar
@@ -21,12 +21,12 @@ where T.S == Double {
 }
 
 public func * <T: TensorArithmeticReference>(scalar: Complex, tensor: T) -> TensorDenseBLAS<Complex>
-where T.S == Double {
+    where T.S == Double {
     tensor * scalar
 }
 
 public func / <T: TensorArithmeticReference>(tensor: T, scalar: Complex) -> TensorDenseBLAS<Complex>
-where T.S == Double {
+    where T.S == Double {
     var result = TensorDenseBLAS<Complex>(shape: tensor.shape, initialValue: .zero)
     for index in mixedScalarIndexCombinations(for: tensor.shape) {
         result[index] = tensor[index] / scalar
@@ -54,18 +54,15 @@ public func / <T: TensorArithmeticReference>(tensor: T, scalar: Double) -> T whe
     return result
 }
 
-public func * <T: TensorArithmeticBLAS>(tensor: T, scalar: Complex) -> TensorDenseBLAS<Complex>
-where T.S == Double {
+public func * <T: TensorArithmeticBLAS>(tensor: T, scalar: Complex) -> TensorDenseBLAS<Complex> where T.S == Double {
     TensorDenseBLAS<Complex>(shape: tensor.shape, elements: tensor.elements.map { $0 * scalar })
 }
 
-public func * <T: TensorArithmeticBLAS>(scalar: Complex, tensor: T) -> TensorDenseBLAS<Complex>
-where T.S == Double {
+public func * <T: TensorArithmeticBLAS>(scalar: Complex, tensor: T) -> TensorDenseBLAS<Complex> where T.S == Double {
     tensor * scalar
 }
 
-public func / <T: TensorArithmeticBLAS>(tensor: T, scalar: Complex) -> TensorDenseBLAS<Complex>
-where T.S == Double {
+public func / <T: TensorArithmeticBLAS>(tensor: T, scalar: Complex) -> TensorDenseBLAS<Complex> where T.S == Double {
     TensorDenseBLAS<Complex>(shape: tensor.shape, elements: tensor.elements.map { $0 / scalar })
 }
 

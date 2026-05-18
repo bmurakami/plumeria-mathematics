@@ -1,6 +1,5 @@
 public protocol TensorArithmetic: Equatable {
     associatedtype S: PluScalar
-    associatedtype Magnitude: FloatingPoint
 
     static func + (lhs: Self, rhs: Self) -> Self
     static func - (lhs: Self, rhs: Self) -> Self
@@ -8,7 +7,7 @@ public protocol TensorArithmetic: Equatable {
     static func * (tensor: Self, scalar: S) -> Self
     static func * (scalar: S, tensor: Self) -> Self
     static func / (tensor: Self, scalar: S) -> Self
-    func isApproximatelyEqual(to other: Self, relativeTolerance: Magnitude, norm: (Self) -> Magnitude) -> Bool
+    func isApproximatelyEqual(to other: Self, relativeTolerance: S.Magnitude, norm: (Self) -> S.Magnitude) -> Bool
 }
 
 extension TensorArithmetic {

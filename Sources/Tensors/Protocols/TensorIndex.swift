@@ -2,16 +2,15 @@ public struct TensorIndex: Hashable, ExpressibleByStringLiteral {
     public let symbol: String
 
     public init(_ symbol: String) {
-        precondition(!symbol.isEmpty, "Tensor index symbol must not be empty"); self.symbol = symbol
+        precondition(!symbol.isEmpty, "Tensor index symbol must not be empty")
+        self.symbol = symbol
     }
+
     public init(stringLiteral value: String) { self.init(value) }
 }
 
 public func multiply<L: TensorMultiplication, R: TensorMultiplication>(
-    _ left: L,
-    _ leftIndices: [TensorIndex],
-    _ right: R,
-    _ rightIndices: [TensorIndex]
+    _ left: L, _ leftIndices: [TensorIndex], _ right: R, _ rightIndices: [TensorIndex]
 ) -> L where L.S == R.S {
     precondition(leftIndices.count == left.rank, "Left index count must match tensor rank")
     precondition(rightIndices.count == right.rank, "Right index count must match tensor rank")
@@ -27,11 +26,8 @@ public func multiply<L: TensorMultiplication, R: TensorMultiplication>(
     return left.times(right, contract: contractedIndices)
 }
 
-public func multiply<L: TensorMultiplication, R: TensorMultiplication>(
-    _ left: L,
-    _ right: R,
-    _ notation: String
-) -> L where L.S == R.S {
+public func multiply<L: TensorMultiplication, R: TensorMultiplication>(_ left: L, _ right: R, _ notation: String) -> L
+    where L.S == R.S {
     let compact = notation.filter { !$0.isWhitespace }
     precondition(!compact.contains("->"), "Tensor multiplication notation must not include an output clause")
     let operands = compact.split(separator: ",", omittingEmptySubsequences: false)
@@ -39,12 +35,8 @@ public func multiply<L: TensorMultiplication, R: TensorMultiplication>(
     return multiply(left, tensorIndices(operands[0]), right, tensorIndices(operands[1]))
 }
 
-private func tensorIndices(_ symbols: Substring) -> [TensorIndex] { symbols.map { TensorIndex(String($0)) } }
-
 public func permute<T: TensorMultiplication>(
-    _ tensor: T,
-    from sourceIndices: [TensorIndex],
-    to destinationIndices: [TensorIndex]
+    _ tensor: T, from sourceIndices: [TensorIndex], to destinationIndices: [TensorIndex]
 ) -> T {
     precondition(sourceIndices.count == tensor.rank, "Source index count must match tensor rank")
     precondition(destinationIndices.count == tensor.rank, "Destination index count must match tensor rank")
@@ -76,6 +68,8 @@ public func permute<T: TensorMultiplication>(_ tensor: T, _ notation: String) ->
     precondition(!destination.contains("->"), "Tensor permutation notation must contain one output clause")
     return permute(tensor, from: tensorIndices(source), to: tensorIndices(destination))
 }
+
+private func tensorIndices(_ symbols: Substring) -> [TensorIndex] { symbols.map { TensorIndex(String($0)) } }
 
 private func indexCombinations(for shape: [Int]) -> [[Int]] {
     if shape.isEmpty { return [[]] }

@@ -6,7 +6,6 @@ import Tensors
 
 public func solveLinearDense<M: PluMatrix, V: PluVector>(_ A: M, _ b: V, blasImplementation: BLAS = .default) -> V {
     precondition(A.columns == b.size, "Number of columns in A must equal size of b")
-    
     let n = b.size
     var x: [V.S]
 

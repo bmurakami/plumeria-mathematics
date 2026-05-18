@@ -3,10 +3,19 @@ import AccelerateWrapper
 #endif
 import OpenBLASWrapper
 
-public struct VectorDenseBLAS<S: PluScalar>: PluVector, TensorArithmeticBLAS {
+public struct VectorDenseBLAS<S: PluScalar>: TensorArithmeticBLAS {
     public var elements: [S]
 
+    public init(_ values: [S]) {
+        self.elements = values
+    }
+}
+
+// MARK: - PluVector
+
+extension VectorDenseBLAS: PluVector {
     public var size: Int { elements.count }
+
     public subscript(i: Int) -> S {
         get { elements[i] }
         set { elements[i] = newValue }
@@ -23,13 +32,9 @@ public struct VectorDenseBLAS<S: PluScalar>: PluVector, TensorArithmeticBLAS {
         }
     }
 
-    public init(_ values: [S]) {
-        self.elements = values
-    }
-
     public init(_ values: TensorNestedArray<S>) {
         precondition(values.shape.count == 1, "Vector nested array must have rank 1")
-        self.init(values.columnMajorElements())
+        self.init(values.flatten())
     }
 
     public func toArray(round: Bool) -> [S] {
@@ -63,14 +68,14 @@ public struct VectorDenseBLAS<S: PluScalar>: PluVector, TensorArithmeticBLAS {
 
         self.init(elements)
     }
-}
 
-extension VectorDenseBLAS where S == Double {
-    public func magnitude() -> Double {
+    public func magnitude() -> S.Magnitude {
+        if S.self != Double.self { return elements.map { $0.magnitude * $0.magnitude }.reduce(.zero, +).squareRoot() }
+        let values = elements as! [Double]
         #if canImport(Accelerate)
-        return AccelerateOperations.dnrm2(Int32(size), elements)
+        return AccelerateOperations.dnrm2(Int32(size), values) as! S.Magnitude
         #else
-        return OpenBLASOperations.dnrm2(Int32(size), elements)
+        return OpenBLASOperations.dnrm2(Int32(size), values) as! S.Magnitude
         #endif
     }
 }

@@ -1,8 +1,10 @@
 import Testing
 @testable import Tensors
 
-protocol TensorDenseTestImplementation: TensorArithmetic, TensorMultiplication where S == Double, Magnitude == Double {
+protocol TensorDenseTestImplementation: TensorArithmetic, TensorMultiplication where S == Double {
     init(shape: [Int], initialValue: Double)
+    init(shape: [Int], elements: [Double])
+    func flatten() -> [Double]
 }
 
 extension TensorDenseReference: TensorDenseTestImplementation where S == Double {}
@@ -37,6 +39,13 @@ enum TensorImplementation: CaseIterable, CustomStringConvertible {
         switch self {
         case .reference: verifyNestedArrayInitializer(TensorDenseReference<Double>.self)
         case .blas: verifyNestedArrayInitializer(TensorDenseBLAS<Double>.self)
+        }
+    }
+
+    func checkFlatArrayRoundTrip() {
+        switch self {
+        case .reference: verifyFlatArrayRoundTrip(TensorDenseReference<Double>.self)
+        case .blas: verifyFlatArrayRoundTrip(TensorDenseBLAS<Double>.self)
         }
     }
 
@@ -99,6 +108,11 @@ func TensorDense_nestedArrayInitializer(implementation: TensorImplementation) {
 }
 
 @Test(arguments: TensorImplementation.allCases)
+func TensorDense_flatArrayRoundTrip(implementation: TensorImplementation) {
+    implementation.checkFlatArrayRoundTrip()
+}
+
+@Test(arguments: TensorImplementation.allCases)
 func TensorDense_supportsRankZeroTensors(implementation: TensorImplementation) { implementation.checkRankZeroTensors() }
 
 @Test(arguments: TensorImplementation.allCases)
@@ -158,6 +172,20 @@ private func verifyNestedArrayInitializer<T: TensorDenseTestImplementation>(_ ty
     #expect(tensor[[0, 0, 0]] == 1.0)
     #expect(tensor[[1, 1, 0]] == -2.0)
     #expect(tensor[[2, 1, 1]] == -3.0)
+}
+
+private func verifyFlatArrayRoundTrip<T: TensorDenseTestImplementation>(_ type: T.Type) {
+    let elements = [1.0, -1.0, 2.0, -2.0, 3.0, -3.0, 0.0, 1.0, -2.0, 2.0, 3.0, 0.0]
+    let tensor = T(shape: [2, 3, 2], elements: elements)
+    let copy = T(shape: tensor.shape, elements: tensor.flatten())
+
+    #expect(tensor.shape == [2, 3, 2])
+    #expect(tensor[[0, 0, 0]] == 1.0)
+    #expect(tensor[[1, 0, 0]] == -1.0)
+    #expect(tensor[[0, 1, 0]] == 2.0)
+    #expect(tensor[[1, 2, 1]] == 0.0)
+    #expect(tensor.flatten() == elements)
+    #expect(copy == tensor)
 }
 
 private func verifyRankZeroTensors<T: TensorDenseTestImplementation>(_ type: T.Type) {
