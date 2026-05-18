@@ -118,8 +118,11 @@ extension MatrixBase: PluMatrix {
     }
 }
 
-extension MatrixBase where Implementation: MatrixEigen {
-    public func eigen() -> Eigen {
-        implementation.eigen()
+extension MatrixBase: MatrixEigen where Implementation: MatrixEigen, Implementation.S == Double {
+    public typealias Eigenvectors = MatrixBase<Implementation.Eigenvectors>
+
+    public func eigen() -> Eigen<Eigenvectors> {
+        let result = implementation.eigen()
+        return Eigen(values: result.values, vectors: MatrixBase<Implementation.Eigenvectors>(result.vectors))
     }
 }

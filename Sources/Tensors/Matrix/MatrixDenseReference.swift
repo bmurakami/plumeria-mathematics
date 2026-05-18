@@ -74,7 +74,9 @@ extension MatrixDenseReference: PluMatrix {
     }
 }
 
-extension MatrixDenseReference: MatrixEigen where S == Double {}
+extension MatrixDenseReference: MatrixEigen where S == Double {
+    public typealias Eigenvectors = MatrixDenseReference<Complex>
+}
 
 extension MatrixDenseReference {
     public func times<V: PluVector>(_ v: V) -> V where S == V.S {

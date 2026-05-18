@@ -64,10 +64,10 @@ extension MatrixArithmeticReference {
 }
 
 extension MatrixArithmeticReference where Self: MatrixEigen, S == Double {
-    public func eigen() -> Eigen {
+    public func eigen() -> Eigen<Eigenvectors> {
         precondition(rows == columns, "Eigen decomposition requires a square matrix")
         if rows == 1 {
-            return Eigen(values: [Complex(self[0, 0], 0.0)], vectors: MatrixDenseBLAS<Complex>([[Complex(1.0, 0.0)]]))
+            return Eigen(values: [Complex(self[0, 0], 0.0)], vectors: Eigenvectors([[Complex(1.0, 0.0)]]))
         }
         precondition(rows == 2, "Reference eigen decomposition currently supports 1x1 and 2x2 matrices")
         let a = Complex(self[0, 0], 0.0), b = Complex(self[0, 1], 0.0)
@@ -78,9 +78,7 @@ extension MatrixArithmeticReference where Self: MatrixEigen, S == Double {
         let values = [(trace + root) / 2.0, (trace - root) / 2.0]
         let first = eigenvector(a: a, b: b, c: c, d: d, value: values[0], fallbackColumn: 0)
         let second = eigenvector(a: a, b: b, c: c, d: d, value: values[1], fallbackColumn: 1)
-        return Eigen(values: values, vectors: MatrixDenseBLAS<Complex>(rows: 2, columns: 2, values: [
-            first[0], first[1], second[0], second[1]
-        ]))
+        return Eigen(values: values, vectors: Eigenvectors([[first[0], second[0]], [first[1], second[1]]]))
     }
 
     private func eigenvector(a: Complex, b: Complex, c: Complex, d: Complex, value: Complex, fallbackColumn: Int)

@@ -289,7 +289,9 @@ extension MatrixDenseBLAS {
 }
 
 extension MatrixDenseBLAS: MatrixEigen where S == Double {
-    public func eigen() -> Eigen {
+    public typealias Eigenvectors = MatrixDenseBLAS<Complex>
+
+    public func eigen() -> Eigen<MatrixDenseBLAS<Complex>> {
         precondition(rows == columns, "Eigen decomposition requires a square matrix")
         let n = Int32(rows)
         var matrix = flatten()

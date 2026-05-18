@@ -74,7 +74,7 @@ private func expectEigenvalues(_ values: [Complex], _ expected: [Complex]) {
     }
 }
 
-private func expectEigenpair<M: MatrixEigen>(_ matrix: M, _ eigen: Eigen, column: Int) {
+private func expectEigenpair<M: MatrixEigen>(_ matrix: M, _ eigen: Eigen<M.Eigenvectors>, column: Int) {
     let vector = VectorDenseReference<Complex>((0..<matrix.rows).map { eigen.vectors[$0, column] })
     let left = complexMatrix(matrix) * vector
     let right = VectorDenseReference<Complex>((0..<vector.size).map { eigen.values[column] * vector[$0] })
