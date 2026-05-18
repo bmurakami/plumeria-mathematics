@@ -40,8 +40,6 @@ public func step(_ range: Range<Int>, by: Int) -> TensorSliceIndex {
     .step(range, by: by)
 }
 
-// MARK: - Integer Literals
-
 extension TensorSliceIndex: ExpressibleByIntegerLiteral {
     public init(integerLiteral value: Int) {
         self = .index(value)

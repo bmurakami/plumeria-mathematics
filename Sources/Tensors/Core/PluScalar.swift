@@ -33,8 +33,6 @@ extension Complex: TensorArithmetic, PluTensor, PluScalar {
     }
 }
 
-// MARK: - ComplexScalar
-
 extension Complex: ComplexScalar {
     public var star: Complex { conjugate }
     public var mod: Double { length }
