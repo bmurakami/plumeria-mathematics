@@ -6,9 +6,9 @@ public struct VectorDenseReference<S: PluScalar>: TensorArithmeticReference {
     }
 }
 
-// MARK: - PluVector
+// MARK: - VectorArithmeticReference
 
-extension VectorDenseReference: PluVector {
+extension VectorDenseReference: VectorArithmeticReference {
     public var size: Int { elements.count }
 
     public subscript(i: Int) -> S {

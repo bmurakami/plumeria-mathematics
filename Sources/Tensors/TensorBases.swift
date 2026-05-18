@@ -44,6 +44,7 @@ extension VectorBase: PluVector {
     }
 
     public func toArray(round: Bool) -> [Implementation.S] { implementation.toArray(round: round) }
+    public func magnitude() -> Implementation.S.Magnitude { implementation.magnitude() }
 }
 
 public struct MatrixBase<Implementation: PluMatrix>: TensorArithmeticReference {

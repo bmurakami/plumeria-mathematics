@@ -5,6 +5,7 @@ public protocol PluVector: PluTensor, TensorStructure where S: PluScalar {
     init(_ elements: [S])
 
     func toArray(round: Bool) -> [S]
+    func magnitude() -> S.Magnitude
 }
 
 extension PluVector {
@@ -17,10 +18,6 @@ extension PluVector {
 }
 
 extension PluVector {
-    public func magnitude() -> S.Magnitude {
-        toArray().map { $0.magnitude * $0.magnitude }.reduce(.zero, +).squareRoot()
-    }
-
     public func dot<V: PluVector>(_ other: V) -> S where V.S == S {
         precondition(size == other.size, "Vector sizes must match")
         var sum = S.zero
