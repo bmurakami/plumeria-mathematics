@@ -3,7 +3,7 @@ import Numerics
 
 public typealias Complex = Numerics.Complex<Double>
 
-public protocol PluScalar: ElementaryFunctions & PluTensor & Numeric {
+public protocol PluScalar: ElementaryFunctions & PluTensor & Numeric where Magnitude: FloatingPoint {
     static func / (lhs: Self, rhs: Self) -> Self
     func round(precision: Int) -> Self
 }

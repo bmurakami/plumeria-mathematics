@@ -3,7 +3,7 @@ public protocol TensorArithmeticReference: TensorArithmetic, TensorStructure whe
     subscript(_ indices: [Int]) -> S { get set }
 }
 
-extension TensorArithmeticReference where Magnitude == S.Magnitude {
+extension TensorArithmeticReference {
     public static func + (lhs: Self, rhs: Self) -> Self {
         precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
         var result = Self(shape: lhs.shape, initialValue: .zero)

@@ -1,7 +1,7 @@
 import Testing
 @testable import Tensors
 
-protocol TensorDenseTestImplementation: TensorArithmetic, TensorMultiplication where S == Double, Magnitude == Double {
+protocol TensorDenseTestImplementation: TensorArithmetic, TensorMultiplication where S == Double {
     init(shape: [Int], initialValue: Double)
     init(shape: [Int], elements: [Double])
     func flatten() -> [Double]

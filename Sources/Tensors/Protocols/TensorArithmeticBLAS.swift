@@ -8,7 +8,7 @@ public protocol TensorArithmeticBLAS: TensorArithmetic, TensorStructure where S:
     var elements: [S] { get set }
 }
 
-extension TensorArithmeticBLAS where Magnitude == S.Magnitude {
+extension TensorArithmeticBLAS {
     public static func + (lhs: Self, rhs: Self) -> Self {
         precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
         var result = lhs
