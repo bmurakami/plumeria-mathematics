@@ -117,7 +117,7 @@ extension MatrixBase: PluMatrix {
     }
 }
 
-extension MatrixBase where Implementation == MatrixDenseBLAS<Double> {
+extension MatrixBase where Implementation: MatrixEigen {
     public func eigen() -> Eigen {
         implementation.eigen()
     }

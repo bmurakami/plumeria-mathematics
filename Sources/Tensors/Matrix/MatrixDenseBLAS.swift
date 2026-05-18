@@ -1,13 +1,14 @@
 import AccelerateWrapper
 import OpenBLASWrapper
 
+// Usage of MatrixArithmeticReference is temporary until determinant and inverse use LAPACK.
 public struct MatrixDenseBLAS<S: PluScalar>: MatrixArithmeticReference, TensorArithmeticBLAS,
-    MatrixColumnMajorInitializable, Equatable { // Temporary until determinant and inverse use LAPACK.
+                                             MatrixColumnMajorInitializable, Equatable {
     private var view: TensorFlatView<S>
     public var blasImplementation: BLAS
 
     public init(rows: Int, columns: Int, values: [S]) {
-        self.init(rows: rows, columns: columns, values: values, blasImplementation: BLAS.default)
+        self.init(rows: rows, columns: columns, values: values, blasImplementation: .default)
     }
 
     init(rows: Int, columns: Int, values: [S], blasImplementation: BLAS) {
@@ -15,7 +16,7 @@ public struct MatrixDenseBLAS<S: PluScalar>: MatrixArithmeticReference, TensorAr
         self.blasImplementation = blasImplementation
     }
 
-    init(view: TensorFlatView<S>, blasImplementation: BLAS = BLAS.default) {
+    init(view: TensorFlatView<S>, blasImplementation: BLAS = .default) {
         precondition(view.rank == 2, "MatrixDenseBLAS view must have rank 2")
         self.view = view
         self.blasImplementation = blasImplementation
@@ -29,9 +30,8 @@ extension MatrixDenseBLAS: PluMatrix {
     public var columns: Int { view.shape[1] }
     public var shape: [Int] { [rows, columns] }
     public var rank: Int { shape.count }
-
     public var elements: [S] {
-        get { columnMajorElements() }
+        get { columnMajorStorage() }
         set {
             precondition(newValue.count == rows * columns, "Matrix element count must match matrix shape")
             view = TensorFlatView(shape: shape, elements: newValue)
@@ -61,7 +61,7 @@ extension MatrixDenseBLAS: PluMatrix {
     public init(rows: Int, columns: Int, initialValue: S = S.zero) {
         let elements = Array(repeating: initialValue, count: rows * columns)
         self.view = TensorFlatView(shape: [rows, columns], elements: elements)
-        self.blasImplementation = BLAS.default
+        self.blasImplementation = .default
     }
 
     public init(_ values: [[S]]) {
@@ -111,7 +111,7 @@ extension MatrixDenseBLAS: PluMatrix {
     }
 
     public func flatten(columnMajorOrder: Bool = true) -> [S] {
-        columnMajorOrder ? columnMajorElements() : viewElements(columnMajorOrder: false)
+        columnMajorOrder ? columnMajorStorage() : flattenedFromView(columnMajorOrder: false)
     }
 }
 
@@ -166,7 +166,7 @@ extension MatrixDenseBLAS {
         precondition(columns == v.size, "Number of columns in matrix must equal size of vector")
         switch S.self {
         case is Double.Type:
-            let A = columnMajorElements() as! [Double]
+            let A = columnMajorStorage() as! [Double]
             let x = vectorElements(v) as! [Double]
             var y = Array(repeating: 0.0, count: rows)
             switch blasImplementation {
@@ -200,8 +200,8 @@ extension MatrixDenseBLAS {
         precondition(columns == m.rows, "Number of matrix columns must match matrix rows")
         switch S.self {
         case is Double.Type:
-            let A = columnMajorElements() as! [Double]
-            let B = matrixElements(m) as! [Double]
+            let A = columnMajorStorage() as! [Double]
+            let B = columnMajorElements(from: m) as! [Double]
             var C = Array(repeating: 0.0, count: rows * m.columns)
             switch blasImplementation {
             #if canImport(Accelerate)
@@ -253,7 +253,7 @@ extension MatrixDenseBLAS {
     private func value(row: Int, column: Int) -> S { view[[row, column]] }
     private mutating func setValue(_ value: S, row: Int, column: Int) { view[[row, column]] = value }
 
-    private func viewElements(columnMajorOrder: Bool) -> [S] {
+    private func flattenedFromView(columnMajorOrder: Bool) -> [S] {
         var elements = Array(repeating: S.zero, count: rows * columns)
         for row in 0..<rows {
             for column in 0..<columns {
@@ -264,8 +264,8 @@ extension MatrixDenseBLAS {
         return elements
     }
 
-    private func columnMajorElements() -> [S] {
-        view.contiguousElements ?? viewElements(columnMajorOrder: true)
+    private func columnMajorStorage() -> [S] {
+        view.contiguousElements ?? flattenedFromView(columnMajorOrder: true)
     }
 
     private func vectorElements<V: PluVector>(_ vector: V) -> [S] where V.S == S {
@@ -273,8 +273,8 @@ extension MatrixDenseBLAS {
         return vector.toArray(round: false)
     }
 
-    private func matrixElements<M: PluMatrix>(_ matrix: M) -> [S] where M.S == S {
-        if let matrix = matrix as? MatrixDenseBLAS<S> { return matrix.columnMajorElements() }
+    private func columnMajorElements<M: PluMatrix>(from matrix: M) -> [S] where M.S == S {
+        if let matrix = matrix as? MatrixDenseBLAS<S> { return matrix.columnMajorStorage() }
         return matrix.flatten(columnMajorOrder: true)
     }
 
@@ -288,7 +288,7 @@ extension MatrixDenseBLAS {
 
 }
 
-extension MatrixDenseBLAS where S == Double {
+extension MatrixDenseBLAS: MatrixEigen where S == Double {
     public func eigen() -> Eigen {
         precondition(rows == columns, "Eigen decomposition requires a square matrix")
         let n = Int32(rows)

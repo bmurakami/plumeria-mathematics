@@ -26,6 +26,8 @@ extension TensorDenseBLAS: TensorStructure {
 }
 
 extension TensorDenseBLAS {
+    public func flatten() -> [S] { elements }
+
     public subscript(_ indices: [Int]) -> S {
         get { view[indices] }
         set { view[indices] = newValue }

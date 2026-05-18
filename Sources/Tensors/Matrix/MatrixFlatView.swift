@@ -14,7 +14,7 @@ extension MatrixFlatView: MatrixView {
     public var columns: Int { view.shape[1] }
     public var shape: [Int] { view.shape }
     public var rank: Int { view.rank }
-    public var elements: [Scalar] { viewElements(columnMajorOrder: true) }
+    public var elements: [Scalar] { flattenedFromView(columnMajorOrder: true) }
     public var isContiguous: Bool { view.isContiguous }
 
     public init(rows: Int, columns: Int) {
@@ -130,7 +130,7 @@ extension MatrixFlatView {
 }
 
 extension MatrixFlatView {
-    private func viewElements(columnMajorOrder: Bool) -> [Scalar] {
+    private func flattenedFromView(columnMajorOrder: Bool) -> [Scalar] {
         var elements = Array(repeating: Scalar.zero, count: rows * columns)
         for row in 0..<rows {
             for column in 0..<columns {

@@ -19,9 +19,22 @@ extension TensorDenseReference: TensorStructure {
         self.shape = shape
         self.storage = Self.storage(shape: shape, initialValue: initialValue)
     }
+
+    public init(shape: [Int], elements: [S]) {
+        precondition(shape.allSatisfy { $0 >= 0 }, "Tensor shape dimensions must be non-negative")
+        let count = shape.reduce(1, *)
+        precondition(count == elements.count,
+                     "Tensor shape \(shape) requires \(count) elements, but got \(elements.count)")
+        self.init(shape: shape, initialValue: .zero)
+        for (index, element) in zip(Self.indexCombinations(for: shape), elements) {
+            self[index] = element
+        }
+    }
 }
 
 extension TensorDenseReference {
+    public func flatten() -> [S] { elements }
+
     public subscript(_ indices: [Int]) -> S {
         get {
             precondition(indices.count == rank, "Tensor index rank must match tensor rank")
@@ -78,5 +91,18 @@ extension TensorDenseReference {
         precondition(index >= 0 && index < subtensors.count, "Tensor index out of bounds")
         setValue(value, in: &subtensors[index], at: Array(indices.dropFirst()))
         storage = .array(subtensors)
+    }
+
+    private static func indexCombinations(for shape: [Int]) -> [[Int]] {
+        if shape.isEmpty { return [[]] }
+        if shape.contains(0) { return [] }
+        return (0..<shape.reduce(1, *)).map { flatIndex in
+            var remaining = flatIndex
+            return shape.map { dimension in
+                let index = remaining % dimension
+                remaining /= dimension
+                return index
+            }
+        }
     }
 }

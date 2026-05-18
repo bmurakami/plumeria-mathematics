@@ -21,28 +21,60 @@ import Testing
     #expect((matrix * inverse).isApproximatelyEqual(to: identity, relativeTolerance: 1e-12))
 }
 
-@Test func Matrix_eigenRealEigenvalues() {
-    let matrix = MatrixDenseBLAS<Double>([[2.0, 0.0],
-                                          [0.0, 3.0]])
+extension MatrixImplementation {
+    func checkEigenRealEigenvalues() {
+        switch self {
+        case .reference: verifyEigenRealEigenvalues(MatrixDenseReference<Double>.self)
+        case .blas: verifyEigenRealEigenvalues(MatrixDenseBLAS<Double>.self)
+        }
+    }
+
+    func checkEigenComplexEigenvalues() {
+        switch self {
+        case .reference: verifyEigenComplexEigenvalues(MatrixDenseReference<Double>.self)
+        case .blas: verifyEigenComplexEigenvalues(MatrixDenseBLAS<Double>.self)
+        }
+    }
+}
+
+@Test(arguments: MatrixImplementation.allCases)
+func Matrix_eigenRealEigenvalues(implementation: MatrixImplementation) {
+    implementation.checkEigenRealEigenvalues()
+}
+
+@Test(arguments: MatrixImplementation.allCases)
+func Matrix_eigenComplexEigenvalues(implementation: MatrixImplementation) {
+    implementation.checkEigenComplexEigenvalues()
+}
+
+private func verifyEigenRealEigenvalues<M: MatrixEigen>(_ type: M.Type) {
+    let matrix = M([[2.0, 0.0],
+                    [0.0, 3.0]])
     let eigen = matrix.eigen()
 
-    #expect(eigen.values == [Complex(2.0, 0.0), Complex(3.0, 0.0)])
+    expectEigenvalues(eigen.values, [Complex(2.0, 0.0), Complex(3.0, 0.0)])
     expectEigenpair(matrix, eigen, column: 0)
     expectEigenpair(matrix, eigen, column: 1)
 }
 
-@Test func Matrix_eigenComplexEigenvalues() {
-    let matrix = MatrixDenseBLAS<Double>([[0.0, -1.0],
-                                          [1.0, 0.0]])
+private func verifyEigenComplexEigenvalues<M: MatrixEigen>(_ type: M.Type) {
+    let matrix = M([[0.0, -1.0],
+                    [1.0, 0.0]])
     let eigen = matrix.eigen()
 
-    #expect(eigen.values[0].isApproximatelyEqual(to: Complex(0.0, 1.0)))
-    #expect(eigen.values[1].isApproximatelyEqual(to: Complex(0.0, -1.0)))
+    expectEigenvalues(eigen.values, [Complex(0.0, 1.0), Complex(0.0, -1.0)])
     expectEigenpair(matrix, eigen, column: 0)
     expectEigenpair(matrix, eigen, column: 1)
 }
 
-private func expectEigenpair(_ matrix: MatrixDenseBLAS<Double>, _ eigen: Eigen, column: Int) {
+private func expectEigenvalues(_ values: [Complex], _ expected: [Complex]) {
+    #expect(values.count == expected.count)
+    for value in expected {
+        #expect(values.contains { $0.isApproximatelyEqual(to: value, relativeTolerance: 1e-12) })
+    }
+}
+
+private func expectEigenpair<M: MatrixEigen>(_ matrix: M, _ eigen: Eigen, column: Int) {
     let vector = VectorDenseReference<Complex>((0..<matrix.rows).map { eigen.vectors[$0, column] })
     let left = complexMatrix(matrix) * vector
     let right = VectorDenseReference<Complex>((0..<vector.size).map { eigen.values[column] * vector[$0] })
@@ -50,7 +82,7 @@ private func expectEigenpair(_ matrix: MatrixDenseBLAS<Double>, _ eigen: Eigen, 
     #expect(left.isApproximatelyEqual(to: right, relativeTolerance: 1e-12))
 }
 
-private func complexMatrix(_ matrix: MatrixDenseBLAS<Double>) -> MatrixDenseBLAS<Complex> {
+private func complexMatrix<M: MatrixEigen>(_ matrix: M) -> MatrixDenseBLAS<Complex> {
     MatrixDenseBLAS<Complex>((0..<matrix.rows).map { row in
         (0..<matrix.columns).map { column in Complex(matrix[row, column], 0.0) }
     })
