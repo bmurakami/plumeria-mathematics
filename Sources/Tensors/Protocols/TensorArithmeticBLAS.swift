@@ -1,8 +1,3 @@
-#if canImport(Accelerate)
-import AccelerateWrapper
-#endif
-import OpenBLASWrapper
-
 public protocol TensorArithmeticBLAS: TensorArithmetic, TensorStructure where S: PluScalar {
     init(shape: [Int], initialValue: S)
     var elements: [S] { get set }
@@ -51,12 +46,12 @@ extension TensorArithmeticBLAS {
         case is Double.Type:
             let x = right as! [Double]
             var y = left as! [Double]
-            axpy(Int32(y.count), x, &y)
+            BLAS.axpy(Int32(y.count), x, &y)
             return y as! [S]
         case is Complex.Type:
             var x = interleaved(right as! [Complex])
             var y = interleaved(left as! [Complex])
-            zaxpy(Int32(right.count), &x, &y)
+            BLAS.zaxpy(Int32(right.count), &x, &y)
             return complexValues(y) as! [S]
         default:
             fatalError("Unsupported scalar type")
@@ -67,48 +62,16 @@ extension TensorArithmeticBLAS {
         switch S.self {
         case is Double.Type:
             var result = values as! [Double]
-            scal(Int32(result.count), scalar as! Double, &result)
+            BLAS.scal(Int32(result.count), scalar as! Double, &result)
             return result as! [S]
         case is Complex.Type:
             var result = interleaved(values as! [Complex])
             var alpha = interleaved([scalar as! Complex])
-            zscal(Int32(values.count), &alpha, &result)
+            BLAS.zscal(Int32(values.count), &alpha, &result)
             return complexValues(result) as! [S]
         default:
             fatalError("Unsupported scalar type")
         }
-    }
-
-    private static func axpy(_ n: Int32, _ x: [Double], _ y: inout [Double]) {
-        #if canImport(Accelerate)
-        AccelerateOperations.daxpy(n, x, &y)
-        #else
-        OpenBLASOperations.daxpy(n, x, &y)
-        #endif
-    }
-
-    private static func scal(_ n: Int32, _ alpha: Double, _ x: inout [Double]) {
-        #if canImport(Accelerate)
-        AccelerateOperations.dscal(n, alpha, &x)
-        #else
-        OpenBLASOperations.dscal(n, alpha, &x)
-        #endif
-    }
-
-    private static func zaxpy(_ n: Int32, _ x: inout [Double], _ y: inout [Double]) {
-        #if canImport(Accelerate)
-        AccelerateOperations.zaxpy(n, &x, &y)
-        #else
-        OpenBLASOperations.zaxpy(n, &x, &y)
-        #endif
-    }
-
-    private static func zscal(_ n: Int32, _ alpha: inout [Double], _ x: inout [Double]) {
-        #if canImport(Accelerate)
-        AccelerateOperations.zscal(n, &alpha, &x)
-        #else
-        OpenBLASOperations.zscal(n, &alpha, &x)
-        #endif
     }
 
     private static func interleaved(_ values: [Complex]) -> [Double] {
