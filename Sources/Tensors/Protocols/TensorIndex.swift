@@ -27,7 +27,7 @@ public func multiply<L: TensorMultiplication, R: TensorMultiplication>(
 }
 
 public func multiply<L: TensorMultiplication, R: TensorMultiplication>(_ left: L, _ right: R, _ notation: String) -> L
-where L.S == R.S {
+    where L.S == R.S {
     let compact = notation.filter { !$0.isWhitespace }
     precondition(!compact.contains("->"), "Tensor multiplication notation must not include an output clause")
     let operands = compact.split(separator: ",", omittingEmptySubsequences: false)
