@@ -2,6 +2,24 @@
 import Accelerate
 
 public struct AccelerateOperations {
+    public static func sgemv(_ m: Int32, _ n: Int32, _ a: [Float], _ x: [Float], _ y: inout [Float]) {
+        let alpha: Float = 1.0
+        let beta: Float = 0.0
+        let lda = Int32(m)
+        let incx = Int32(1)
+        let incy = Int32(1)
+        a.withUnsafeBufferPointer { a in
+            x.withUnsafeBufferPointer { x in
+                y.withUnsafeMutableBufferPointer { y in
+                    Accelerate.cblas_sgemv(
+                        CblasColMajor, CblasNoTrans, m, n, alpha, a.baseAddress!, lda, x.baseAddress!, incx,
+                        beta, y.baseAddress!, incy
+                    )
+                }
+            }
+        }
+    }
+
     public static func dgemv(_ m: Int32, _ n: Int32, _ a: [Double], _ x: [Double], _ y: inout [Double]) {
         let alpha: Double = 1.0
         let beta = 0.0
@@ -66,6 +84,26 @@ public struct AccelerateOperations {
         }
     }
 
+    public static func sgemm(
+        _ m: Int32, _ n: Int32, _ k: Int32, _ a: [Float], _ b: [Float], _ c: inout [Float]
+    ) {
+        let alpha: Float = 1.0
+        let beta: Float = 0.0
+        let lda = m
+        let ldb = k
+        let ldc = m
+        a.withUnsafeBufferPointer { a in
+            b.withUnsafeBufferPointer { b in
+                c.withUnsafeMutableBufferPointer { c in
+                    Accelerate.cblas_sgemm(
+                        CblasColMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha, a.baseAddress!, lda,
+                        b.baseAddress!, ldb, beta, c.baseAddress!, ldc
+                    )
+                }
+            }
+        }
+    }
+
     public static func zgemm(
         _ m: Int32, _ n: Int32, _ k: Int32, _ a: inout [Double], _ b: inout [Double], _ c: inout [Double]
     ) {
@@ -104,15 +142,37 @@ public struct AccelerateOperations {
         }
     }
 
+    public static func saxpy(_ n: Int32, _ x: [Float], _ y: inout [Float]) {
+        let alpha: Float = 1.0
+        let inc = Int32(1)
+        x.withUnsafeBufferPointer { x in
+            y.withUnsafeMutableBufferPointer { y in
+                Accelerate.cblas_saxpy(n, alpha, x.baseAddress!, inc, y.baseAddress!, inc)
+            }
+        }
+    }
+
     public static func dscal(_ n: Int32, _ alpha: Double, _ x: inout [Double]) {
         let inc = Int32(1)
         Accelerate.cblas_dscal(n, alpha, &x, inc)
+    }
+
+    public static func sscal(_ n: Int32, _ alpha: Float, _ x: inout [Float]) {
+        let inc = Int32(1)
+        Accelerate.cblas_sscal(n, alpha, &x, inc)
     }
 
     public static func dnrm2(_ n: Int32, _ x: [Double]) -> Double {
         let inc = Int32(1)
         return x.withUnsafeBufferPointer { x in
             Accelerate.cblas_dnrm2(n, x.baseAddress!, inc)
+        }
+    }
+
+    public static func snrm2(_ n: Int32, _ x: [Float]) -> Float {
+        let inc = Int32(1)
+        return x.withUnsafeBufferPointer { x in
+            Accelerate.cblas_snrm2(n, x.baseAddress!, inc)
         }
     }
 

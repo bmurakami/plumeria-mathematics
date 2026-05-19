@@ -30,6 +30,16 @@ func compareBenchmark(
     return referenceChecksum + blasChecksum
 }
 
+func compareFloatBenchmark(
+    _ operation: String, _ size: String, samples: Int = 5, iterations: Int = 1,
+    double: () -> Double, float: () -> Double
+) -> Double {
+    let (doubleResult, doubleChecksum) = measure(samples: samples, iterations: iterations, operation: double)
+    let (floatResult, floatChecksum) = measure(samples: samples, iterations: iterations, operation: float)
+    printFloatBenchmark(operation, size, double: doubleResult, float: floatResult)
+    return doubleChecksum + floatChecksum
+}
+
 func summarize(_ values: [Double]) -> TimedResult {
     let sorted = values.sorted()
     return TimedResult(best: sorted[0], median: sorted[sorted.count / 2])
@@ -47,6 +57,14 @@ func printBenchmark(_ operation: String, _ size: String, reference: TimedResult,
     print("")
 }
 
+func printFloatBenchmark(_ operation: String, _ size: String, double: TimedResult, float: TimedResult) {
+    print("  \(operation) \(size)")
+    print("    Double: median \(format(double.median)) ms, best \(format(double.best)) ms")
+    print("    Float:  median \(format(float.median)) ms, best \(format(float.best)) ms")
+    print("    ratio:  \(ratio(double: double.median, float: float.median))")
+    print("")
+}
+
 func ratio(reference: Double, blas: Double) -> String {
     if reference == 0 && blas == 0 { return "same speed" }
     if reference == 0 { return "reference faster" }
@@ -55,6 +73,16 @@ func ratio(reference: Double, blas: Double) -> String {
         return "reference \(format(blas / reference))x faster"
     }
     return "BLAS \(format(reference / blas))x faster"
+}
+
+func ratio(double: Double, float: Double) -> String {
+    if double == 0 && float == 0 { return "same speed" }
+    if double == 0 { return "Double faster" }
+    if float == 0 { return "Float faster" }
+    if double < float {
+        return "Double \(format(float / double))x faster"
+    }
+    return "Float \(format(double / float))x faster"
 }
 
 func commandOutput(_ command: String, _ arguments: [String]) -> String {
@@ -78,6 +106,10 @@ func vectorValues(count: Int) -> [Double] {
     (0..<count).map { Double(($0 % 97) - 48) / 7.0 }
 }
 
+func vectorFloatValues(count: Int) -> [Float] {
+    vectorValues(count: count).map(Float.init)
+}
+
 func matrixRows(rows: Int, columns: Int) -> [[Double]] {
     var values: [[Double]] = []
     values.reserveCapacity(rows)
@@ -92,10 +124,21 @@ func matrixRows(rows: Int, columns: Int) -> [[Double]] {
     return values
 }
 
+func matrixFloatRows(rows: Int, columns: Int) -> [[Float]] {
+    matrixRows(rows: rows, columns: columns).map { $0.map(Float.init) }
+}
+
 func fillTensor<T: TensorMultiplication>(_ tensor: inout T) where T.S == Double {
     for index in indexCombinations(for: tensor.shape) {
         let weighted = index.enumerated().reduce(0) { $0 + ($1.offset + 1) * ($1.element + 1) }
         tensor[index] = Double((weighted % 29) - 14) / 5.0
+    }
+}
+
+func fillFloatTensor<T: TensorMultiplication>(_ tensor: inout T) where T.S == Float {
+    for index in indexCombinations(for: tensor.shape) {
+        let weighted = index.enumerated().reduce(0) { $0 + ($1.offset + 1) * ($1.element + 1) }
+        tensor[index] = Float((weighted % 29) - 14) / 5.0
     }
 }
 
@@ -251,6 +294,69 @@ func benchmarkTensors() -> Double {
     return checksum
 }
 
+func benchmarkFloatScalars() -> Double {
+    print("Float vs Double")
+    let doubleVector = VectorDenseBLAS(vectorValues(count: 100_000))
+    let floatVector = VectorDenseBLAS(vectorFloatValues(count: 100_000))
+    let doubleMatrixVector = VectorDenseBLAS(vectorValues(count: 384))
+    let floatMatrixVector = VectorDenseBLAS(vectorFloatValues(count: 384))
+    let doubleMatrixRows = matrixRows(rows: 384, columns: 384)
+    let floatMatrixRows = matrixFloatRows(rows: 384, columns: 384)
+    let doubleMatrix = MatrixDenseBLAS(doubleMatrixRows)
+    let floatMatrix = MatrixDenseBLAS(floatMatrixRows)
+    let doubleLeftRows = matrixRows(rows: 128, columns: 128)
+    let floatLeftRows = matrixFloatRows(rows: 128, columns: 128)
+    let doubleRightRows = matrixRows(rows: 128, columns: 128)
+    let floatRightRows = matrixFloatRows(rows: 128, columns: 128)
+    let doubleLeftMatrix = MatrixDenseBLAS(doubleLeftRows)
+    let floatLeftMatrix = MatrixDenseBLAS(floatLeftRows)
+    let doubleRightMatrix = MatrixDenseBLAS(doubleRightRows)
+    let floatRightMatrix = MatrixDenseBLAS(floatRightRows)
+    var doubleTensor = TensorDenseBLAS<Double>(shape: [16, 24, 16], initialValue: 0.0)
+    var doubleRightTensor = TensorDenseBLAS<Double>(shape: [16, 16], initialValue: 0.0)
+    var floatTensor = TensorDenseBLAS<Float>(shape: [16, 24, 16], initialValue: 0.0)
+    var floatRightTensor = TensorDenseBLAS<Float>(shape: [16, 16], initialValue: 0.0)
+    fillTensor(&doubleTensor)
+    fillTensor(&doubleRightTensor)
+    fillFloatTensor(&floatTensor)
+    fillFloatTensor(&floatRightTensor)
+    var checksum = 0.0
+    checksum += compareFloatBenchmark("vector add", "100,000", iterations: 10, double: {
+        let result = doubleVector + doubleVector
+        return result[0] + result[result.size - 1]
+    }, float: {
+        let result = floatVector + floatVector
+        return Double(result[0] + result[result.size - 1])
+    })
+    checksum += compareFloatBenchmark("magnitude", "100,000", iterations: 10, double: {
+        doubleVector.magnitude()
+    }, float: {
+        Double(floatVector.magnitude())
+    })
+    checksum += compareFloatBenchmark("matrix-vector multiply", "384x384", double: {
+        let result = doubleMatrix * doubleMatrixVector
+        return result[0] + result[result.size - 1]
+    }, float: {
+        let result = floatMatrix * floatMatrixVector
+        return Double(result[0] + result[result.size - 1])
+    })
+    checksum += compareFloatBenchmark("matrix-matrix multiply", "128x128", double: {
+        let result = doubleLeftMatrix * doubleRightMatrix
+        return result[0, 0] + result[result.rows - 1, result.columns - 1]
+    }, float: {
+        let result = floatLeftMatrix * floatRightMatrix
+        return Double(result[0, 0] + result[result.rows - 1, result.columns - 1])
+    })
+    checksum += compareFloatBenchmark("tensor contraction", "16x24x16,16x16", double: {
+        let result = multiply(doubleTensor, ["i", "j", "k"], doubleRightTensor, ["k", "l"])
+        return result[[0, 0, 0]] + result[[15, 23, 15]]
+    }, float: {
+        let result = multiply(floatTensor, ["i", "j", "k"], floatRightTensor, ["k", "l"])
+        return Double(result[[0, 0, 0]] + result[[15, 23, 15]])
+    })
+    return checksum
+}
+
 let swiftVersion = commandOutput("/usr/bin/env", ["swift", "--version"])
 let platform = commandOutput("/usr/bin/env", ["uname", "-m"])
 
@@ -258,5 +364,5 @@ print("PlumeriaBenchmarks")
 print("Swift: \(swiftVersion)")
 print("Platform: \(platform)")
 print("")
-let blackHole = benchmarkVectors() + benchmarkMatrices() + benchmarkTensors()
+let blackHole = benchmarkVectors() + benchmarkMatrices() + benchmarkTensors() + benchmarkFloatScalars()
 print("Checksum: \(blackHole)")

@@ -53,5 +53,7 @@ import Testing
 @Test func PluScalar_roundsWithPrecision() {
     #expect(1.23456.round() == 1.23456)
     #expect(1.23456.round(precision: 2) == 1.23)
+    #expect(Float(1.2345678).round() == 1.234568)
+    #expect(Float(1.2345678).round(precision: 2) == 1.23)
     #expect(Complex(1.23456, -2.34567).round(precision: 2) == Complex(1.23, -2.35))
 }
