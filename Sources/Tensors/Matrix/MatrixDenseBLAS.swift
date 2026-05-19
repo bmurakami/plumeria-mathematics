@@ -178,6 +178,19 @@ extension MatrixDenseBLAS {
                 OpenBLASOperations.dgemv(Int32(rows), Int32(columns), A, x, &y)
             }
             return V(y as! [S])
+        case is Float.Type:
+            let A = columnMajorStorage() as! [Float]
+            let x = vectorElements(v) as! [Float]
+            var y = Array(repeating: Float.zero, count: rows)
+            switch blasImplementation {
+            #if canImport(Accelerate)
+            case .accelerate:
+                AccelerateOperations.sgemv(Int32(rows), Int32(columns), A, x, &y)
+            #endif
+            case .openBLAS:
+                OpenBLASOperations.sgemv(Int32(rows), Int32(columns), A, x, &y)
+            }
+            return V(y as! [S])
         case is Complex.Type:
             var A = MatrixDenseBLAS.interleaved(flatten() as! [Complex])
             var x = MatrixDenseBLAS.interleaved(v.toArray(round: false) as! [Complex])
@@ -210,6 +223,19 @@ extension MatrixDenseBLAS {
             #endif
             case .openBLAS:
                 OpenBLASOperations.dgemm(Int32(rows), Int32(m.columns), Int32(columns), A, B, &C)
+            }
+            return MatrixDenseBLAS(rows: rows, columns: m.columns, values: C as! [S])
+        case is Float.Type:
+            let A = columnMajorStorage() as! [Float]
+            let B = columnMajorElements(from: m) as! [Float]
+            var C = Array(repeating: Float.zero, count: rows * m.columns)
+            switch blasImplementation {
+            #if canImport(Accelerate)
+            case .accelerate:
+                AccelerateOperations.sgemm(Int32(rows), Int32(m.columns), Int32(columns), A, B, &C)
+            #endif
+            case .openBLAS:
+                OpenBLASOperations.sgemm(Int32(rows), Int32(m.columns), Int32(columns), A, B, &C)
             }
             return MatrixDenseBLAS(rows: rows, columns: m.columns, values: C as! [S])
         case is Complex.Type:

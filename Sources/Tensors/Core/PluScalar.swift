@@ -23,6 +23,15 @@ extension Double: PluScalar {
     }
 }
 
+extension Float: PluScalar {
+    public typealias S = Float
+
+    public func round(precision: Int = 6) -> Float {
+        let multiplier = Float(Foundation.pow(10.0, Double(precision)))
+        return (self * multiplier).rounded() / multiplier
+    }
+}
+
 extension Complex: TensorArithmetic, PluTensor, PluScalar {
     public typealias S = Complex
 

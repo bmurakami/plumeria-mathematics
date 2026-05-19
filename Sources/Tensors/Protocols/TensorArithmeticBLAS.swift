@@ -48,6 +48,11 @@ extension TensorArithmeticBLAS {
             var y = left as! [Double]
             BLAS.axpy(Int32(y.count), x, &y)
             return y as! [S]
+        case is Float.Type:
+            let x = right as! [Float]
+            var y = left as! [Float]
+            BLAS.axpy(Int32(y.count), x, &y)
+            return y as! [S]
         case is Complex.Type:
             var x = interleaved(right as! [Complex])
             var y = interleaved(left as! [Complex])
@@ -63,6 +68,10 @@ extension TensorArithmeticBLAS {
         case is Double.Type:
             var result = values as! [Double]
             BLAS.scal(Int32(result.count), scalar as! Double, &result)
+            return result as! [S]
+        case is Float.Type:
+            var result = values as! [Float]
+            BLAS.scal(Int32(result.count), scalar as! Float, &result)
             return result as! [S]
         case is Complex.Type:
             var result = interleaved(values as! [Complex])

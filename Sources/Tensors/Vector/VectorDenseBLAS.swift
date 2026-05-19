@@ -70,12 +70,23 @@ extension VectorDenseBLAS: PluVector {
     }
 
     public func magnitude() -> S.Magnitude {
-        if S.self != Double.self { return elements.map { $0.magnitude * $0.magnitude }.reduce(.zero, +).squareRoot() }
-        let values = elements as! [Double]
-        #if canImport(Accelerate)
-        return AccelerateOperations.dnrm2(Int32(size), values) as! S.Magnitude
-        #else
-        return OpenBLASOperations.dnrm2(Int32(size), values) as! S.Magnitude
-        #endif
+        switch S.self {
+        case is Double.Type:
+            let values = elements as! [Double]
+            #if canImport(Accelerate)
+            return AccelerateOperations.dnrm2(Int32(size), values) as! S.Magnitude
+            #else
+            return OpenBLASOperations.dnrm2(Int32(size), values) as! S.Magnitude
+            #endif
+        case is Float.Type:
+            let values = elements as! [Float]
+            #if canImport(Accelerate)
+            return AccelerateOperations.snrm2(Int32(size), values) as! S.Magnitude
+            #else
+            return OpenBLASOperations.snrm2(Int32(size), values) as! S.Magnitude
+            #endif
+        default:
+            return elements.map { $0.magnitude * $0.magnitude }.reduce(.zero, +).squareRoot()
+        }
     }
 }
