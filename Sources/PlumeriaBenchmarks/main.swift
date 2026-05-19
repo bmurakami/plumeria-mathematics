@@ -79,9 +79,10 @@ func printFloatBenchmark(_ operation: String, _ size: String, double: TimedResul
 
 func printComplexFloatBenchmark(_ operation: String, _ size: String, complex: TimedResult, complexFloat: TimedResult) {
     print("  \(operation) \(size)")
-    print("    Complex:  median \(format(complex.median)) ms, best \(format(complex.best)) ms")
-    print("    ComplexF: median \(format(complexFloat.median)) ms, best \(format(complexFloat.best)) ms")
-    print("    ratio:    \(ratio(left: complex.median, "Complex", right: complexFloat.median, "ComplexF"))")
+    print("    ComplexDouble: median \(format(complex.median)) ms, best \(format(complex.best)) ms")
+    print("    ComplexFloat:  median \(format(complexFloat.median)) ms, best \(format(complexFloat.best)) ms")
+    let speedRatio = ratio(left: complex.median, "ComplexDouble", right: complexFloat.median, "ComplexFloat")
+    print("    ratio:         \(speedRatio)")
     print("")
 }
 
@@ -160,6 +161,15 @@ func matrixRows(rows: Int, columns: Int) -> [[Double]] {
         values.append(rowValues)
     }
     return values
+}
+
+func invertibleMatrixRows(size: Int) -> [[Double]] {
+    (0..<size).map { row in
+        (0..<size).map { column in
+            let value = Double(((row * 31 + column * 17) % 101) - 50) / 11.0
+            return row == column ? value + Double(size) : value
+        }
+    }
 }
 
 func matrixFloatRows(rows: Int, columns: Int) -> [[Float]] {
@@ -258,6 +268,7 @@ func benchmarkMatrices() -> Double {
     let largeMVRows = matrixRows(rows: 1_536, columns: 1_536)
     let mmLeftRows = matrixRows(rows: 128, columns: 128)
     let mmRightRows = matrixRows(rows: 128, columns: 128)
+    let detRows = invertibleMatrixRows(size: 96)
     let referenceAdd = MatrixDenseReference(addRows)
     let blasAdd = MatrixDenseBLAS(addRows)
     let referenceLargeAdd = MatrixDenseReference(largeAddRows)
@@ -270,6 +281,8 @@ func benchmarkMatrices() -> Double {
     let referenceMMRight = MatrixDenseReference(mmRightRows)
     let blasMMLeft = MatrixDenseBLAS(mmLeftRows)
     let blasMMRight = MatrixDenseBLAS(mmRightRows)
+    let referenceDet = MatrixDenseReference(detRows)
+    let blasDet = MatrixDenseBLAS(detRows)
     var checksum = 0.0
     checksum += compareBenchmark("add", "256x256", iterations: 5, reference: {
         let result = referenceAdd + referenceAdd
@@ -304,6 +317,18 @@ func benchmarkMatrices() -> Double {
         return result[0, 0] + result[result.rows - 1, result.columns - 1]
     }, blas: {
         let result = blasMMLeft * blasMMRight
+        return result[0, 0] + result[result.rows - 1, result.columns - 1]
+    })
+    checksum += compareBenchmark("determinant", "96x96", samples: 3, reference: {
+        referenceDet.det
+    }, blas: {
+        blasDet.det
+    })
+    checksum += compareBenchmark("inverse", "96x96", samples: 3, reference: {
+        let result = referenceDet.inverse()
+        return result[0, 0] + result[result.rows - 1, result.columns - 1]
+    }, blas: {
+        let result = blasDet.inverse()
         return result[0, 0] + result[result.rows - 1, result.columns - 1]
     })
     return checksum
@@ -420,7 +445,7 @@ func benchmarkFloatScalars() -> Double {
 }
 
 func benchmarkComplexFloatScalars() -> Double {
-    print("ComplexF vs Complex")
+    print("ComplexFloat vs ComplexDouble")
     let complexVector = VectorDenseBLAS(vectorComplexValues(count: 100_000))
     let complexFloatVector = VectorDenseBLAS(vectorComplexFloatValues(count: 100_000))
     let complexMatrixVector = VectorDenseBLAS(vectorComplexValues(count: 384))

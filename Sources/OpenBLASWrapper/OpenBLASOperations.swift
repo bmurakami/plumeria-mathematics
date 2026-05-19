@@ -273,6 +273,134 @@ public enum OpenBLASOperations {
         }
     }
 
+    public static func sgetrf(_ n: Int32, _ a: inout [Float]) -> (pivots: [Int32], info: Int32) {
+        var nMutable = n
+        var lda = n
+        var pivots = Array<Int32>(repeating: 0, count: Int(n))
+        var info = Int32(0)
+        COpenBLAS.sgetrf_(&nMutable, &nMutable, &a, &lda, &pivots, &info)
+        return (pivots, info)
+    }
+
+    public static func dgetrf(_ n: Int32, _ a: inout [Double]) -> (pivots: [Int32], info: Int32) {
+        var nMutable = n
+        var lda = n
+        var pivots = Array<Int32>(repeating: 0, count: Int(n))
+        var info = Int32(0)
+        COpenBLAS.dgetrf_(&nMutable, &nMutable, &a, &lda, &pivots, &info)
+        return (pivots, info)
+    }
+
+    public static func cgetrf(_ n: Int32, _ a: inout [Float]) -> (pivots: [Int32], info: Int32) {
+        var nMutable = n
+        var lda = n
+        var pivots = Array<Int32>(repeating: 0, count: Int(n))
+        var info = Int32(0)
+        _ = a.withUnsafeMutableBufferPointer { a in
+            COpenBLAS.cgetrf_(
+                &nMutable, &nMutable, OpaquePointer(UnsafeMutableRawPointer(a.baseAddress!)), &lda, &pivots, &info
+            )
+        }
+        return (pivots, info)
+    }
+
+    public static func zgetrf(_ n: Int32, _ a: inout [Double]) -> (pivots: [Int32], info: Int32) {
+        var nMutable = n
+        var lda = n
+        var pivots = Array<Int32>(repeating: 0, count: Int(n))
+        var info = Int32(0)
+        _ = a.withUnsafeMutableBufferPointer { a in
+            COpenBLAS.zgetrf_(
+                &nMutable, &nMutable, OpaquePointer(UnsafeMutableRawPointer(a.baseAddress!)), &lda, &pivots, &info
+            )
+        }
+        return (pivots, info)
+    }
+
+    public static func sgetri(_ n: Int32, _ a: inout [Float], _ pivots: [Int32]) -> Int32 {
+        var nMutable = n
+        var lda = n
+        var pivots = pivots
+        var workQuery = Float.zero
+        var lwork = Int32(-1)
+        var info = Int32(0)
+        COpenBLAS.sgetri_(&nMutable, &a, &lda, &pivots, &workQuery, &lwork, &info)
+        lwork = Int32(workQuery)
+        var work = Array(repeating: Float.zero, count: Int(lwork))
+        COpenBLAS.sgetri_(&nMutable, &a, &lda, &pivots, &work, &lwork, &info)
+        return info
+    }
+
+    public static func dgetri(_ n: Int32, _ a: inout [Double], _ pivots: [Int32]) -> Int32 {
+        var nMutable = n
+        var lda = n
+        var pivots = pivots
+        var workQuery = Double.zero
+        var lwork = Int32(-1)
+        var info = Int32(0)
+        COpenBLAS.dgetri_(&nMutable, &a, &lda, &pivots, &workQuery, &lwork, &info)
+        lwork = Int32(workQuery)
+        var work = Array(repeating: Double.zero, count: Int(lwork))
+        COpenBLAS.dgetri_(&nMutable, &a, &lda, &pivots, &work, &lwork, &info)
+        return info
+    }
+
+    public static func cgetri(_ n: Int32, _ a: inout [Float], _ pivots: [Int32]) -> Int32 {
+        var nMutable = n
+        var lda = n
+        var pivots = pivots
+        var workQuery = [Float.zero, Float.zero]
+        var lwork = Int32(-1)
+        var info = Int32(0)
+        a.withUnsafeMutableBufferPointer { a in
+            workQuery.withUnsafeMutableBufferPointer { work in
+                COpenBLAS.cgetri_(
+                    &nMutable, OpaquePointer(UnsafeMutableRawPointer(a.baseAddress!)), &lda, &pivots,
+                    OpaquePointer(UnsafeMutableRawPointer(work.baseAddress!)), &lwork, &info
+                )
+            }
+        }
+        lwork = Int32(workQuery[0])
+        var work = Array(repeating: Float.zero, count: Int(lwork) * 2)
+        a.withUnsafeMutableBufferPointer { a in
+            work.withUnsafeMutableBufferPointer { work in
+                COpenBLAS.cgetri_(
+                    &nMutable, OpaquePointer(UnsafeMutableRawPointer(a.baseAddress!)), &lda, &pivots,
+                    OpaquePointer(UnsafeMutableRawPointer(work.baseAddress!)), &lwork, &info
+                )
+            }
+        }
+        return info
+    }
+
+    public static func zgetri(_ n: Int32, _ a: inout [Double], _ pivots: [Int32]) -> Int32 {
+        var nMutable = n
+        var lda = n
+        var pivots = pivots
+        var workQuery = [Double.zero, Double.zero]
+        var lwork = Int32(-1)
+        var info = Int32(0)
+        a.withUnsafeMutableBufferPointer { a in
+            workQuery.withUnsafeMutableBufferPointer { work in
+                COpenBLAS.zgetri_(
+                    &nMutable, OpaquePointer(UnsafeMutableRawPointer(a.baseAddress!)), &lda, &pivots,
+                    OpaquePointer(UnsafeMutableRawPointer(work.baseAddress!)), &lwork, &info
+                )
+            }
+        }
+        lwork = Int32(workQuery[0])
+        var work = Array(repeating: Double.zero, count: Int(lwork) * 2)
+        a.withUnsafeMutableBufferPointer { a in
+            work.withUnsafeMutableBufferPointer { work in
+                COpenBLAS.zgetri_(
+                    &nMutable, OpaquePointer(UnsafeMutableRawPointer(a.baseAddress!)), &lda, &pivots,
+                    OpaquePointer(UnsafeMutableRawPointer(work.baseAddress!)), &lwork, &info
+                )
+            }
+        }
+        return info
+    }
+
     public static func dgesv(_ n: Int32, _ a: UnsafeMutablePointer<Double>, _ b: UnsafeMutablePointer<Double>)
         -> Int32 {
         var nMutable = n
