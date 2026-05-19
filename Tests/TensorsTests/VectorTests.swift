@@ -24,8 +24,8 @@ enum VectorImplementation: CaseIterable, CustomStringConvertible {
 
     func checkComplexInit() {
         switch self {
-        case .reference: verifyComplexInit(VectorDenseReference<Complex>.self)
-        case .blas: verifyComplexInit(VectorDenseBLAS<Complex>.self)
+        case .reference: verifyComplexInit(VectorDenseReference<ComplexDouble>.self)
+        case .blas: verifyComplexInit(VectorDenseBLAS<ComplexDouble>.self)
         }
     }
 
@@ -52,8 +52,8 @@ enum VectorImplementation: CaseIterable, CustomStringConvertible {
 
     func checkComplexArithmetic() {
         switch self {
-        case .reference: verifyComplexArithmetic(VectorDenseReference<Complex>.self)
-        case .blas: verifyComplexArithmetic(VectorDenseBLAS<Complex>.self)
+        case .reference: verifyComplexArithmetic(VectorDenseReference<ComplexDouble>.self)
+        case .blas: verifyComplexArithmetic(VectorDenseBLAS<ComplexDouble>.self)
         }
     }
 
@@ -112,17 +112,17 @@ private func verifyDoubleInit<V: PluVector>(_ type: V.Type) where V.S == Double 
     #expect(v[1] == a[1])
 }
 
-private func verifyComplexInit<V: PluVector>(_ type: V.Type) where V.S == Complex {
-    let s = Complex(a[0], a[1])
-    let t = Complex(b[0], b[1])
+private func verifyComplexInit<V: PluVector>(_ type: V.Type) where V.S == ComplexDouble {
+    let s = ComplexDouble(a[0], a[1])
+    let t = ComplexDouble(b[0], b[1])
     let v = V([s, t])
     #expect(v.size == a.count)
     #expect(v[0].real == a[0])
     #expect(v[0].imaginary == a[1])
-    #expect(v[0] == Complex(a[0], a[1]))
+    #expect(v[0] == ComplexDouble(a[0], a[1]))
     #expect(v[1].real == b[0])
     #expect(v[1].imaginary == b[1])
-    #expect(v[1] == Complex(b[0], b[1]))
+    #expect(v[1] == ComplexDouble(b[0], b[1]))
 }
 
 private func verifyNestedArrayInitializer<V: PluVector>(_ type: V.Type) where V.S == Double {
@@ -152,13 +152,13 @@ private func verifyArithmetic<V: PluVector>(_ type: V.Type) where V.S == Double 
     #expect((u / 2.0).toArray(round: true) == [0.6, -1.7])
 }
 
-private func verifyComplexArithmetic<V: PluVector>(_ type: V.Type) where V.S == Complex {
-    let u = V([Complex(1.0, -1.0), Complex(0.0, 2.0)])
-    let v = V([Complex(2.0, 1.0), Complex(-3.0, 0.0)])
+private func verifyComplexArithmetic<V: PluVector>(_ type: V.Type) where V.S == ComplexDouble {
+    let u = V([ComplexDouble(1.0, -1.0), ComplexDouble(0.0, 2.0)])
+    let v = V([ComplexDouble(2.0, 1.0), ComplexDouble(-3.0, 0.0)])
 
-    #expect((u + v).toArray() == [Complex(3.0, 0.0), Complex(-3.0, 2.0)])
-    #expect((u * Complex(0.0, 2.0)).toArray() == [Complex(2.0, 2.0), Complex(-4.0, 0.0)])
-    #expect((u * Complex(2.0, 0.0)).toArray() == [Complex(2.0, -2.0), Complex(0.0, 4.0)])
+    #expect((u + v).toArray() == [ComplexDouble(3.0, 0.0), ComplexDouble(-3.0, 2.0)])
+    #expect((u * ComplexDouble(0.0, 2.0)).toArray() == [ComplexDouble(2.0, 2.0), ComplexDouble(-4.0, 0.0)])
+    #expect((u * ComplexDouble(2.0, 0.0)).toArray() == [ComplexDouble(2.0, -2.0), ComplexDouble(0.0, 4.0)])
 }
 
 private func verifyToArray<V: PluVector>(_ type: V.Type) where V.S == Double {

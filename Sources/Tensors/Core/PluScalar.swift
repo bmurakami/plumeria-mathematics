@@ -1,7 +1,8 @@
 import Foundation
 import Numerics
 
-public typealias Complex = Numerics.Complex<Double>
+public typealias ComplexDouble = Numerics.Complex<Double>
+public typealias ComplexFloat = Numerics.Complex<Float>
 
 public protocol PluScalar: ElementaryFunctions & PluTensor & Numeric where Magnitude: FloatingPoint {
     static func / (lhs: Self, rhs: Self) -> Self
@@ -32,56 +33,49 @@ extension Float: PluScalar {
     }
 }
 
-extension Complex: TensorArithmetic, PluTensor, PluScalar {
-    public typealias S = Complex
+extension Numerics.Complex: TensorArithmetic, PluTensor, PluScalar {
+    public typealias S = Numerics.Complex<RealType>
 
-    public static let i = Complex(0.0, 1.0)
+    public static var i: Self { Self(RealType(0), RealType(1)) }
 
-    public func round(precision: Int = 14) -> Complex {
-        return Complex(real.round(precision: precision), imaginary.round(precision: precision))
+    public func round(precision: Int) -> Self {
+        let multiplier = RealType.pow(RealType(10), RealType(precision))
+        return Self((real * multiplier).rounded() / multiplier,
+                    (imaginary * multiplier).rounded() / multiplier)
     }
 }
 
-extension Complex: ComplexScalar {
-    public var star: Complex { conjugate }
-    public var mod: Double { length }
-    public var arg: Double { phase }
+extension Numerics.Complex: ComplexScalar {
+    public var star: Self { conjugate }
+    public var mod: RealType { length }
+    public var arg: RealType { phase }
 }
 
-public func + (left: Double, right: Complex) -> Complex {
-    Complex(left, 0.0) + right
-}
+public func + (left: Double, right: ComplexDouble) -> ComplexDouble { ComplexDouble(left, 0.0) + right }
+public func + (left: ComplexDouble, right: Double) -> ComplexDouble { left + ComplexDouble(right, 0.0) }
+public func - (left: Double, right: ComplexDouble) -> ComplexDouble { ComplexDouble(left, 0.0) - right }
+public func - (left: ComplexDouble, right: Double) -> ComplexDouble { left - ComplexDouble(right, 0.0) }
+public func * (left: Double, right: ComplexDouble) -> ComplexDouble { ComplexDouble(left, 0.0) * right }
+public func * (left: ComplexDouble, right: Double) -> ComplexDouble { left * ComplexDouble(right, 0.0) }
+public func / (left: Double, right: ComplexDouble) -> ComplexDouble { ComplexDouble(left, 0.0) / right }
+public func / (left: ComplexDouble, right: Double) -> ComplexDouble { left / ComplexDouble(right, 0.0) }
 
-public func + (left: Complex, right: Double) -> Complex {
-    left + Complex(right, 0.0)
-}
-
-public func - (left: Double, right: Complex) -> Complex {
-    Complex(left, 0.0) - right
-}
-
-public func - (left: Complex, right: Double) -> Complex {
-    left - Complex(right, 0.0)
-}
-
-public func * (left: Double, right: Complex) -> Complex {
-    Complex(left, 0.0) * right
-}
-
-public func * (left: Complex, right: Double) -> Complex {
-    left * Complex(right, 0.0)
-}
-
-public func / (left: Double, right: Complex) -> Complex {
-    Complex(left, 0.0) / right
-}
-
-public func / (left: Complex, right: Double) -> Complex {
-    left / Complex(right, 0.0)
-}
+public func + (left: Float, right: ComplexFloat) -> ComplexFloat { ComplexFloat(left, 0.0) + right }
+public func + (left: ComplexFloat, right: Float) -> ComplexFloat { left + ComplexFloat(right, 0.0) }
+public func - (left: Float, right: ComplexFloat) -> ComplexFloat { ComplexFloat(left, 0.0) - right }
+public func - (left: ComplexFloat, right: Float) -> ComplexFloat { left - ComplexFloat(right, 0.0) }
+public func * (left: Float, right: ComplexFloat) -> ComplexFloat { ComplexFloat(left, 0.0) * right }
+public func * (left: ComplexFloat, right: Float) -> ComplexFloat { left * ComplexFloat(right, 0.0) }
+public func / (left: Float, right: ComplexFloat) -> ComplexFloat { ComplexFloat(left, 0.0) / right }
+public func / (left: ComplexFloat, right: Float) -> ComplexFloat { left / ComplexFloat(right, 0.0) }
 
 extension PluScalar {
     public func round() -> Self {
-        round(precision: 14)
+        switch Self.self {
+        case is Float.Type, is ComplexFloat.Type:
+            return round(precision: 6)
+        default:
+            return round(precision: 14)
+        }
     }
 }

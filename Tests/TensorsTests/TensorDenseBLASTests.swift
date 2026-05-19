@@ -30,23 +30,23 @@ private func tensor(_ values: [[[Double]]]) -> TensorDenseBLAS<Double> {
 @Test func TensorDenseBLAS_mixedScalarArithmetic() {
     let realScalar = TensorDenseBLAS<Double>(shape: [], elements: [2.0])
     let realRank3 = TensorDenseBLAS<Double>(shape: [2, 2, 2], elements: [1.0, 0.0, -1.0, 2.0, 3.0, -2.0, 0.0, 1.0])
-    let complexRank3 = TensorDenseBLAS<Complex>(shape: [2, 2, 2], elements: [
-        Complex(1.0, -1.0), Complex(0.0, 2.0), Complex(-1.0, 0.0), Complex(2.0, 1.0),
-        Complex(3.0, -2.0), Complex(-2.0, 1.0), Complex(0.0, -1.0), Complex(1.0, 0.0)
+    let complexRank3 = TensorDenseBLAS<ComplexDouble>(shape: [2, 2, 2], elements: [
+        ComplexDouble(1.0, -1.0), ComplexDouble(0.0, 2.0), ComplexDouble(-1.0, 0.0), ComplexDouble(2.0, 1.0),
+        ComplexDouble(3.0, -2.0), ComplexDouble(-2.0, 1.0), ComplexDouble(0.0, -1.0), ComplexDouble(1.0, 0.0)
     ])
-    #expect((realScalar * Complex(1.0, -1.0)).elements == [Complex(2.0, -2.0)])
-    #expect((realRank3 * Complex(0.0, 2.0)).elements == [
-        Complex(0.0, 2.0), Complex(0.0, 0.0), Complex(0.0, -2.0), Complex(0.0, 4.0),
-        Complex(0.0, 6.0), Complex(0.0, -4.0), Complex(0.0, 0.0), Complex(0.0, 2.0)
+    #expect((realScalar * ComplexDouble(1.0, -1.0)).elements == [ComplexDouble(2.0, -2.0)])
+    #expect((realRank3 * ComplexDouble(0.0, 2.0)).elements == [
+        ComplexDouble(0.0, 2.0), ComplexDouble(0.0, 0.0), ComplexDouble(0.0, -2.0), ComplexDouble(0.0, 4.0),
+        ComplexDouble(0.0, 6.0), ComplexDouble(0.0, -4.0), ComplexDouble(0.0, 0.0), ComplexDouble(0.0, 2.0)
     ])
-    #expect((Complex(0.0, 2.0) * realRank3).elements == (realRank3 * Complex(0.0, 2.0)).elements)
+    #expect((ComplexDouble(0.0, 2.0) * realRank3).elements == (realRank3 * ComplexDouble(0.0, 2.0)).elements)
     #expect((complexRank3 * 2.0).elements == [
-        Complex(2.0, -2.0), Complex(0.0, 4.0), Complex(-2.0, 0.0), Complex(4.0, 2.0),
-        Complex(6.0, -4.0), Complex(-4.0, 2.0), Complex(0.0, -2.0), Complex(2.0, 0.0)
+        ComplexDouble(2.0, -2.0), ComplexDouble(0.0, 4.0), ComplexDouble(-2.0, 0.0), ComplexDouble(4.0, 2.0),
+        ComplexDouble(6.0, -4.0), ComplexDouble(-4.0, 2.0), ComplexDouble(0.0, -2.0), ComplexDouble(2.0, 0.0)
     ])
     #expect((complexRank3 / 2.0).elements == [
-        Complex(0.5, -0.5), Complex(0.0, 1.0), Complex(-0.5, 0.0), Complex(1.0, 0.5),
-        Complex(1.5, -1.0), Complex(-1.0, 0.5), Complex(0.0, -0.5), Complex(0.5, 0.0)
+        ComplexDouble(0.5, -0.5), ComplexDouble(0.0, 1.0), ComplexDouble(-0.5, 0.0), ComplexDouble(1.0, 0.5),
+        ComplexDouble(1.5, -1.0), ComplexDouble(-1.0, 0.5), ComplexDouble(0.0, -0.5), ComplexDouble(0.5, 0.0)
     ])
 }
 

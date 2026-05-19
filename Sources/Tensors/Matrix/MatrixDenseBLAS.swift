@@ -1,4 +1,5 @@
 import AccelerateWrapper
+import Numerics
 import OpenBLASWrapper
 
 // Usage of MatrixArithmeticReference is temporary until determinant and inverse use LAPACK.
@@ -191,9 +192,9 @@ extension MatrixDenseBLAS {
                 OpenBLASOperations.sgemv(Int32(rows), Int32(columns), A, x, &y)
             }
             return V(y as! [S])
-        case is Complex.Type:
-            var A = MatrixDenseBLAS.interleaved(flatten() as! [Complex])
-            var x = MatrixDenseBLAS.interleaved(v.toArray(round: false) as! [Complex])
+        case is ComplexDouble.Type:
+            var A = BLASComplexStorage.interleaved(flatten() as! [ComplexDouble])
+            var x = BLASComplexStorage.interleaved(v.toArray(round: false) as! [ComplexDouble])
             var y = Array(repeating: 0.0, count: rows * 2)
             switch blasImplementation {
             #if canImport(Accelerate)
@@ -203,7 +204,20 @@ extension MatrixDenseBLAS {
             case .openBLAS:
                 OpenBLASOperations.zgemv(Int32(rows), Int32(columns), &A, &x, &y)
             }
-            return V(MatrixDenseBLAS.complexValues(y) as! [S])
+            return V(BLASComplexStorage.complexValues(y) as! [S])
+        case is ComplexFloat.Type:
+            var A = BLASComplexStorage.interleaved(flatten() as! [ComplexFloat])
+            var x = BLASComplexStorage.interleaved(v.toArray(round: false) as! [ComplexFloat])
+            var y = Array(repeating: Float.zero, count: rows * 2)
+            switch blasImplementation {
+            #if canImport(Accelerate)
+            case .accelerate:
+                AccelerateOperations.cgemv(Int32(rows), Int32(columns), &A, &x, &y)
+            #endif
+            case .openBLAS:
+                OpenBLASOperations.cgemv(Int32(rows), Int32(columns), &A, &x, &y)
+            }
+            return V(BLASComplexStorage.complexValues(y) as! [S])
         default:
             fatalError("Unsupported scalar type")
         }
@@ -238,9 +252,9 @@ extension MatrixDenseBLAS {
                 OpenBLASOperations.sgemm(Int32(rows), Int32(m.columns), Int32(columns), A, B, &C)
             }
             return MatrixDenseBLAS(rows: rows, columns: m.columns, values: C as! [S])
-        case is Complex.Type:
-            var A = MatrixDenseBLAS.interleaved(flatten() as! [Complex])
-            var B = MatrixDenseBLAS.interleaved(m.flatten() as! [Complex])
+        case is ComplexDouble.Type:
+            var A = BLASComplexStorage.interleaved(flatten() as! [ComplexDouble])
+            var B = BLASComplexStorage.interleaved(m.flatten() as! [ComplexDouble])
             var C = Array(repeating: 0.0, count: rows * m.columns * 2)
             switch blasImplementation {
             #if canImport(Accelerate)
@@ -250,7 +264,21 @@ extension MatrixDenseBLAS {
             case .openBLAS:
                 OpenBLASOperations.zgemm(Int32(rows), Int32(m.columns), Int32(columns), &A, &B, &C)
             }
-            return MatrixDenseBLAS(rows: rows, columns: m.columns, values: MatrixDenseBLAS.complexValues(C) as! [S])
+            return MatrixDenseBLAS(rows: rows, columns: m.columns, values: BLASComplexStorage.complexValues(C) as! [S])
+        case is ComplexFloat.Type:
+            var A = BLASComplexStorage.interleaved(flatten() as! [ComplexFloat])
+            var B = BLASComplexStorage.interleaved(m.flatten() as! [ComplexFloat])
+            var C = Array(repeating: Float.zero, count: rows * m.columns * 2)
+            switch blasImplementation {
+            #if canImport(Accelerate)
+            case .accelerate:
+                AccelerateOperations.cgemm(Int32(rows), Int32(m.columns), Int32(columns), &A, &B, &C)
+            #endif
+            case .openBLAS:
+                OpenBLASOperations.cgemm(Int32(rows), Int32(m.columns), Int32(columns), &A, &B, &C)
+            }
+            let values = BLASComplexStorage.complexValues(C) as! [S]
+            return MatrixDenseBLAS(rows: rows, columns: m.columns, values: values)
         default:
             fatalError("Unsupported scalar type")
         }
@@ -304,20 +332,13 @@ extension MatrixDenseBLAS {
         return matrix.flatten(columnMajorOrder: true)
     }
 
-    private static func interleaved(_ values: [Complex]) -> [Double] {
-        values.flatMap { [$0.real, $0.imaginary] }
-    }
-
-    private static func complexValues(_ values: [Double]) -> [Complex] {
-        stride(from: 0, to: values.count, by: 2).map { Complex(values[$0], values[$0 + 1]) }
-    }
-
 }
 
 extension MatrixDenseBLAS: MatrixEigen where S == Double {
-    public typealias Eigenvectors = MatrixDenseBLAS<Complex>
+    public typealias Eigenvalue = ComplexDouble
+    public typealias Eigenvectors = MatrixDenseBLAS<ComplexDouble>
 
-    public func eigen() -> Eigen<MatrixDenseBLAS<Complex>> {
+    public func eigen() -> Eigen<ComplexDouble, MatrixDenseBLAS<ComplexDouble>> {
         precondition(rows == columns, "Eigen decomposition requires a square matrix")
         let n = Int32(rows)
         var matrix = flatten()
@@ -334,25 +355,27 @@ extension MatrixDenseBLAS: MatrixEigen where S == Double {
                      vectors: eigenvectors(real: real, imaginary: imaginary, vectors: vectors))
     }
 
-    private func eigenvalues(real: [Double], imaginary: [Double]) -> [Complex] {
-        zip(real, imaginary).map { Complex($0, $1) }
+    private func eigenvalues(real: [Double], imaginary: [Double]) -> [ComplexDouble] {
+        zip(real, imaginary).map { ComplexDouble($0, $1) }
     }
 
-    private func eigenvectors(real: [Double], imaginary: [Double], vectors: [Double]) -> MatrixDenseBLAS<Complex> {
-        var result = MatrixDenseBLAS<Complex>(rows: rows, columns: columns, initialValue: .zero)
+    private func eigenvectors(
+        real: [Double], imaginary: [Double], vectors: [Double]
+    ) -> MatrixDenseBLAS<ComplexDouble> {
+        var result = MatrixDenseBLAS<ComplexDouble>(rows: rows, columns: columns, initialValue: .zero)
         var column = 0
         while column < columns {
             if imaginary[column] == 0.0 {
                 for row in 0..<rows {
-                    result[row, column] = Complex(vectors[row + rows * column], 0.0)
+                    result[row, column] = ComplexDouble(vectors[row + rows * column], 0.0)
                 }
                 column += 1
             } else {
                 for row in 0..<rows {
                     let realPart = vectors[row + rows * column]
                     let imaginaryPart = vectors[row + rows * (column + 1)]
-                    result[row, column] = Complex(realPart, imaginaryPart)
-                    result[row, column + 1] = Complex(realPart, -imaginaryPart)
+                    result[row, column] = ComplexDouble(realPart, imaginaryPart)
+                    result[row, column + 1] = ComplexDouble(realPart, -imaginaryPart)
                 }
                 column += 2
             }

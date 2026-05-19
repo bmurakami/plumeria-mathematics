@@ -1,4 +1,5 @@
 public protocol MatrixEigen: PluMatrix where S == Double {
-    associatedtype Eigenvectors: PluMatrix where Eigenvectors.S == Complex
-    func eigen() -> Eigen<Eigenvectors>
+    associatedtype Eigenvalue: ComplexScalar
+    associatedtype Eigenvectors: PluMatrix where Eigenvectors.S == Eigenvalue
+    func eigen() -> Eigen<Eigenvalue, Eigenvectors>
 }

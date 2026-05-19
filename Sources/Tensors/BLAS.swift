@@ -64,4 +64,20 @@ public enum BLAS {
         OpenBLASOperations.zscal(n, &alpha, &x)
         #endif
     }
+
+    static func caxpy(_ n: Int32, _ x: inout [Float], _ y: inout [Float]) {
+        #if canImport(Accelerate)
+        AccelerateOperations.caxpy(n, &x, &y)
+        #else
+        OpenBLASOperations.caxpy(n, &x, &y)
+        #endif
+    }
+
+    static func cscal(_ n: Int32, _ alpha: inout [Float], _ x: inout [Float]) {
+        #if canImport(Accelerate)
+        AccelerateOperations.cscal(n, &alpha, &x)
+        #else
+        OpenBLASOperations.cscal(n, &alpha, &x)
+        #endif
+    }
 }

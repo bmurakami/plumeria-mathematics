@@ -1,8 +1,8 @@
-public struct Eigen<Vectors: PluMatrix>: Equatable where Vectors.S == Complex {
-    public let values: [Complex]
+public struct Eigen<Value: ComplexScalar, Vectors: PluMatrix>: Equatable where Vectors.S == Value {
+    public let values: [Value]
     public let vectors: Vectors
 
-    public init(values: [Complex], vectors: Vectors) {
+    public init(values: [Value], vectors: Vectors) {
         self.values = values
         self.vectors = vectors
     }
