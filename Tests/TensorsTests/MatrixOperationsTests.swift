@@ -17,9 +17,61 @@ import Testing
     let identity = MatrixDenseBLAS<Double>.identity(size: 2)
 
     #expect(identity.toArray() == [[1.0, 0.0], [0.0, 1.0]])
-    #expect(inverse.toArray() == [[-2.0, 1.0], [1.5, -0.5]])
-    #expect((matrix * inverse).isApproximatelyEqual(to: identity, relativeTolerance: 1e-12))
+    expectApproximatelyEqual(inverse, [[-2.0, 1.0], [1.5, -0.5]], tolerance: 1e-12)
+    expectApproximatelyIdentity(matrix * inverse, tolerance: 1e-12)
 }
+
+@Test func Matrix_BLAS_lapackDeterminantAndInverse() {
+    let matrix = MatrixDenseBLAS<Double>([[4.0, 7.0, 2.0],
+                                          [3.0, 6.0, 1.0],
+                                          [2.0, 5.0, 1.0]])
+
+    #expect(matrix.det.isApproximatelyEqual(to: 3.0, relativeTolerance: 1e-12))
+    expectApproximatelyIdentity(matrix * matrix.inverse(), tolerance: 1e-12)
+}
+
+@Test func Matrix_BLAS_lapackSingularDeterminant() {
+    let matrix = MatrixDenseBLAS<Double>([[1.0, 2.0],
+                                          [2.0, 4.0]])
+
+    #expect(matrix.det == 0.0)
+}
+
+@Test func Matrix_BLAS_lapackFloatDeterminantAndInverse() {
+    let matrix = MatrixDenseBLAS<Float>([[4.0, 7.0, 2.0],
+                                         [3.0, 6.0, 1.0],
+                                         [2.0, 5.0, 1.0]])
+
+    #expect(matrix.det.isApproximatelyEqual(to: 3.0, relativeTolerance: 1e-5))
+    expectApproximatelyIdentity(matrix * matrix.inverse(), tolerance: 1e-5)
+}
+
+@Test func Matrix_BLAS_lapackComplexDeterminantAndInverse() {
+    let matrix = MatrixDenseBLAS<ComplexDouble>([[ComplexDouble(1.0, 1.0), ComplexDouble(2.0, 0.0)],
+                                                 [ComplexDouble(0.0, 0.0), ComplexDouble(3.0, -1.0)]])
+
+    #expect((matrix.det - ComplexDouble(4.0, 2.0)).mod.isApproximatelyEqual(to: 0.0, relativeTolerance: 1e-12))
+    expectApproximatelyIdentity(matrix * matrix.inverse(), tolerance: 1e-12)
+}
+
+@Test func Matrix_BLAS_lapackComplexFloatDeterminantAndInverse() {
+    let matrix = MatrixDenseBLAS<ComplexFloat>([[ComplexFloat(1.0, 1.0), ComplexFloat(2.0, 0.0)],
+                                                [ComplexFloat(0.0, 0.0), ComplexFloat(3.0, -1.0)]])
+
+    #expect((matrix.det - ComplexFloat(4.0, 2.0)).mod.isApproximatelyEqual(to: 0.0, relativeTolerance: 1e-5))
+    expectApproximatelyIdentity(matrix * matrix.inverse(), tolerance: 1e-5)
+}
+
+#if canImport(Accelerate)
+@Test func Matrix_BLAS_lapackImplementationSelection() {
+    let values = [4.0, 3.0, 2.0, 7.0, 6.0, 5.0, 2.0, 1.0, 1.0]
+    let accelerate = MatrixDenseBLAS(rows: 3, columns: 3, values: values, blasImplementation: .accelerate)
+    let openBLAS = MatrixDenseBLAS(rows: 3, columns: 3, values: values, blasImplementation: .openBLAS)
+
+    #expect(accelerate.det.isApproximatelyEqual(to: openBLAS.det, relativeTolerance: 1e-12))
+    #expect(accelerate.inverse().isApproximatelyEqual(to: openBLAS.inverse(), relativeTolerance: 1e-12))
+}
+#endif
 
 extension MatrixImplementation {
     func checkEigenRealEigenvalues() {
@@ -88,4 +140,48 @@ private func complexMatrix<M: MatrixEigen>(_ matrix: M) -> MatrixDenseBLAS<Compl
     MatrixDenseBLAS<ComplexDouble>((0..<matrix.rows).map { row in
         (0..<matrix.columns).map { column in ComplexDouble(matrix[row, column], 0.0) }
     })
+}
+
+private func expectApproximatelyEqual(_ matrix: MatrixDenseBLAS<Double>, _ expected: [[Double]], tolerance: Double) {
+    for row in 0..<matrix.rows {
+        for column in 0..<matrix.columns {
+            #expect(abs(matrix[row, column] - expected[row][column]) <= tolerance)
+        }
+    }
+}
+
+private func expectApproximatelyIdentity(_ matrix: MatrixDenseBLAS<Double>, tolerance: Double) {
+    for row in 0..<matrix.rows {
+        for column in 0..<matrix.columns {
+            let expected = row == column ? 1.0 : 0.0
+            #expect(abs(matrix[row, column] - expected) <= tolerance)
+        }
+    }
+}
+
+private func expectApproximatelyIdentity(_ matrix: MatrixDenseBLAS<Float>, tolerance: Float) {
+    for row in 0..<matrix.rows {
+        for column in 0..<matrix.columns {
+            let expected: Float = row == column ? 1.0 : 0.0
+            #expect(abs(matrix[row, column] - expected) <= tolerance)
+        }
+    }
+}
+
+private func expectApproximatelyIdentity(_ matrix: MatrixDenseBLAS<ComplexDouble>, tolerance: Double) {
+    for row in 0..<matrix.rows {
+        for column in 0..<matrix.columns {
+            let expected = row == column ? ComplexDouble(1.0, 0.0) : .zero
+            #expect((matrix[row, column] - expected).mod <= tolerance)
+        }
+    }
+}
+
+private func expectApproximatelyIdentity(_ matrix: MatrixDenseBLAS<ComplexFloat>, tolerance: Float) {
+    for row in 0..<matrix.rows {
+        for column in 0..<matrix.columns {
+            let expected = row == column ? ComplexFloat(1.0, 0.0) : .zero
+            #expect((matrix[row, column] - expected).mod <= tolerance)
+        }
+    }
 }

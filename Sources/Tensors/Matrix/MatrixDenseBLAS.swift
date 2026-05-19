@@ -2,9 +2,7 @@ import AccelerateWrapper
 import Numerics
 import OpenBLASWrapper
 
-// Usage of MatrixArithmeticReference is temporary until determinant and inverse use LAPACK.
-public struct MatrixDenseBLAS<S: PluScalar>: MatrixArithmeticReference, TensorArithmeticBLAS,
-                                             MatrixColumnMajorInitializable, Equatable {
+public struct MatrixDenseBLAS<S: PluScalar>: TensorArithmeticBLAS, MatrixColumnMajorInitializable, Equatable {
     private var view: TensorFlatView<S>
     public var blasImplementation: BLAS
 
@@ -286,6 +284,28 @@ extension MatrixDenseBLAS {
 }
 
 extension MatrixDenseBLAS {
+    public var det: S {
+        precondition(rows == columns, "Determinant requires a square matrix")
+        switch S.self {
+        case is Double.Type: return doubleDeterminant() as! S
+        case is Float.Type: return floatDeterminant() as! S
+        case is ComplexDouble.Type: return complexDoubleDeterminant() as! S
+        case is ComplexFloat.Type: return complexFloatDeterminant() as! S
+        default: fatalError("Unsupported scalar type")
+        }
+    }
+
+    public func inverse() -> MatrixDenseBLAS<S> {
+        precondition(rows == columns, "Inverse requires a square matrix")
+        switch S.self {
+        case is Double.Type: return doubleInverse() as! MatrixDenseBLAS<S>
+        case is Float.Type: return floatInverse() as! MatrixDenseBLAS<S>
+        case is ComplexDouble.Type: return complexDoubleInverse() as! MatrixDenseBLAS<S>
+        case is ComplexFloat.Type: return complexFloatInverse() as! MatrixDenseBLAS<S>
+        default: fatalError("Unsupported scalar type")
+        }
+    }
+
     public func transpose() -> MatrixDenseBLAS<S> {
         var transposed = MatrixDenseBLAS(rows: columns, columns: rows)
         for row in 0..<rows {
@@ -332,6 +352,174 @@ extension MatrixDenseBLAS {
         return matrix.flatten(columnMajorOrder: true)
     }
 
+    private func doubleFactorization() -> (matrix: [Double], pivots: [Int32], info: Int32) {
+        var matrix = columnMajorStorage() as! [Double]
+        let factorization = doubleGetrf(Int32(rows), &matrix)
+        return (matrix, factorization.pivots, factorization.info)
+    }
+
+    private func floatFactorization() -> (matrix: [Float], pivots: [Int32], info: Int32) {
+        var matrix = columnMajorStorage() as! [Float]
+        let factorization = floatGetrf(Int32(rows), &matrix)
+        return (matrix, factorization.pivots, factorization.info)
+    }
+
+    private func complexDoubleFactorization() -> (matrix: [Double], pivots: [Int32], info: Int32) {
+        var matrix = BLASComplexStorage.interleaved(columnMajorStorage() as! [ComplexDouble])
+        let factorization = complexDoubleGetrf(Int32(rows), &matrix)
+        return (matrix, factorization.pivots, factorization.info)
+    }
+
+    private func complexFloatFactorization() -> (matrix: [Float], pivots: [Int32], info: Int32) {
+        var matrix = BLASComplexStorage.interleaved(columnMajorStorage() as! [ComplexFloat])
+        let factorization = complexFloatGetrf(Int32(rows), &matrix)
+        return (matrix, factorization.pivots, factorization.info)
+    }
+
+    private func doubleDeterminant() -> Double {
+        let factorization = doubleFactorization()
+        precondition(factorization.info >= 0, "LAPACK determinant failed with info \(factorization.info)")
+        if factorization.info > 0 { return .zero }
+        return luDeterminant(from: factorization.matrix, pivots: factorization.pivots, one: 1.0)
+    }
+
+    private func floatDeterminant() -> Float {
+        let factorization = floatFactorization()
+        precondition(factorization.info >= 0, "LAPACK determinant failed with info \(factorization.info)")
+        if factorization.info > 0 { return .zero }
+        return luDeterminant(from: factorization.matrix, pivots: factorization.pivots, one: Float(1.0))
+    }
+
+    private func complexDoubleDeterminant() -> ComplexDouble {
+        let factorization = complexDoubleFactorization()
+        precondition(factorization.info >= 0, "LAPACK determinant failed with info \(factorization.info)")
+        if factorization.info > 0 { return .zero }
+        let matrix = BLASComplexStorage.complexValues(factorization.matrix) as [ComplexDouble]
+        return luDeterminant(from: matrix, pivots: factorization.pivots, one: ComplexDouble(1.0, 0.0))
+    }
+
+    private func complexFloatDeterminant() -> ComplexFloat {
+        let factorization = complexFloatFactorization()
+        precondition(factorization.info >= 0, "LAPACK determinant failed with info \(factorization.info)")
+        if factorization.info > 0 { return .zero }
+        let matrix = BLASComplexStorage.complexValues(factorization.matrix) as [ComplexFloat]
+        return luDeterminant(from: matrix, pivots: factorization.pivots, one: ComplexFloat(1.0, 0.0))
+    }
+
+    private func luDeterminant<T: PluScalar>(from matrix: [T], pivots: [Int32], one: T) -> T {
+        var result = one
+        for index in 0..<rows {
+            if pivots[index] != Int32(index + 1) { result = -result }
+            result *= matrix[index + rows * index]
+        }
+        return result
+    }
+
+    private func doubleInverse() -> MatrixDenseBLAS<Double> {
+        var factorization = doubleFactorization()
+        precondition(factorization.info == 0, "Matrix must be invertible")
+        let info = doubleGetri(Int32(rows), &factorization.matrix, factorization.pivots)
+        precondition(info == 0, "LAPACK inverse failed with info \(info)")
+        return MatrixDenseBLAS<Double>(rows: rows, columns: columns, values: factorization.matrix)
+    }
+
+    private func floatInverse() -> MatrixDenseBLAS<Float> {
+        var factorization = floatFactorization()
+        precondition(factorization.info == 0, "Matrix must be invertible")
+        let info = floatGetri(Int32(rows), &factorization.matrix, factorization.pivots)
+        precondition(info == 0, "LAPACK inverse failed with info \(info)")
+        return MatrixDenseBLAS<Float>(rows: rows, columns: columns, values: factorization.matrix)
+    }
+
+    private func complexDoubleInverse() -> MatrixDenseBLAS<ComplexDouble> {
+        var factorization = complexDoubleFactorization()
+        precondition(factorization.info == 0, "Matrix must be invertible")
+        let info = complexDoubleGetri(Int32(rows), &factorization.matrix, factorization.pivots)
+        precondition(info == 0, "LAPACK inverse failed with info \(info)")
+        return MatrixDenseBLAS<ComplexDouble>(rows: rows, columns: columns,
+                                              values: BLASComplexStorage.complexValues(factorization.matrix))
+    }
+
+    private func complexFloatInverse() -> MatrixDenseBLAS<ComplexFloat> {
+        var factorization = complexFloatFactorization()
+        precondition(factorization.info == 0, "Matrix must be invertible")
+        let info = complexFloatGetri(Int32(rows), &factorization.matrix, factorization.pivots)
+        precondition(info == 0, "LAPACK inverse failed with info \(info)")
+        return MatrixDenseBLAS<ComplexFloat>(rows: rows, columns: columns,
+                                             values: BLASComplexStorage.complexValues(factorization.matrix))
+    }
+
+    private func doubleGetrf(_ n: Int32, _ matrix: inout [Double]) -> (pivots: [Int32], info: Int32) {
+        switch blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate: return AccelerateOperations.dgetrf(n, &matrix)
+        #endif
+        case .openBLAS: return OpenBLASOperations.dgetrf(n, &matrix)
+        }
+    }
+
+    private func floatGetrf(_ n: Int32, _ matrix: inout [Float]) -> (pivots: [Int32], info: Int32) {
+        switch blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate: return AccelerateOperations.sgetrf(n, &matrix)
+        #endif
+        case .openBLAS: return OpenBLASOperations.sgetrf(n, &matrix)
+        }
+    }
+
+    private func complexDoubleGetrf(_ n: Int32, _ matrix: inout [Double]) -> (pivots: [Int32], info: Int32) {
+        switch blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate: return AccelerateOperations.zgetrf(n, &matrix)
+        #endif
+        case .openBLAS: return OpenBLASOperations.zgetrf(n, &matrix)
+        }
+    }
+
+    private func complexFloatGetrf(_ n: Int32, _ matrix: inout [Float]) -> (pivots: [Int32], info: Int32) {
+        switch blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate: return AccelerateOperations.cgetrf(n, &matrix)
+        #endif
+        case .openBLAS: return OpenBLASOperations.cgetrf(n, &matrix)
+        }
+    }
+
+    private func doubleGetri(_ n: Int32, _ matrix: inout [Double], _ pivots: [Int32]) -> Int32 {
+        switch blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate: return AccelerateOperations.dgetri(n, &matrix, pivots)
+        #endif
+        case .openBLAS: return OpenBLASOperations.dgetri(n, &matrix, pivots)
+        }
+    }
+
+    private func floatGetri(_ n: Int32, _ matrix: inout [Float], _ pivots: [Int32]) -> Int32 {
+        switch blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate: return AccelerateOperations.sgetri(n, &matrix, pivots)
+        #endif
+        case .openBLAS: return OpenBLASOperations.sgetri(n, &matrix, pivots)
+        }
+    }
+
+    private func complexDoubleGetri(_ n: Int32, _ matrix: inout [Double], _ pivots: [Int32]) -> Int32 {
+        switch blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate: return AccelerateOperations.zgetri(n, &matrix, pivots)
+        #endif
+        case .openBLAS: return OpenBLASOperations.zgetri(n, &matrix, pivots)
+        }
+    }
+
+    private func complexFloatGetri(_ n: Int32, _ matrix: inout [Float], _ pivots: [Int32]) -> Int32 {
+        switch blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate: return AccelerateOperations.cgetri(n, &matrix, pivots)
+        #endif
+        case .openBLAS: return OpenBLASOperations.cgetri(n, &matrix, pivots)
+        }
+    }
 }
 
 extension MatrixDenseBLAS: MatrixEigen where S == Double {
