@@ -1,3 +1,5 @@
+import Numerics
+
 public protocol TensorArithmeticBLAS: TensorArithmetic, TensorStructure where S: PluScalar {
     init(shape: [Int], initialValue: S)
     var elements: [S] { get set }
@@ -53,11 +55,16 @@ extension TensorArithmeticBLAS {
             var y = left as! [Float]
             BLAS.axpy(Int32(y.count), x, &y)
             return y as! [S]
-        case is Complex.Type:
-            var x = interleaved(right as! [Complex])
-            var y = interleaved(left as! [Complex])
+        case is ComplexDouble.Type:
+            var x = BLASComplexStorage.interleaved(right as! [ComplexDouble])
+            var y = BLASComplexStorage.interleaved(left as! [ComplexDouble])
             BLAS.zaxpy(Int32(right.count), &x, &y)
-            return complexValues(y) as! [S]
+            return BLASComplexStorage.complexValues(y) as! [S]
+        case is ComplexFloat.Type:
+            var x = BLASComplexStorage.interleaved(right as! [ComplexFloat])
+            var y = BLASComplexStorage.interleaved(left as! [ComplexFloat])
+            BLAS.caxpy(Int32(right.count), &x, &y)
+            return BLASComplexStorage.complexValues(y) as! [S]
         default:
             fatalError("Unsupported scalar type")
         }
@@ -73,21 +80,19 @@ extension TensorArithmeticBLAS {
             var result = values as! [Float]
             BLAS.scal(Int32(result.count), scalar as! Float, &result)
             return result as! [S]
-        case is Complex.Type:
-            var result = interleaved(values as! [Complex])
-            var alpha = interleaved([scalar as! Complex])
+        case is ComplexDouble.Type:
+            var result = BLASComplexStorage.interleaved(values as! [ComplexDouble])
+            var alpha = BLASComplexStorage.interleaved([scalar as! ComplexDouble])
             BLAS.zscal(Int32(values.count), &alpha, &result)
-            return complexValues(result) as! [S]
+            return BLASComplexStorage.complexValues(result) as! [S]
+        case is ComplexFloat.Type:
+            var result = BLASComplexStorage.interleaved(values as! [ComplexFloat])
+            var alpha = BLASComplexStorage.interleaved([scalar as! ComplexFloat])
+            BLAS.cscal(Int32(values.count), &alpha, &result)
+            return BLASComplexStorage.complexValues(result) as! [S]
         default:
             fatalError("Unsupported scalar type")
         }
     }
 
-    private static func interleaved(_ values: [Complex]) -> [Double] {
-        values.flatMap { [$0.real, $0.imaginary] }
-    }
-
-    private static func complexValues(_ values: [Double]) -> [Complex] {
-        stride(from: 0, to: values.count, by: 2).map { Complex(values[$0], values[$0 + 1]) }
-    }
 }

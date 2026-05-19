@@ -40,6 +40,18 @@ func compareFloatBenchmark(
     return doubleChecksum + floatChecksum
 }
 
+func compareComplexFloatBenchmark(
+    _ operation: String, _ size: String, samples: Int = 5, iterations: Int = 1,
+    complex: () -> Double, complexFloat: () -> Double
+) -> Double {
+    let (complexResult, complexChecksum) = measure(samples: samples, iterations: iterations, operation: complex)
+    let (complexFloatResult, complexFloatChecksum) = measure(
+        samples: samples, iterations: iterations, operation: complexFloat
+    )
+    printComplexFloatBenchmark(operation, size, complex: complexResult, complexFloat: complexFloatResult)
+    return complexChecksum + complexFloatChecksum
+}
+
 func summarize(_ values: [Double]) -> TimedResult {
     let sorted = values.sorted()
     return TimedResult(best: sorted[0], median: sorted[sorted.count / 2])
@@ -65,6 +77,14 @@ func printFloatBenchmark(_ operation: String, _ size: String, double: TimedResul
     print("")
 }
 
+func printComplexFloatBenchmark(_ operation: String, _ size: String, complex: TimedResult, complexFloat: TimedResult) {
+    print("  \(operation) \(size)")
+    print("    Complex:  median \(format(complex.median)) ms, best \(format(complex.best)) ms")
+    print("    ComplexF: median \(format(complexFloat.median)) ms, best \(format(complexFloat.best)) ms")
+    print("    ratio:    \(ratio(left: complex.median, "Complex", right: complexFloat.median, "ComplexF"))")
+    print("")
+}
+
 func ratio(reference: Double, blas: Double) -> String {
     if reference == 0 && blas == 0 { return "same speed" }
     if reference == 0 { return "reference faster" }
@@ -83,6 +103,16 @@ func ratio(double: Double, float: Double) -> String {
         return "Double \(format(float / double))x faster"
     }
     return "Float \(format(double / float))x faster"
+}
+
+func ratio(left: Double, _ leftLabel: String, right: Double, _ rightLabel: String) -> String {
+    if left == 0 && right == 0 { return "same speed" }
+    if left == 0 { return "\(leftLabel) faster" }
+    if right == 0 { return "\(rightLabel) faster" }
+    if left < right {
+        return "\(leftLabel) \(format(right / left))x faster"
+    }
+    return "\(rightLabel) \(format(left / right))x faster"
 }
 
 func commandOutput(_ command: String, _ arguments: [String]) -> String {
@@ -110,6 +140,14 @@ func vectorFloatValues(count: Int) -> [Float] {
     vectorValues(count: count).map(Float.init)
 }
 
+func vectorComplexValues(count: Int) -> [ComplexDouble] {
+    vectorValues(count: count).map { ComplexDouble($0, -$0 / 2.0) }
+}
+
+func vectorComplexFloatValues(count: Int) -> [ComplexFloat] {
+    vectorValues(count: count).map { ComplexFloat(Float($0), Float(-$0 / 2.0)) }
+}
+
 func matrixRows(rows: Int, columns: Int) -> [[Double]] {
     var values: [[Double]] = []
     values.reserveCapacity(rows)
@@ -128,6 +166,14 @@ func matrixFloatRows(rows: Int, columns: Int) -> [[Float]] {
     matrixRows(rows: rows, columns: columns).map { $0.map(Float.init) }
 }
 
+func matrixComplexRows(rows: Int, columns: Int) -> [[ComplexDouble]] {
+    matrixRows(rows: rows, columns: columns).map { row in row.map { ComplexDouble($0, -$0 / 3.0) } }
+}
+
+func matrixComplexFloatRows(rows: Int, columns: Int) -> [[ComplexFloat]] {
+    matrixRows(rows: rows, columns: columns).map { row in row.map { ComplexFloat(Float($0), Float(-$0 / 3.0)) } }
+}
+
 func fillTensor<T: TensorMultiplication>(_ tensor: inout T) where T.S == Double {
     for index in indexCombinations(for: tensor.shape) {
         let weighted = index.enumerated().reduce(0) { $0 + ($1.offset + 1) * ($1.element + 1) }
@@ -139,6 +185,22 @@ func fillFloatTensor<T: TensorMultiplication>(_ tensor: inout T) where T.S == Fl
     for index in indexCombinations(for: tensor.shape) {
         let weighted = index.enumerated().reduce(0) { $0 + ($1.offset + 1) * ($1.element + 1) }
         tensor[index] = Float((weighted % 29) - 14) / 5.0
+    }
+}
+
+func fillComplexTensor<T: TensorMultiplication>(_ tensor: inout T) where T.S == ComplexDouble {
+    for index in indexCombinations(for: tensor.shape) {
+        let weighted = index.enumerated().reduce(0) { $0 + ($1.offset + 1) * ($1.element + 1) }
+        let value = Double((weighted % 29) - 14) / 5.0
+        tensor[index] = ComplexDouble(value, -value / 2.0)
+    }
+}
+
+func fillComplexFloatTensor<T: TensorMultiplication>(_ tensor: inout T) where T.S == ComplexFloat {
+    for index in indexCombinations(for: tensor.shape) {
+        let weighted = index.enumerated().reduce(0) { $0 + ($1.offset + 1) * ($1.element + 1) }
+        let value = Float((weighted % 29) - 14) / 5.0
+        tensor[index] = ComplexFloat(value, -value / 2.0)
     }
 }
 
@@ -357,6 +419,63 @@ func benchmarkFloatScalars() -> Double {
     return checksum
 }
 
+func benchmarkComplexFloatScalars() -> Double {
+    print("ComplexF vs Complex")
+    let complexVector = VectorDenseBLAS(vectorComplexValues(count: 100_000))
+    let complexFloatVector = VectorDenseBLAS(vectorComplexFloatValues(count: 100_000))
+    let complexMatrixVector = VectorDenseBLAS(vectorComplexValues(count: 384))
+    let complexFloatMatrixVector = VectorDenseBLAS(vectorComplexFloatValues(count: 384))
+    let complexMatrix = MatrixDenseBLAS(matrixComplexRows(rows: 384, columns: 384))
+    let complexFloatMatrix = MatrixDenseBLAS(matrixComplexFloatRows(rows: 384, columns: 384))
+    let complexLeftMatrix = MatrixDenseBLAS(matrixComplexRows(rows: 128, columns: 128))
+    let complexRightMatrix = MatrixDenseBLAS(matrixComplexRows(rows: 128, columns: 128))
+    let complexFloatLeftMatrix = MatrixDenseBLAS(matrixComplexFloatRows(rows: 128, columns: 128))
+    let complexFloatRightMatrix = MatrixDenseBLAS(matrixComplexFloatRows(rows: 128, columns: 128))
+    var complexTensor = TensorDenseBLAS<ComplexDouble>(shape: [16, 24, 16], initialValue: .zero)
+    var complexRightTensor = TensorDenseBLAS<ComplexDouble>(shape: [16, 16], initialValue: .zero)
+    var complexFloatTensor = TensorDenseBLAS<ComplexFloat>(shape: [16, 24, 16], initialValue: .zero)
+    var complexFloatRightTensor = TensorDenseBLAS<ComplexFloat>(shape: [16, 16], initialValue: .zero)
+    fillComplexTensor(&complexTensor)
+    fillComplexTensor(&complexRightTensor)
+    fillComplexFloatTensor(&complexFloatTensor)
+    fillComplexFloatTensor(&complexFloatRightTensor)
+    var checksum = 0.0
+    checksum += compareComplexFloatBenchmark("vector add", "100,000", iterations: 10, complex: {
+        let result = complexVector + complexVector
+        return result[0].real + result[result.size - 1].real
+    }, complexFloat: {
+        let result = complexFloatVector + complexFloatVector
+        return Double(result[0].real + result[result.size - 1].real)
+    })
+    checksum += compareComplexFloatBenchmark("magnitude", "100,000", iterations: 10, complex: {
+        complexVector.magnitude()
+    }, complexFloat: {
+        Double(complexFloatVector.magnitude())
+    })
+    checksum += compareComplexFloatBenchmark("matrix-vector multiply", "384x384", complex: {
+        let result = complexMatrix * complexMatrixVector
+        return result[0].real + result[result.size - 1].real
+    }, complexFloat: {
+        let result = complexFloatMatrix * complexFloatMatrixVector
+        return Double(result[0].real + result[result.size - 1].real)
+    })
+    checksum += compareComplexFloatBenchmark("matrix-matrix multiply", "128x128", complex: {
+        let result = complexLeftMatrix * complexRightMatrix
+        return result[0, 0].real + result[result.rows - 1, result.columns - 1].real
+    }, complexFloat: {
+        let result = complexFloatLeftMatrix * complexFloatRightMatrix
+        return Double(result[0, 0].real + result[result.rows - 1, result.columns - 1].real)
+    })
+    checksum += compareComplexFloatBenchmark("tensor contraction", "16x24x16,16x16", complex: {
+        let result = multiply(complexTensor, ["i", "j", "k"], complexRightTensor, ["k", "l"])
+        return result[[0, 0, 0]].real + result[[15, 23, 15]].real
+    }, complexFloat: {
+        let result = multiply(complexFloatTensor, ["i", "j", "k"], complexFloatRightTensor, ["k", "l"])
+        return Double(result[[0, 0, 0]].real + result[[15, 23, 15]].real)
+    })
+    return checksum
+}
+
 let swiftVersion = commandOutput("/usr/bin/env", ["swift", "--version"])
 let platform = commandOutput("/usr/bin/env", ["uname", "-m"])
 
@@ -364,5 +483,6 @@ print("PlumeriaBenchmarks")
 print("Swift: \(swiftVersion)")
 print("Platform: \(platform)")
 print("")
-let blackHole = benchmarkVectors() + benchmarkMatrices() + benchmarkTensors() + benchmarkFloatScalars()
+let blackHole = benchmarkVectors() + benchmarkMatrices() + benchmarkTensors()
+    + benchmarkFloatScalars() + benchmarkComplexFloatScalars()
 print("Checksum: \(blackHole)")

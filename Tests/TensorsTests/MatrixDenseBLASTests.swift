@@ -4,10 +4,11 @@ import Testing
 @Test func MatrixDense_BLAS_accelerateComplexVectorMultiplication() {
     #if canImport(Accelerate)
     let A = complexTestMatrixA()
-    let v = VectorDenseReference<Complex>([Complex(1.0, 0.0), Complex(0.0, 1.0), Complex(2.0, 0.0)])
+    let v = VectorDenseReference<ComplexDouble>([ComplexDouble(1.0, 0.0), ComplexDouble(0.0, 1.0),
+                                                 ComplexDouble(2.0, 0.0)])
     let b = A * v
 
-    #expect(b == VectorDenseReference<Complex>([Complex(1.0, 1.0), Complex(6.0, -3.0)]))
+    #expect(b == VectorDenseReference<ComplexDouble>([ComplexDouble(1.0, 1.0), ComplexDouble(6.0, -3.0)]))
 
     var AAccelerate = A
     AAccelerate.blasImplementation = .accelerate
@@ -18,13 +19,13 @@ import Testing
 @Test func MatrixDense_BLAS_accelerateComplexMatrixMultiplication() {
     #if canImport(Accelerate)
     let A = complexTestMatrixA()
-    let B = MatrixDenseBLAS<Complex>([[Complex(1.0, 0.0), Complex(0.0, 1.0)],
-                                      [Complex(2.0, -1.0), Complex(-1.0, 0.0)],
-                                      [Complex(0.0, 0.0), Complex(1.0, 1.0)]])
+    let B = MatrixDenseBLAS<ComplexDouble>([[ComplexDouble(1.0, 0.0), ComplexDouble(0.0, 1.0)],
+                                      [ComplexDouble(2.0, -1.0), ComplexDouble(-1.0, 0.0)],
+                                      [ComplexDouble(0.0, 0.0), ComplexDouble(1.0, 1.0)]])
     let C = A * B
 
-    #expect(C.toArray() == [[Complex(5.0, -1.0), Complex(-2.0, 0.0)],
-                            [Complex(2.0, 3.0), Complex(4.0, 3.0)]])
+    #expect(C.toArray() == [[ComplexDouble(5.0, -1.0), ComplexDouble(-2.0, 0.0)],
+                            [ComplexDouble(2.0, 3.0), ComplexDouble(4.0, 3.0)]])
 
     var AAccelerate = A
     AAccelerate.blasImplementation = .accelerate
@@ -106,7 +107,7 @@ import Testing
     #expect(column.elements == [2.0, 5.0, 8.0])
 }
 
-private func complexTestMatrixA() -> MatrixDenseBLAS<Complex> {
-    MatrixDenseBLAS<Complex>([[Complex(1.0, 1.0), Complex(2.0, 0.0), Complex(0.0, -1.0)],
-                              [Complex(3.0, 0.0), Complex(-1.0, 1.0), Complex(2.0, -1.0)]])
+private func complexTestMatrixA() -> MatrixDenseBLAS<ComplexDouble> {
+    MatrixDenseBLAS<ComplexDouble>([[ComplexDouble(1.0, 1.0), ComplexDouble(2.0, 0.0), ComplexDouble(0.0, -1.0)],
+                              [ComplexDouble(3.0, 0.0), ComplexDouble(-1.0, 1.0), ComplexDouble(2.0, -1.0)]])
 }

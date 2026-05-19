@@ -42,8 +42,8 @@ enum MatrixImplementation: CaseIterable, CustomStringConvertible {
 
     func checkComplexVectorMultiplication() {
         switch self {
-        case .reference: verifyComplexVectorMultiplication(MatrixDenseReference<Complex>.self)
-        case .blas: verifyComplexVectorMultiplication(MatrixDenseBLAS<Complex>.self)
+        case .reference: verifyComplexVectorMultiplication(MatrixDenseReference<ComplexDouble>.self)
+        case .blas: verifyComplexVectorMultiplication(MatrixDenseBLAS<ComplexDouble>.self)
         }
     }
 
@@ -56,8 +56,8 @@ enum MatrixImplementation: CaseIterable, CustomStringConvertible {
 
     func checkComplexMatrixMultiplication() {
         switch self {
-        case .reference: verifyComplexMatrixMultiplication(MatrixDenseReference<Complex>.self)
-        case .blas: verifyComplexMatrixMultiplication(MatrixDenseBLAS<Complex>.self)
+        case .reference: verifyComplexMatrixMultiplication(MatrixDenseReference<ComplexDouble>.self)
+        case .blas: verifyComplexMatrixMultiplication(MatrixDenseBLAS<ComplexDouble>.self)
         }
     }
 
@@ -207,10 +207,11 @@ private func verifyVectorMultiplication<M: PluMatrix>(_ type: M.Type) where M.S 
     #expect((matrix * vector).toArray() == [20.0, 47.0])
 }
 
-private func verifyComplexVectorMultiplication<M: PluMatrix>(_ type: M.Type) where M.S == Complex {
+private func verifyComplexVectorMultiplication<M: PluMatrix>(_ type: M.Type) where M.S == ComplexDouble {
     let matrix = complexTestMatrixA(M.self)
-    let vector = VectorDenseReference<Complex>([Complex(1.0, 0.0), Complex(0.0, 1.0), Complex(2.0, 0.0)])
-    #expect(matrix * vector == VectorDenseReference<Complex>([Complex(1.0, 1.0), Complex(6.0, -3.0)]))
+    let vector = VectorDenseReference<ComplexDouble>([ComplexDouble(1.0, 0.0), ComplexDouble(0.0, 1.0),
+                                                      ComplexDouble(2.0, 0.0)])
+    #expect(matrix * vector == VectorDenseReference<ComplexDouble>([ComplexDouble(1.0, 1.0), ComplexDouble(6.0, -3.0)]))
 }
 
 private func verifyMatrixMultiplication<M: PluMatrix>(_ type: M.Type) where M.S == Double {
@@ -219,13 +220,13 @@ private func verifyMatrixMultiplication<M: PluMatrix>(_ type: M.Type) where M.S 
     #expect((left * right).toArray() == [[58.0, 64.0], [139.0, 154.0]])
 }
 
-private func verifyComplexMatrixMultiplication<M: PluMatrix>(_ type: M.Type) where M.S == Complex {
+private func verifyComplexMatrixMultiplication<M: PluMatrix>(_ type: M.Type) where M.S == ComplexDouble {
     let left = complexTestMatrixA(M.self)
-    let right = M([[Complex(1.0, 0.0), Complex(0.0, 1.0)],
-                   [Complex(2.0, -1.0), Complex(-1.0, 0.0)],
-                   [Complex(0.0, 0.0), Complex(1.0, 1.0)]])
-    #expect((left * right).toArray() == [[Complex(5.0, -1.0), Complex(-2.0, 0.0)],
-                                         [Complex(2.0, 3.0), Complex(4.0, 3.0)]])
+    let right = M([[ComplexDouble(1.0, 0.0), ComplexDouble(0.0, 1.0)],
+                   [ComplexDouble(2.0, -1.0), ComplexDouble(-1.0, 0.0)],
+                   [ComplexDouble(0.0, 0.0), ComplexDouble(1.0, 1.0)]])
+    #expect((left * right).toArray() == [[ComplexDouble(5.0, -1.0), ComplexDouble(-2.0, 0.0)],
+                                         [ComplexDouble(2.0, 3.0), ComplexDouble(4.0, 3.0)]])
 }
 
 private func verifyTranspose<M: PluMatrix>(_ type: M.Type) where M.S == Double {
@@ -274,7 +275,7 @@ private func verifyArithmetic<M: PluMatrix>(_ type: M.Type) where M.S == Double 
     #expect((left / 2.0).toArray(round: true) == [[0.6, -1.7], [0.25, 1.0]])
 }
 
-private func complexTestMatrixA<M: PluMatrix>(_ type: M.Type) -> M where M.S == Complex {
-    M([[Complex(1.0, 1.0), Complex(2.0, 0.0), Complex(0.0, -1.0)],
-       [Complex(3.0, 0.0), Complex(-1.0, 1.0), Complex(2.0, -1.0)]])
+private func complexTestMatrixA<M: PluMatrix>(_ type: M.Type) -> M where M.S == ComplexDouble {
+    M([[ComplexDouble(1.0, 1.0), ComplexDouble(2.0, 0.0), ComplexDouble(0.0, -1.0)],
+       [ComplexDouble(3.0, 0.0), ComplexDouble(-1.0, 1.0), ComplexDouble(2.0, -1.0)]])
 }

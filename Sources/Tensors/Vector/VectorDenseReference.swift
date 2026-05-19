@@ -63,4 +63,15 @@ extension VectorDenseReference: VectorArithmeticReference {
 
         self.init(elements)
     }
+
+    public func magnitude() -> S.Magnitude {
+        switch S.self {
+        case is ComplexDouble.Type:
+            return (elements as! [ComplexDouble]).map { $0.mod * $0.mod }.reduce(.zero, +).squareRoot() as! S.Magnitude
+        case is ComplexFloat.Type:
+            return (elements as! [ComplexFloat]).map { $0.mod * $0.mod }.reduce(.zero, +).squareRoot() as! S.Magnitude
+        default:
+            return elements.map { $0.magnitude * $0.magnitude }.reduce(.zero, +).squareRoot()
+        }
+    }
 }

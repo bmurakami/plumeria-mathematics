@@ -1,6 +1,7 @@
 #if canImport(Accelerate)
 import AccelerateWrapper
 #endif
+import Numerics
 import OpenBLASWrapper
 
 public struct VectorDenseBLAS<S: PluScalar>: TensorArithmeticBLAS {
@@ -84,6 +85,20 @@ extension VectorDenseBLAS: PluVector {
             return AccelerateOperations.snrm2(Int32(size), values) as! S.Magnitude
             #else
             return OpenBLASOperations.snrm2(Int32(size), values) as! S.Magnitude
+            #endif
+        case is ComplexDouble.Type:
+            var values = BLASComplexStorage.interleaved(elements as! [ComplexDouble])
+            #if canImport(Accelerate)
+            return AccelerateOperations.dznrm2(Int32(size), &values) as! S.Magnitude
+            #else
+            return OpenBLASOperations.dznrm2(Int32(size), &values) as! S.Magnitude
+            #endif
+        case is ComplexFloat.Type:
+            var values = BLASComplexStorage.interleaved(elements as! [ComplexFloat])
+            #if canImport(Accelerate)
+            return AccelerateOperations.scnrm2(Int32(size), &values) as! S.Magnitude
+            #else
+            return OpenBLASOperations.scnrm2(Int32(size), &values) as! S.Magnitude
             #endif
         default:
             return elements.map { $0.magnitude * $0.magnitude }.reduce(.zero, +).squareRoot()

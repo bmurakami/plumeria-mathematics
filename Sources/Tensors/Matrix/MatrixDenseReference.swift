@@ -1,3 +1,5 @@
+import Numerics
+
 public struct MatrixDenseReference<S: PluScalar>: MatrixArithmeticReference, TensorArithmeticReference,
     MatrixColumnMajorInitializable {
     private var elements: [[S]]
@@ -75,7 +77,8 @@ extension MatrixDenseReference: PluMatrix {
 }
 
 extension MatrixDenseReference: MatrixEigen where S == Double {
-    public typealias Eigenvectors = MatrixDenseReference<Complex>
+    public typealias Eigenvalue = ComplexDouble
+    public typealias Eigenvectors = MatrixDenseReference<ComplexDouble>
 }
 
 extension MatrixDenseReference {
