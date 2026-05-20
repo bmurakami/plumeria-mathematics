@@ -140,6 +140,51 @@ func TensorDense_permute(implementation: TensorImplementation) {
     implementation.checkPermute()
 }
 
+@Test func TensorNotation_reportsInvalidMultiplyNotation() {
+    let left = TensorDenseBLAS<Double>(shape: [2, 3], initialValue: 0.0)
+    let right = TensorDenseBLAS<Double>(shape: [3, 2], initialValue: 0.0)
+
+    #expect(tensorMultiplicationNotationValidationError(left, right, "ij -> jk") ==
+            "Tensor multiplication notation must not include an output clause")
+    #expect(tensorMultiplicationNotationValidationError(left, right, "ij") ==
+            "Tensor multiplication notation must contain two operands")
+    #expect(tensorMultiplicationNotationValidationError(left, right, "ij,j1") ==
+            "Right tensor index '1' must be an ASCII letter")
+}
+
+@Test func TensorNotation_reportsInvalidMultiplyIndices() {
+    let left = TensorDenseBLAS<Double>(shape: [2, 3], initialValue: 0.0)
+    let right = TensorDenseBLAS<Double>(shape: [4, 2], initialValue: 0.0)
+
+    #expect(tensorMultiplicationNotationValidationError(left, right, "i,jk") ==
+            "Left index count must match tensor rank: got 1, expected 2")
+    #expect(tensorMultiplicationNotationValidationError(left, right, "ii,jk") == "Left index 'i' must not repeat")
+    #expect(tensorMultiplicationNotationValidationError(left, right, "ij,jk") ==
+            "Contracted dimensions for index 'j' must match: left 3, right 4")
+}
+
+@Test func TensorNotation_reportsInvalidPermuteNotation() {
+    let tensor = TensorDenseBLAS<Double>(shape: [2, 3, 2], initialValue: 0.0)
+
+    #expect(tensorPermutationNotationValidationError(tensor, "ijk") ==
+            "Tensor permutation notation must contain an output clause")
+    #expect(tensorPermutationNotationValidationError(tensor, "ijk,jik,ikj") ==
+            "Tensor permutation notation must contain one tensor")
+    #expect(tensorPermutationNotationValidationError(tensor, "ijk -> j1k") ==
+            "Destination tensor index '1' must be an ASCII letter")
+}
+
+@Test func TensorNotation_reportsInvalidPermuteIndices() {
+    let tensor = TensorDenseBLAS<Double>(shape: [2, 3, 2], initialValue: 0.0)
+
+    #expect(tensorPermutationNotationValidationError(tensor, "ij -> ji") ==
+            "Source index count must match tensor rank: got 2, expected 3")
+    #expect(tensorPermutationNotationValidationError(tensor, "ijk -> jjk") ==
+            "Destination index 'j' must not repeat")
+    #expect(tensorPermutationNotationValidationError(tensor, "ijk -> ikl") ==
+            "Destination indices must permute source indices")
+}
+
 private func verifyInitializesWithValue<T: TensorDenseTestImplementation>(_ type: T.Type) {
     let tensor = T(shape: [2, 3], initialValue: 2.0)
     #expect(tensor.shape == [2, 3])
