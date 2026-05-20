@@ -533,11 +533,13 @@ extension MatrixDenseBLAS: MatrixEigen where S == Double {
         var real = Array(repeating: 0.0, count: rows)
         var imaginary = Array(repeating: 0.0, count: rows)
         var vectors = Array(repeating: 0.0, count: rows * columns)
+        let info: Int32
+        switch blasImplementation {
         #if canImport(Accelerate)
-        let info = AccelerateOperations.dgeev(n, &matrix, &real, &imaginary, &vectors)
-        #else
-        let info = OpenBLASOperations.dgeev(n, &matrix, &real, &imaginary, &vectors)
+        case .accelerate: info = AccelerateOperations.dgeev(n, &matrix, &real, &imaginary, &vectors)
         #endif
+        case .openBLAS: info = OpenBLASOperations.dgeev(n, &matrix, &real, &imaginary, &vectors)
+        }
         precondition(info == 0, "Eigen decomposition failed with LAPACK info \(info)")
         return Eigen(values: eigenvalues(real: real, imaginary: imaginary),
                      vectors: eigenvectors(real: real, imaginary: imaginary, vectors: vectors))
