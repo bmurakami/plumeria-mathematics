@@ -432,7 +432,6 @@ public enum OpenBLASOperations {
         return info
     }
 
-    #if !canImport(Accelerate)
     public static func dgeev(
         _ n: Int32, _ a: inout [Double], _ wr: inout [Double], _ wi: inout [Double], _ vr: inout [Double]
     ) -> Int32 {
@@ -454,5 +453,4 @@ public enum OpenBLASOperations {
                          &work, &lwork, &info, 1, 1)
         return info
     }
-    #endif
 }

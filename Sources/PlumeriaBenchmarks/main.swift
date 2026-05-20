@@ -52,6 +52,18 @@ func compareComplexFloatBenchmark(
     return complexChecksum + complexFloatChecksum
 }
 
+func compareImplementationBenchmark(
+    _ operation: String, _ size: String, samples: Int = 3, iterations: Int = 1,
+    accelerate: () -> Double, openBLAS: () -> Double
+) -> Double {
+    let (accelerateResult, accelerateChecksum) = measure(
+        samples: samples, iterations: iterations, operation: accelerate
+    )
+    let (openBLASResult, openBLASChecksum) = measure(samples: samples, iterations: iterations, operation: openBLAS)
+    printImplementationBenchmark(operation, size, accelerate: accelerateResult, openBLAS: openBLASResult)
+    return accelerateChecksum + openBLASChecksum
+}
+
 func summarize(_ values: [Double]) -> TimedResult {
     let sorted = values.sorted()
     return TimedResult(best: sorted[0], median: sorted[sorted.count / 2])
@@ -83,6 +95,14 @@ func printComplexFloatBenchmark(_ operation: String, _ size: String, complex: Ti
     print("    ComplexFloat:  median \(format(complexFloat.median)) ms, best \(format(complexFloat.best)) ms")
     let speedRatio = ratio(left: complex.median, "ComplexDouble", right: complexFloat.median, "ComplexFloat")
     print("    ratio:         \(speedRatio)")
+    print("")
+}
+
+func printImplementationBenchmark(_ operation: String, _ size: String, accelerate: TimedResult, openBLAS: TimedResult) {
+    print("  \(operation) \(size)")
+    print("    Accelerate: median \(format(accelerate.median)) ms, best \(format(accelerate.best)) ms")
+    print("    OpenBLAS:   median \(format(openBLAS.median)) ms, best \(format(openBLAS.best)) ms")
+    print("    ratio:      \(ratio(left: accelerate.median, "Accelerate", right: openBLAS.median, "OpenBLAS"))")
     print("")
 }
 
@@ -131,6 +151,20 @@ func commandOutput(_ command: String, _ arguments: [String]) -> String {
     } catch {
         return "unknown"
     }
+}
+
+func determinantChecksum(_ value: Double) -> Double {
+    if value == 0.0 { return 0.0 }
+    let sign = value < 0.0 ? -1.0 : 1.0
+    if value.isInfinite { return sign * 308.0 }
+    return sign * Foundation.log10(abs(value))
+}
+
+func writeBenchmarkResultToNullDevice(_ value: Double) {
+    // Make benchmark results observable so the compiler does not release builds do not optimize the
+    // calculations away by skipping them.
+    guard let output = FileHandle(forWritingAtPath: "/dev/null") else { return }
+    output.write(Data("\(value)\n".utf8))
 }
 
 func vectorValues(count: Int) -> [Double] {
@@ -320,9 +354,9 @@ func benchmarkMatrices() -> Double {
         return result[0, 0] + result[result.rows - 1, result.columns - 1]
     })
     checksum += compareBenchmark("determinant", "96x96", samples: 3, reference: {
-        referenceDet.det
+        determinantChecksum(referenceDet.det)
     }, blas: {
-        blasDet.det
+        determinantChecksum(blasDet.det)
     })
     checksum += compareBenchmark("inverse", "96x96", samples: 3, reference: {
         let result = referenceDet.inverse()
@@ -382,7 +416,7 @@ func benchmarkTensors() -> Double {
 }
 
 func benchmarkFloatScalars() -> Double {
-    print("Float vs Double")
+    print("Float vs. Double")
     let doubleVector = VectorDenseBLAS(vectorValues(count: 100_000))
     let floatVector = VectorDenseBLAS(vectorFloatValues(count: 100_000))
     let doubleMatrixVector = VectorDenseBLAS(vectorValues(count: 384))
@@ -445,7 +479,7 @@ func benchmarkFloatScalars() -> Double {
 }
 
 func benchmarkComplexFloatScalars() -> Double {
-    print("ComplexFloat vs ComplexDouble")
+    print("ComplexFloat vs. ComplexDouble")
     let complexVector = VectorDenseBLAS(vectorComplexValues(count: 100_000))
     let complexFloatVector = VectorDenseBLAS(vectorComplexFloatValues(count: 100_000))
     let complexMatrixVector = VectorDenseBLAS(vectorComplexValues(count: 384))
@@ -501,6 +535,183 @@ func benchmarkComplexFloatScalars() -> Double {
     return checksum
 }
 
+func benchmarkAccelerateVsOpenBLAS() -> Double {
+    print("Accelerate vs. OpenBLAS")
+    #if canImport(Accelerate)
+    let matrixVector = VectorDenseBLAS(vectorValues(count: 1_024))
+    let largeMatrixVector = VectorDenseBLAS(vectorValues(count: 2_048))
+    let hugeMatrixVector = VectorDenseBLAS(vectorValues(count: 4_096))
+    let generatedRows = matrixRows(rows: 1_024, columns: 1_024)
+    let largeGeneratedRows = matrixRows(rows: 2_048, columns: 2_048)
+    let hugeGeneratedRows = matrixRows(rows: 4_096, columns: 4_096)
+    let leftRows = matrixRows(rows: 256, columns: 256)
+    let rightRows = matrixRows(rows: 256, columns: 256)
+    let largeLeftRows = matrixRows(rows: 512, columns: 512)
+    let largeRightRows = matrixRows(rows: 512, columns: 512)
+    let hugeLeftRows = matrixRows(rows: 1_024, columns: 1_024)
+    let hugeRightRows = matrixRows(rows: 1_024, columns: 1_024)
+    let hugeFloatLeftRows = hugeLeftRows.map { $0.map(Float.init) }
+    let hugeFloatRightRows = hugeRightRows.map { $0.map(Float.init) }
+    let lapackRows = invertibleMatrixRows(size: 160)
+    let largeLAPACKRows = invertibleMatrixRows(size: 256)
+    let eigenRows = matrixRows(rows: 96, columns: 96)
+    let largeEigenRows = matrixRows(rows: 160, columns: 160)
+    var accelerateMatrix = MatrixDenseBLAS(generatedRows)
+    var openBLASMatrix = MatrixDenseBLAS(generatedRows)
+    var accelerateLargeMatrix = MatrixDenseBLAS(largeGeneratedRows)
+    var openBLASLargeMatrix = MatrixDenseBLAS(largeGeneratedRows)
+    var accelerateHugeMatrix = MatrixDenseBLAS(hugeGeneratedRows)
+    var openBLASHugeMatrix = MatrixDenseBLAS(hugeGeneratedRows)
+    var accelerateLeft = MatrixDenseBLAS(leftRows)
+    var openBLASLeft = MatrixDenseBLAS(leftRows)
+    var accelerateRight = MatrixDenseBLAS(rightRows)
+    var openBLASRight = MatrixDenseBLAS(rightRows)
+    var accelerateLargeLeft = MatrixDenseBLAS(largeLeftRows)
+    var openBLASLargeLeft = MatrixDenseBLAS(largeLeftRows)
+    var accelerateLargeRight = MatrixDenseBLAS(largeRightRows)
+    var openBLASLargeRight = MatrixDenseBLAS(largeRightRows)
+    var accelerateHugeLeft = MatrixDenseBLAS(hugeLeftRows)
+    var openBLASHugeLeft = MatrixDenseBLAS(hugeLeftRows)
+    var accelerateHugeRight = MatrixDenseBLAS(hugeRightRows)
+    var openBLASHugeRight = MatrixDenseBLAS(hugeRightRows)
+    var accelerateHugeFloatLeft = MatrixDenseBLAS<Float>(hugeFloatLeftRows)
+    var openBLASHugeFloatLeft = MatrixDenseBLAS<Float>(hugeFloatLeftRows)
+    var accelerateHugeFloatRight = MatrixDenseBLAS<Float>(hugeFloatRightRows)
+    var openBLASHugeFloatRight = MatrixDenseBLAS<Float>(hugeFloatRightRows)
+    var accelerateLAPACK = MatrixDenseBLAS(lapackRows)
+    var openBLASLAPACK = MatrixDenseBLAS(lapackRows)
+    var accelerateLargeLAPACK = MatrixDenseBLAS(largeLAPACKRows)
+    var openBLASLargeLAPACK = MatrixDenseBLAS(largeLAPACKRows)
+    var accelerateEigen = MatrixDenseBLAS(eigenRows)
+    var openBLASEigen = MatrixDenseBLAS(eigenRows)
+    var accelerateLargeEigen = MatrixDenseBLAS(largeEigenRows)
+    var openBLASLargeEigen = MatrixDenseBLAS(largeEigenRows)
+    accelerateMatrix.blasImplementation = .accelerate
+    accelerateLargeMatrix.blasImplementation = .accelerate
+    accelerateHugeMatrix.blasImplementation = .accelerate
+    accelerateLeft.blasImplementation = .accelerate
+    accelerateRight.blasImplementation = .accelerate
+    accelerateLargeLeft.blasImplementation = .accelerate
+    accelerateLargeRight.blasImplementation = .accelerate
+    accelerateHugeLeft.blasImplementation = .accelerate
+    accelerateHugeRight.blasImplementation = .accelerate
+    accelerateHugeFloatLeft.blasImplementation = .accelerate
+    accelerateHugeFloatRight.blasImplementation = .accelerate
+    accelerateLAPACK.blasImplementation = .accelerate
+    accelerateLargeLAPACK.blasImplementation = .accelerate
+    accelerateEigen.blasImplementation = .accelerate
+    accelerateLargeEigen.blasImplementation = .accelerate
+    openBLASMatrix.blasImplementation = .openBLAS
+    openBLASLargeMatrix.blasImplementation = .openBLAS
+    openBLASHugeMatrix.blasImplementation = .openBLAS
+    openBLASLeft.blasImplementation = .openBLAS
+    openBLASRight.blasImplementation = .openBLAS
+    openBLASLargeLeft.blasImplementation = .openBLAS
+    openBLASLargeRight.blasImplementation = .openBLAS
+    openBLASHugeLeft.blasImplementation = .openBLAS
+    openBLASHugeRight.blasImplementation = .openBLAS
+    openBLASHugeFloatLeft.blasImplementation = .openBLAS
+    openBLASHugeFloatRight.blasImplementation = .openBLAS
+    openBLASLAPACK.blasImplementation = .openBLAS
+    openBLASLargeLAPACK.blasImplementation = .openBLAS
+    openBLASEigen.blasImplementation = .openBLAS
+    openBLASLargeEigen.blasImplementation = .openBLAS
+    var checksum = 0.0
+    checksum += compareImplementationBenchmark("matrix-vector multiply", "1,024x1,024", accelerate: {
+        let result = accelerateMatrix * matrixVector
+        return result[0] + result[result.size - 1]
+    }, openBLAS: {
+        let result = openBLASMatrix * matrixVector
+        return result[0] + result[result.size - 1]
+    })
+    checksum += compareImplementationBenchmark("matrix-matrix multiply", "256x256", accelerate: {
+        let result = accelerateLeft * accelerateRight
+        return result[0, 0] + result[result.rows - 1, result.columns - 1]
+    }, openBLAS: {
+        let result = openBLASLeft * openBLASRight
+        return result[0, 0] + result[result.rows - 1, result.columns - 1]
+    })
+    checksum += compareImplementationBenchmark("matrix-vector multiply", "2,048x2,048", samples: 2, accelerate: {
+        let result = accelerateLargeMatrix * largeMatrixVector
+        return result[0] + result[result.size - 1]
+    }, openBLAS: {
+        let result = openBLASLargeMatrix * largeMatrixVector
+        return result[0] + result[result.size - 1]
+    })
+    checksum += compareImplementationBenchmark("matrix-matrix multiply", "512x512", samples: 2, accelerate: {
+        let result = accelerateLargeLeft * accelerateLargeRight
+        return result[0, 0] + result[result.rows - 1, result.columns - 1]
+    }, openBLAS: {
+        let result = openBLASLargeLeft * openBLASLargeRight
+        return result[0, 0] + result[result.rows - 1, result.columns - 1]
+    })
+    checksum += compareImplementationBenchmark("matrix-vector multiply", "4,096x4,096", samples: 1, accelerate: {
+        let result = accelerateHugeMatrix * hugeMatrixVector
+        return result[0] + result[result.size - 1]
+    }, openBLAS: {
+        let result = openBLASHugeMatrix * hugeMatrixVector
+        return result[0] + result[result.size - 1]
+    })
+    checksum += compareImplementationBenchmark("matrix-matrix multiply", "1,024x1,024", samples: 1, accelerate: {
+        let result = accelerateHugeLeft * accelerateHugeRight
+        return result[0, 0] + result[result.rows - 1, result.columns - 1]
+    }, openBLAS: {
+        let result = openBLASHugeLeft * openBLASHugeRight
+        return result[0, 0] + result[result.rows - 1, result.columns - 1]
+    })
+    checksum += compareImplementationBenchmark("Float matrix-matrix multiply", "1,024x1,024", samples: 1, accelerate: {
+        let result = accelerateHugeFloatLeft * accelerateHugeFloatRight
+        return Double(result[0, 0] + result[result.rows - 1, result.columns - 1])
+    }, openBLAS: {
+        let result = openBLASHugeFloatLeft * openBLASHugeFloatRight
+        return Double(result[0, 0] + result[result.rows - 1, result.columns - 1])
+    })
+    checksum += compareImplementationBenchmark("determinant", "160x160", accelerate: {
+        determinantChecksum(accelerateLAPACK.det)
+    }, openBLAS: {
+        determinantChecksum(openBLASLAPACK.det)
+    })
+    checksum += compareImplementationBenchmark("inverse", "160x160", accelerate: {
+        let result = accelerateLAPACK.inverse()
+        return result[0, 0] + result[result.rows - 1, result.columns - 1]
+    }, openBLAS: {
+        let result = openBLASLAPACK.inverse()
+        return result[0, 0] + result[result.rows - 1, result.columns - 1]
+    })
+    checksum += compareImplementationBenchmark("determinant", "256x256", samples: 2, accelerate: {
+        determinantChecksum(accelerateLargeLAPACK.det)
+    }, openBLAS: {
+        determinantChecksum(openBLASLargeLAPACK.det)
+    })
+    checksum += compareImplementationBenchmark("inverse", "256x256", samples: 2, accelerate: {
+        let result = accelerateLargeLAPACK.inverse()
+        return result[0, 0] + result[result.rows - 1, result.columns - 1]
+    }, openBLAS: {
+        let result = openBLASLargeLAPACK.inverse()
+        return result[0, 0] + result[result.rows - 1, result.columns - 1]
+    })
+    checksum += compareImplementationBenchmark("eigen", "96x96", accelerate: {
+        let result = accelerateEigen.eigen()
+        return result.values[0].real + result.values[result.values.count - 1].real
+    }, openBLAS: {
+        let result = openBLASEigen.eigen()
+        return result.values[0].real + result.values[result.values.count - 1].real
+    })
+    checksum += compareImplementationBenchmark("eigen", "160x160", samples: 2, accelerate: {
+        let result = accelerateLargeEigen.eigen()
+        return result.values[0].real + result.values[result.values.count - 1].real
+    }, openBLAS: {
+        let result = openBLASLargeEigen.eigen()
+        return result.values[0].real + result.values[result.values.count - 1].real
+    })
+    return checksum
+    #else
+    print("  skipped: Accelerate is only available on Apple platforms")
+    print("")
+    return 0.0
+    #endif
+}
+
 let swiftVersion = commandOutput("/usr/bin/env", ["swift", "--version"])
 let platform = commandOutput("/usr/bin/env", ["uname", "-m"])
 
@@ -509,5 +720,5 @@ print("Swift: \(swiftVersion)")
 print("Platform: \(platform)")
 print("")
 let blackHole = benchmarkVectors() + benchmarkMatrices() + benchmarkTensors()
-    + benchmarkFloatScalars() + benchmarkComplexFloatScalars()
-print("Checksum: \(blackHole)")
+    + benchmarkFloatScalars() + benchmarkComplexFloatScalars() + benchmarkAccelerateVsOpenBLAS()
+writeBenchmarkResultToNullDevice(blackHole)
