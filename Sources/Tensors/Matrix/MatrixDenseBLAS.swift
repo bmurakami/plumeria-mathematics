@@ -128,35 +128,51 @@ extension MatrixDenseBLAS {
     }
 
     public subscript(rows: Range<Int>, columns: Range<Int>) -> MatrixDenseBLAS<S> {
-        slice(rows: SliceRange(rows), columns: SliceRange(columns))
+        get { slice(rows: SliceRange(rows), columns: SliceRange(columns)) }
+        set { view.assign(newValue.view, to: [SliceRange(rows), SliceRange(columns)]) }
     }
 
     public subscript(rows: Range<Int>, columns: TensorSliceIndex) -> MatrixDenseBLAS<S> {
-        slice(rows: SliceRange(rows), columns: columns.sliceRange(dimensionSize: self.columns))
+        get { slice(rows: SliceRange(rows), columns: columns.sliceRange(dimensionSize: self.columns)) }
+        set { view.assign(newValue.view, to: [SliceRange(rows), columns.sliceRange(dimensionSize: self.columns)]) }
     }
 
     public subscript(rows: TensorSliceIndex, columns: Range<Int>) -> MatrixDenseBLAS<S> {
-        slice(rows: rows.sliceRange(dimensionSize: self.rows), columns: SliceRange(columns))
+        get { slice(rows: rows.sliceRange(dimensionSize: self.rows), columns: SliceRange(columns)) }
+        set { view.assign(newValue.view, to: [rows.sliceRange(dimensionSize: self.rows), SliceRange(columns)]) }
     }
 
     public subscript(rows: TensorSliceIndex, columns: TensorSliceIndex) -> MatrixDenseBLAS<S> {
-        slice(rows: rows.sliceRange(dimensionSize: self.rows), columns: columns.sliceRange(dimensionSize: self.columns))
+        get {
+            let rowRange = rows.sliceRange(dimensionSize: self.rows)
+            let columnRange = columns.sliceRange(dimensionSize: self.columns)
+            return slice(rows: rowRange, columns: columnRange)
+        }
+        set {
+            let rowRange = rows.sliceRange(dimensionSize: self.rows)
+            let columnRange = columns.sliceRange(dimensionSize: self.columns)
+            view.assign(newValue.view, to: [rowRange, columnRange])
+        }
     }
 
     public subscript(row: Int, columns: Range<Int>) -> VectorFlatView<S> {
-        slice(row: row, columns: SliceRange(columns))
+        get { slice(row: row, columns: SliceRange(columns)) }
+        set { view.assign(newValue.view, to: [.index(row), TensorSliceIndex.range(columns)]) }
     }
 
     public subscript(row: Int, columns: TensorSliceIndex) -> VectorFlatView<S> {
-        slice(row: row, columns: columns.sliceRange(dimensionSize: self.columns))
+        get { slice(row: row, columns: columns.sliceRange(dimensionSize: self.columns)) }
+        set { view.assign(newValue.view, to: [.index(row), columns]) }
     }
 
     public subscript(rows: Range<Int>, column: Int) -> VectorFlatView<S> {
-        slice(rows: SliceRange(rows), column: column)
+        get { slice(rows: SliceRange(rows), column: column) }
+        set { view.assign(newValue.view, to: [TensorSliceIndex.range(rows), .index(column)]) }
     }
 
     public subscript(rows: TensorSliceIndex, column: Int) -> VectorFlatView<S> {
-        slice(rows: rows.sliceRange(dimensionSize: self.rows), column: column)
+        get { slice(rows: rows.sliceRange(dimensionSize: self.rows), column: column) }
+        set { view.assign(newValue.view, to: [rows, .index(column)]) }
     }
 }
 

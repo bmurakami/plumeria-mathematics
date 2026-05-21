@@ -56,7 +56,8 @@ extension TensorFlatView: TensorView {
     }
 
     public subscript(_ indices: TensorSliceIndex...) -> TensorFlatView<Scalar> {
-        slice(indices)
+        get { slice(indices) }
+        set { assign(newValue, to: indices) }
     }
 }
 
@@ -121,6 +122,16 @@ extension TensorFlatView {
         precondition(view.rank == 2, "Tensor slice result must have rank 2")
         return MatrixFlatView(view: view)
     }
+
+    public mutating func assign(_ replacement: TensorFlatView<Scalar>, to indices: [TensorSliceIndex]) {
+        let destination = slice(indices)
+        assign(replacement.elements, replacementShape: replacement.shape, destination: destination)
+    }
+
+    public mutating func assign(_ replacement: TensorFlatView<Scalar>, to ranges: [SliceRange]) {
+        let destination = slice(ranges)
+        assign(replacement.elements, replacementShape: replacement.shape, destination: destination)
+    }
 }
 
 extension TensorFlatView {
@@ -139,6 +150,19 @@ extension TensorFlatView {
             }
         }
         return strides
+    }
+
+    private static func indexCombinations(for shape: [Int]) -> [[Int]] {
+        if shape.isEmpty { return [[]] }
+        if shape.contains(0) { return [] }
+        return (0..<shape.reduce(1, *)).map { flatIndex in
+            var remaining = flatIndex
+            return shape.map { dimension in
+                let index = remaining % dimension
+                remaining /= dimension
+                return index
+            }
+        }
     }
 
     private func linearIndex(_ indices: [Int]) -> Int {
@@ -167,9 +191,27 @@ extension TensorFlatView {
         }
     }
 
+    private mutating func assign(_ replacementElements: [Scalar], replacementShape: [Int],
+                                 destination: TensorFlatView<Scalar>) {
+        let error = sliceAssignmentShapeError(destination: destination.shape, replacement: replacementShape)
+        if let error {
+            preconditionFailure(error)
+        }
+        ensureUniqueStorage()
+        for (index, element) in zip(Self.indexCombinations(for: destination.shape), replacementElements) {
+            let linearIndex = destination.offset + zip(index, destination.strides).map(*).reduce(0, +)
+            storage[linearIndex] = element
+        }
+    }
+
     private mutating func ensureUniqueStorage() {
         if !isKnownUniquelyReferenced(&storage) {
             storage = TensorStorage(storage.elements)
         }
     }
+}
+
+func sliceAssignmentShapeError(destination: [Int], replacement: [Int]) -> String? {
+    if destination == replacement { return nil }
+    return "Assigned slice shape \(replacement) must match destination slice shape \(destination)"
 }

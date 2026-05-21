@@ -4,6 +4,7 @@ import Testing
 protocol TensorDenseTestImplementation: TensorArithmetic, TensorMultiplication where S == Double {
     init(shape: [Int], initialValue: Double)
     init(shape: [Int], elements: [Double])
+    subscript(_ indices: TensorSliceIndex...) -> Self { get set }
     func flatten() -> [Double]
 }
 
@@ -90,6 +91,13 @@ enum TensorImplementation: CaseIterable, CustomStringConvertible {
         case .blas: verifyPermute(TensorDenseBLAS<Double>.self)
         }
     }
+
+    func checkSliceAssignment() {
+        switch self {
+        case .reference: verifySliceAssignment(TensorDenseReference<Double>.self)
+        case .blas: verifySliceAssignment(TensorDenseBLAS<Double>.self)
+        }
+    }
 }
 
 @Test(arguments: TensorImplementation.allCases)
@@ -140,6 +148,11 @@ func TensorDense_permute(implementation: TensorImplementation) {
     implementation.checkPermute()
 }
 
+@Test(arguments: TensorImplementation.allCases)
+func TensorDense_sliceAssignment(implementation: TensorImplementation) {
+    implementation.checkSliceAssignment()
+}
+
 private func verifyInitializesWithValue<T: TensorDenseTestImplementation>(_ type: T.Type) {
     let tensor = T(shape: [2, 3], initialValue: 2.0)
     #expect(tensor.shape == [2, 3])
@@ -186,6 +199,19 @@ private func verifyFlatArrayRoundTrip<T: TensorDenseTestImplementation>(_ type: 
     #expect(tensor[[1, 2, 1]] == 0.0)
     #expect(tensor.flatten() == elements)
     #expect(copy == tensor)
+}
+
+private func verifySliceAssignment<T: TensorDenseTestImplementation>(_ type: T.Type) {
+    var tensor = T(shape: [2, 3, 2], elements: [
+        1.0, -1.0, 2.0, -2.0, 3.0, -3.0, 0.0, 1.0, -2.0, 2.0, 3.0, 0.0
+    ])
+    tensor[all, range(1..<3), 0] = T(shape: [2, 2], elements: [20.0, 30.0, 40.0, 50.0])
+
+    #expect(tensor[[0, 1, 0]] == 20.0)
+    #expect(tensor[[1, 1, 0]] == 30.0)
+    #expect(tensor[[0, 2, 0]] == 40.0)
+    #expect(tensor[[1, 2, 0]] == 50.0)
+    #expect(tensor[[0, 1, 1]] == -2.0)
 }
 
 private func verifyRankZeroTensors<T: TensorDenseTestImplementation>(_ type: T.Type) {

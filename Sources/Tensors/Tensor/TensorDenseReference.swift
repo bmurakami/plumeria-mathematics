@@ -51,6 +51,27 @@ extension TensorDenseReference {
         set { self[indices] = newValue }
     }
 
+    public subscript(_ indices: TensorSliceIndex...) -> TensorDenseReference<S> {
+        get {
+            let mapping = Self.sliceMapping(indices, shape: shape)
+            var result = TensorDenseReference(shape: mapping.shape, initialValue: .zero)
+            for index in Self.indexCombinations(for: mapping.shape) {
+                result[index] = self[mapping.sourceIndex(index)]
+            }
+            return result
+        }
+        set {
+            let mapping = Self.sliceMapping(indices, shape: shape)
+            let error = sliceAssignmentShapeError(destination: mapping.shape, replacement: newValue.shape)
+            if let error {
+                preconditionFailure(error)
+            }
+            for index in Self.indexCombinations(for: mapping.shape) {
+                self[mapping.sourceIndex(index)] = newValue[index]
+            }
+        }
+    }
+
     public func toNestedArray() -> TensorNestedArray<S> { storage }
 }
 
@@ -104,5 +125,36 @@ extension TensorDenseReference {
                 return index
             }
         }
+    }
+
+    private static func sliceMapping(
+        _ indices: [TensorSliceIndex],
+        shape: [Int]
+    ) -> (shape: [Int], sourceIndex: ([Int]) -> [Int]) {
+        precondition(indices.count == shape.count, "Slice rank must match tensor rank")
+        var resultShape: [Int] = []
+        var dimensions: [(fixed: Int?, range: SliceRange?)] = []
+        for (dimension, index) in indices.enumerated() {
+            switch index {
+            case .index:
+                dimensions.append((index.fixedIndex(dimensionSize: shape[dimension]), nil))
+            case .range, .step, .all:
+                let range = index.sliceRange(dimensionSize: shape[dimension])
+                let lastIndex = range.start + (range.length - 1) * range.step
+                precondition(range.start <= shape[dimension], "Slice start is out of bounds")
+                precondition(range.length == 0 || lastIndex < shape[dimension], "Slice end is out of bounds")
+                resultShape.append(range.length)
+                dimensions.append((nil, range))
+            }
+        }
+        return (resultShape, { resultIndex in
+            var resultPosition = 0
+            return dimensions.map { dimension in
+                if let fixed = dimension.fixed { return fixed }
+                let range = dimension.range!
+                defer { resultPosition += 1 }
+                return range.start + resultIndex[resultPosition] * range.step
+            }
+        })
     }
 }
