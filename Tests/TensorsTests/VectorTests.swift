@@ -70,6 +70,13 @@ enum VectorImplementation: CaseIterable, CustomStringConvertible {
         case .blas: verifyTensorStructure(VectorDenseBLAS<Double>.self)
         }
     }
+
+    func checkSliceAssignment() {
+        switch self {
+        case .reference: verifySliceAssignment(VectorDenseReference<Double>.self)
+        case .blas: verifySliceAssignment(VectorDenseBLAS<Double>.self)
+        }
+    }
 }
 
 @Test(arguments: VectorImplementation.allCases)
@@ -97,6 +104,9 @@ func VectorDense_toArray(implementation: VectorImplementation) { implementation.
 
 @Test(arguments: VectorImplementation.allCases)
 func VectorDense_tensorStructure(implementation: VectorImplementation) { implementation.checkTensorStructure() }
+
+@Test(arguments: VectorImplementation.allCases)
+func VectorDense_sliceAssignment(implementation: VectorImplementation) { implementation.checkSliceAssignment() }
 
 @Test func DefaultVector_aliasUsesRecommendedImplementation() {
     let vector = Vector<Double>([1.0, 2.0, 3.0])
@@ -131,6 +141,14 @@ private func verifyNestedArrayInitializer<V: PluVector>(_ type: V.Type) where V.
     #expect(vector.shape == [3])
     #expect(vector.rank == 1)
     #expect(vector.toArray() == [1.0, -2.0, 3.0])
+}
+
+private func verifySliceAssignment<V: PluVector>(_ type: V.Type) where V.S == Double {
+    var vector = V([1.0, 2.0, 3.0, 4.0])
+    vector[1..<3] = V([20.0, 30.0])
+    vector[step(0..<4, by: 2)] = V([10.0, 40.0])
+
+    #expect(vector.toArray() == [10.0, 20.0, 40.0, 4.0])
 }
 
 private func verifyPhysicsOperations<V: PluVector>(_ type: V.Type) where V.S == Double {

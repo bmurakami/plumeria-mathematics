@@ -37,6 +37,11 @@ extension TensorDenseBLAS {
         get { self[indices] }
         set { self[indices] = newValue }
     }
+
+    public subscript(_ indices: TensorSliceIndex...) -> TensorDenseBLAS<S> {
+        get { TensorDenseBLAS(view: view.slice(indices)) }
+        set { view.assign(newValue.view, to: indices) }
+    }
 }
 
 // MARK: - TensorMultiplication

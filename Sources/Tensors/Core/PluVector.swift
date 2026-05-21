@@ -15,6 +15,32 @@ extension PluVector {
     public func toArray() -> [S] {
         return toArray(round: false)
     }
+
+    public subscript(range: Range<Int>) -> Self {
+        get { self[TensorSliceIndex.range(range)] }
+        set { self[TensorSliceIndex.range(range)] = newValue }
+    }
+
+    public subscript(index: TensorSliceIndex) -> Self {
+        get {
+            let range = index.sliceRange(dimensionSize: size)
+            var result = Self(Array(repeating: .zero, count: range.length))
+            for position in 0..<range.length {
+                result[position] = self[range.start + position * range.step]
+            }
+            return result
+        }
+        set {
+            let range = index.sliceRange(dimensionSize: size)
+            let error = sliceAssignmentShapeError(destination: [range.length], replacement: newValue.shape)
+            if let error {
+                preconditionFailure(error)
+            }
+            for position in 0..<range.length {
+                self[range.start + position * range.step] = newValue[position]
+            }
+        }
+    }
 }
 
 extension PluVector {
@@ -29,10 +55,9 @@ extension PluVector {
 
     public func cross<V: PluVector>(_ other: V) -> Self where V.S == S {
         precondition(size == 3 && other.size == 3, "Cross product requires 3D vectors")
-        return Self([
-            self[1] * other[2] - self[2] * other[1],
-            self[2] * other[0] - self[0] * other[2],
-            self[0] * other[1] - self[1] * other[0]
-        ])
+        let x = self[1] * other[2] - self[2] * other[1]
+        let y = self[2] * other[0] - self[0] * other[2]
+        let z = self[0] * other[1] - self[1] * other[0]
+        return Self([x, y, z])
     }
 }
