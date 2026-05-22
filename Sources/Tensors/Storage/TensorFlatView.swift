@@ -20,7 +20,7 @@ public struct TensorFlatView<Scalar: PluScalar>: Equatable {
 extension TensorFlatView: TensorView {
     public var rank: Int { shape.count }
     public var count: Int { shape.reduce(1, *) }
-    public var elements: [Scalar] { (0..<count).map { self[tensorIndices(forFlatIndex: $0)] } }
+    public var elements: [Scalar] { flattenedElements() }
     public var isContiguous: Bool { strides == Self.columnMajorStrides(for: shape) }
     public var contiguousElements: [Scalar]? { isContiguous && offset == 0 ? storage.elements : nil }
 
@@ -125,12 +125,36 @@ extension TensorFlatView {
 
     public mutating func assign(_ replacement: TensorFlatView<Scalar>, to indices: [TensorSliceIndex]) {
         let destination = slice(indices)
-        assign(replacement.elements, replacementShape: replacement.shape, destination: destination)
+        assign(replacement, to: destination)
     }
 
     public mutating func assign(_ replacement: TensorFlatView<Scalar>, to ranges: [SliceRange]) {
         let destination = slice(ranges)
-        assign(replacement.elements, replacementShape: replacement.shape, destination: destination)
+        assign(replacement, to: destination)
+    }
+
+    mutating func assign(_ expression: MatrixExpression<Scalar>, rows: Int, columns: Int, to ranges: [SliceRange]) {
+        var destination = slice(ranges)
+        let error = sliceAssignmentShapeError(destination: destination.shape, replacement: [rows, columns])
+        if let error { preconditionFailure(error) }
+        ensureUniqueStorage()
+        destination.storage = storage
+        if Scalar.self == Double.self {
+            var doubleDestination = destination as! TensorFlatView<Double>
+            (expression as! MatrixExpression<Double>).assign(to: &doubleDestination)
+            destination = doubleDestination as! TensorFlatView<Scalar>
+        } else {
+            expression.assign(to: &destination)
+        }
+    }
+
+    func value(index0: Int, index1: Int) -> Scalar {
+        storage.elements[offset + index0 * strides[0] + index1 * strides[1]]
+    }
+
+    mutating func setValue(_ value: Scalar, index0: Int, index1: Int) {
+        ensureUniqueStorage()
+        storage[offset + index0 * strides[0] + index1 * strides[1]] = value
     }
 }
 
@@ -152,19 +176,6 @@ extension TensorFlatView {
         return strides
     }
 
-    private static func indexCombinations(for shape: [Int]) -> [[Int]] {
-        if shape.isEmpty { return [[]] }
-        if shape.contains(0) { return [] }
-        return (0..<shape.reduce(1, *)).map { flatIndex in
-            var remaining = flatIndex
-            return shape.map { dimension in
-                let index = remaining % dimension
-                remaining /= dimension
-                return index
-            }
-        }
-    }
-
     private func linearIndex(_ indices: [Int]) -> Int {
         precondition(indices.count == rank, "Tensor index rank \(indices.count) does not match tensor rank \(rank)")
 
@@ -182,25 +193,82 @@ extension TensorFlatView {
         precondition(range.length == 0 || lastIndex < dimensionSize, "Slice end is out of bounds")
     }
 
-    private func tensorIndices(forFlatIndex linearIndex: Int) -> [Int] {
-        var remaining = linearIndex
-        return shape.map { dimension in
-            let index = remaining % dimension
-            remaining /= dimension
-            return index
+    private func flattenedElements() -> [Scalar] {
+        var elements: [Scalar] = []
+        elements.reserveCapacity(count)
+        var index = Array(repeating: 0, count: rank)
+        for _ in 0..<count {
+            elements.append(storage.elements[linearIndex(forUncheckedIndex: index)])
+            Self.increment(&index, shape: shape)
         }
+        return elements
     }
 
-    private mutating func assign(_ replacementElements: [Scalar], replacementShape: [Int],
-                                 destination: TensorFlatView<Scalar>) {
-        let error = sliceAssignmentShapeError(destination: destination.shape, replacement: replacementShape)
+    private mutating func assign(_ replacement: TensorFlatView<Scalar>, to destination: TensorFlatView<Scalar>) {
+        let error = sliceAssignmentShapeError(destination: destination.shape, replacement: replacement.shape)
         if let error {
             preconditionFailure(error)
         }
         ensureUniqueStorage()
-        for (index, element) in zip(Self.indexCombinations(for: destination.shape), replacementElements) {
-            let linearIndex = destination.offset + zip(index, destination.strides).map(*).reduce(0, +)
-            storage[linearIndex] = element
+        if destination.rank == 2 {
+            assignRankTwo(replacement, to: destination)
+            return
+        }
+        var index = Array(repeating: 0, count: destination.rank)
+        for _ in 0..<destination.count {
+            let element = replacement.storage.elements[replacement.linearIndex(forUncheckedIndex: index)]
+            storage[destination.linearIndex(forUncheckedIndex: index)] = element
+            Self.increment(&index, shape: destination.shape)
+        }
+    }
+
+    private mutating func assignRankTwo(_ replacement: TensorFlatView<Scalar>, to destination: TensorFlatView<Scalar>) {
+        if destination.strides[0] == 1 && replacement.strides[0] == 1 && storage !== replacement.storage {
+            assignRankTwoColumnSegments(replacement, to: destination)
+            return
+        }
+        for index1 in 0..<destination.shape[1] {
+            let destinationColumn = destination.offset + index1 * destination.strides[1]
+            let replacementColumn = replacement.offset + index1 * replacement.strides[1]
+            for index0 in 0..<destination.shape[0] {
+                storage[destinationColumn + index0 * destination.strides[0]] =
+                    replacement.storage.elements[replacementColumn + index0 * replacement.strides[0]]
+            }
+        }
+    }
+
+    private mutating func assignRankTwoColumnSegments(_ replacement: TensorFlatView<Scalar>,
+                                                      to destination: TensorFlatView<Scalar>) {
+        storage.elements.withUnsafeMutableBufferPointer { destinationElements in
+            replacement.storage.elements.withUnsafeBufferPointer { replacementElements in
+                for index1 in 0..<destination.shape[1] {
+                    let destinationColumn = destination.offset + index1 * destination.strides[1]
+                    let replacementColumn = replacement.offset + index1 * replacement.strides[1]
+                    var destinationIndex = destinationColumn
+                    var replacementIndex = replacementColumn
+                    for _ in 0..<destination.shape[0] {
+                        destinationElements[destinationIndex] = replacementElements[replacementIndex]
+                        destinationIndex += 1
+                        replacementIndex += 1
+                    }
+                }
+            }
+        }
+    }
+
+    private func linearIndex(forUncheckedIndex index: [Int]) -> Int {
+        var linearIndex = offset
+        for dimension in 0..<rank {
+            linearIndex += index[dimension] * strides[dimension]
+        }
+        return linearIndex
+    }
+
+    private static func increment(_ index: inout [Int], shape: [Int]) {
+        for dimension in 0..<shape.count {
+            index[dimension] += 1
+            if index[dimension] < shape[dimension] { return }
+            index[dimension] = 0
         }
     }
 

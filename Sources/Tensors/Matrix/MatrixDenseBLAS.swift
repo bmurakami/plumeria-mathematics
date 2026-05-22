@@ -3,7 +3,8 @@ import Numerics
 import OpenBLASWrapper
 
 public struct MatrixDenseBLAS<S: PluScalar>: TensorArithmeticBLAS, MatrixColumnMajorInitializable, Equatable {
-    private var view: TensorFlatView<S>
+    var view: TensorFlatView<S>
+    var expression: MatrixExpression<S>?
     public var blasImplementation: BLAS
 
     public init(rows: Int, columns: Int, values: [S]) {
@@ -12,12 +13,20 @@ public struct MatrixDenseBLAS<S: PluScalar>: TensorArithmeticBLAS, MatrixColumnM
 
     init(rows: Int, columns: Int, values: [S], blasImplementation: BLAS) {
         self.view = TensorFlatView(shape: [rows, columns], elements: values)
+        self.expression = nil
         self.blasImplementation = blasImplementation
     }
 
     init(view: TensorFlatView<S>, blasImplementation: BLAS = .default) {
         precondition(view.rank == 2, "MatrixDenseBLAS view must have rank 2")
         self.view = view
+        self.expression = nil
+        self.blasImplementation = blasImplementation
+    }
+
+    init(rows: Int, columns: Int, expression: MatrixExpression<S>, blasImplementation: BLAS = .default) {
+        self.view = TensorFlatView(storage: TensorStorage([]), offset: 0, shape: [rows, columns], strides: [1, rows])
+        self.expression = expression
         self.blasImplementation = blasImplementation
     }
 }
@@ -34,6 +43,7 @@ extension MatrixDenseBLAS: PluMatrix {
         set {
             precondition(newValue.count == rows * columns, "Matrix element count must match matrix shape")
             view = TensorFlatView(shape: shape, elements: newValue)
+            expression = nil
         }
     }
 
@@ -60,6 +70,7 @@ extension MatrixDenseBLAS: PluMatrix {
     public init(rows: Int, columns: Int, initialValue: S = S.zero) {
         let elements = Array(repeating: initialValue, count: rows * columns)
         self.view = TensorFlatView(shape: [rows, columns], elements: elements)
+        self.expression = nil
         self.blasImplementation = .default
     }
 
@@ -70,12 +81,14 @@ extension MatrixDenseBLAS: PluMatrix {
             (0..<rows).map { row in values[row][column] }
         }
         self.view = TensorFlatView(shape: [rows, columns], elements: elements)
+        self.expression = nil
         self.blasImplementation = .default
     }
 
     public init(_ values: TensorNestedArray<S>) {
         precondition(values.shape.count == 2, "Matrix nested array must have rank 2")
         self.view = TensorFlatView(values)
+        self.expression = nil
         self.blasImplementation = .default
     }
 
@@ -110,13 +123,19 @@ extension MatrixDenseBLAS: PluMatrix {
     }
 
     public func flatten(columnMajorOrder: Bool = true) -> [S] {
-        columnMajorOrder ? columnMajorStorage() : flattenedFromView(columnMajorOrder: false)
+        if let expression {
+            let elements = expression.materializedElements(rows: rows, columns: columns)
+            if columnMajorOrder { return elements }
+            return rowMajorElements(fromColumnMajorElements: elements)
+        }
+        return columnMajorOrder ? columnMajorStorage() : flattenedFromView(columnMajorOrder: false)
     }
 }
 
 extension MatrixDenseBLAS {
     public func slice(rows: SliceRange, columns: SliceRange) -> MatrixDenseBLAS<S> {
-        MatrixDenseBLAS(view: view.slice(rows: rows, columns: columns), blasImplementation: blasImplementation)
+        let source = materializedView()
+        return MatrixDenseBLAS(view: source.slice(rows: rows, columns: columns), blasImplementation: blasImplementation)
     }
 
     public func slice(row: Int, columns: SliceRange) -> VectorFlatView<S> {
@@ -129,17 +148,17 @@ extension MatrixDenseBLAS {
 
     public subscript(rows: Range<Int>, columns: Range<Int>) -> MatrixDenseBLAS<S> {
         get { slice(rows: SliceRange(rows), columns: SliceRange(columns)) }
-        set { view.assign(newValue.view, to: [SliceRange(rows), SliceRange(columns)]) }
+        set { assign(newValue, to: [SliceRange(rows), SliceRange(columns)]) }
     }
 
     public subscript(rows: Range<Int>, columns: TensorSliceIndex) -> MatrixDenseBLAS<S> {
         get { slice(rows: SliceRange(rows), columns: columns.sliceRange(dimensionSize: self.columns)) }
-        set { view.assign(newValue.view, to: [SliceRange(rows), columns.sliceRange(dimensionSize: self.columns)]) }
+        set { assign(newValue, to: [SliceRange(rows), columns.sliceRange(dimensionSize: self.columns)]) }
     }
 
     public subscript(rows: TensorSliceIndex, columns: Range<Int>) -> MatrixDenseBLAS<S> {
         get { slice(rows: rows.sliceRange(dimensionSize: self.rows), columns: SliceRange(columns)) }
-        set { view.assign(newValue.view, to: [rows.sliceRange(dimensionSize: self.rows), SliceRange(columns)]) }
+        set { assign(newValue, to: [rows.sliceRange(dimensionSize: self.rows), SliceRange(columns)]) }
     }
 
     public subscript(rows: TensorSliceIndex, columns: TensorSliceIndex) -> MatrixDenseBLAS<S> {
@@ -151,7 +170,7 @@ extension MatrixDenseBLAS {
         set {
             let rowRange = rows.sliceRange(dimensionSize: self.rows)
             let columnRange = columns.sliceRange(dimensionSize: self.columns)
-            view.assign(newValue.view, to: [rowRange, columnRange])
+            assign(newValue, to: [rowRange, columnRange])
         }
     }
 
@@ -177,6 +196,38 @@ extension MatrixDenseBLAS {
 }
 
 extension MatrixDenseBLAS {
+    public static func + (lhs: MatrixDenseBLAS<S>, rhs: MatrixDenseBLAS<S>) -> MatrixDenseBLAS<S> {
+        precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
+        return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
+                               expression: lhs.matrixExpression.adding(rhs.matrixExpression),
+                               blasImplementation: lhs.blasImplementation)
+    }
+
+    public static func - (lhs: MatrixDenseBLAS<S>, rhs: MatrixDenseBLAS<S>) -> MatrixDenseBLAS<S> {
+        precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
+        return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
+                               expression: lhs.matrixExpression.subtracting(rhs.matrixExpression),
+                               blasImplementation: lhs.blasImplementation)
+    }
+
+    public static prefix func - (operand: MatrixDenseBLAS<S>) -> MatrixDenseBLAS<S> {
+        operand * -1
+    }
+
+    public static func * (matrix: MatrixDenseBLAS<S>, scalar: S) -> MatrixDenseBLAS<S> {
+        MatrixDenseBLAS(rows: matrix.rows, columns: matrix.columns,
+                        expression: matrix.matrixExpression.scaled(by: scalar),
+                        blasImplementation: matrix.blasImplementation)
+    }
+
+    public static func * (scalar: S, matrix: MatrixDenseBLAS<S>) -> MatrixDenseBLAS<S> {
+        matrix * scalar
+    }
+
+    public static func / (matrix: MatrixDenseBLAS<S>, scalar: S) -> MatrixDenseBLAS<S> {
+        matrix * (1 / scalar)
+    }
+
     public func times<V: PluVector>(_ v: V) -> V where V.S == S {
         precondition(columns == v.size, "Number of columns in matrix must equal size of vector")
         switch S.self {
@@ -340,23 +391,76 @@ extension MatrixDenseBLAS {
 }
 
 extension MatrixDenseBLAS {
-    private func value(row: Int, column: Int) -> S { view[[row, column]] }
-    private mutating func setValue(_ value: S, row: Int, column: Int) { view[[row, column]] = value }
+    private var matrixExpression: MatrixExpression<S> { expression ?? .view(view) }
+
+    private func value(row: Int, column: Int) -> S {
+        if let expression { return expression.value(row: row, column: column) }
+        return view.value(index0: row, index1: column)
+    }
+
+    private mutating func setValue(_ value: S, row: Int, column: Int) {
+        materializeInPlace()
+        view.setValue(value, index0: row, index1: column)
+    }
+
+    private mutating func assign(_ replacement: MatrixDenseBLAS<S>, to ranges: [SliceRange]) {
+        materializeInPlace()
+        if let expression = replacement.expression {
+            view.assign(expression, rows: replacement.rows, columns: replacement.columns, to: ranges)
+        } else {
+            view.assign(replacement.view, to: ranges)
+        }
+    }
 
     private func flattenedFromView(columnMajorOrder: Bool) -> [S] {
         var elements = Array(repeating: S.zero, count: rows * columns)
-        for row in 0..<rows {
+        if columnMajorOrder {
             for column in 0..<columns {
-                let index = columnMajorOrder ? row + rows * column : column + columns * row
-                elements[index] = value(row: row, column: column)
+                for row in 0..<rows {
+                    let index = row + rows * column
+                    let storageIndex = view.offset + row * view.strides[0] + column * view.strides[1]
+                    elements[index] = view.storage.elements[storageIndex]
+                }
+            }
+        } else {
+            for row in 0..<rows {
+                for column in 0..<columns {
+                    let index = column + columns * row
+                    let storageIndex = view.offset + row * view.strides[0] + column * view.strides[1]
+                    elements[index] = view.storage.elements[storageIndex]
+                }
             }
         }
         return elements
     }
 
-    private func columnMajorStorage() -> [S] {
-        view.contiguousElements ?? flattenedFromView(columnMajorOrder: true)
+    private func rowMajorElements(fromColumnMajorElements elements: [S]) -> [S] {
+        var rowMajorElements = Array(repeating: S.zero, count: rows * columns)
+        for row in 0..<rows {
+            for column in 0..<columns { rowMajorElements[column + columns * row] = elements[row + rows * column] }
+        }
+        return rowMajorElements
     }
+
+    private func columnMajorStorage() -> [S] {
+        if let expression { return expression.materializedElements(rows: rows, columns: columns) }
+        return view.contiguousElements ?? flattenedFromView(columnMajorOrder: true)
+    }
+
+    private func materializedView() -> TensorFlatView<S> {
+        if let expression {
+            return TensorFlatView(shape: shape, elements: expression.materializedElements(rows: rows, columns: columns))
+        }
+        return view
+    }
+
+    private mutating func materializeInPlace() {
+        guard let expression else { return }
+        view = TensorFlatView(shape: shape, elements: expression.materializedElements(rows: rows, columns: columns))
+        self.expression = nil
+    }
+
+    var isWholeContiguousView: Bool { expression == nil && view.isContiguous && view.offset == 0 }
 
     private func vectorElements<V: PluVector>(_ vector: V) -> [S] where V.S == S {
         if let vector = vector as? VectorDenseBLAS<S> { return vector.elements }
