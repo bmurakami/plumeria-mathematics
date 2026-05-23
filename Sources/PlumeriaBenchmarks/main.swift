@@ -711,14 +711,6 @@ func benchmarkAccelerateVsOpenBLAS() -> Double {
     #endif
 }
 
-if CommandLine.arguments.contains("--wave-stencil") {
-    writeBenchmarkResultToNullDevice(benchmarkWaveStencil())
-    exit(0)
-}
-if CommandLine.arguments.contains("--matrix-add-micro") {
-    writeBenchmarkResultToNullDevice(benchmarkMatrixAddMicro())
-    exit(0)
-}
 let swiftVersion = commandOutput("/usr/bin/env", ["swift", "--version"])
 let platform = commandOutput("/usr/bin/env", ["uname", "-m"])
 print("PlumeriaBenchmarks")

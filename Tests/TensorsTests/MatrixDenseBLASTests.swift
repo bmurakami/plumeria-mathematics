@@ -33,11 +33,11 @@ import Testing
     #endif
 }
 
-@Test func MatrixDense_BLAS_wholeMatrixAdditionIsEager() {
+@Test func MatrixDense_BLAS_wholeMatrixAdditionMaterializes() {
     let left = MatrixDenseBLAS<Double>([[1.0, 2.0], [3.0, 4.0]])
     let right = MatrixDenseBLAS<Double>([[5.0, 6.0], [7.0, 8.0]])
     let result = left + right
-    #expect(result.expression == nil)
+    #expect(result.lazy == nil)
     #expect(result.toArray() == [[6.0, 8.0], [10.0, 12.0]])
 }
 
@@ -45,7 +45,7 @@ import Testing
     let left = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
     let right = MatrixDenseBLAS<Double>([[9.0, 8.0, 7.0], [6.0, 5.0, 4.0], [3.0, 2.0, 1.0]])
     let result = left[0..<2, 0..<2] + right[0..<2, 0..<2]
-    #expect(result.expression != nil)
+    #expect(result.lazy != nil)
     #expect(result.toArray() == [[10.0, 10.0], [10.0, 10.0]])
 }
 

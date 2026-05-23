@@ -133,7 +133,7 @@ extension TensorFlatView {
         assign(replacement, to: destination)
     }
 
-    mutating func assign(_ expression: MatrixExpression<Scalar>, rows: Int, columns: Int, to ranges: [SliceRange]) {
+    mutating func assign(_ lazy: LazyMatrix<Scalar>, rows: Int, columns: Int, to ranges: [SliceRange]) {
         var destination = slice(ranges)
         let error = sliceAssignmentShapeError(destination: destination.shape, replacement: [rows, columns])
         if let error { preconditionFailure(error) }
@@ -141,10 +141,10 @@ extension TensorFlatView {
         destination.storage = storage
         if Scalar.self == Double.self {
             var doubleDestination = destination as! TensorFlatView<Double>
-            (expression as! MatrixExpression<Double>).assign(to: &doubleDestination)
+            (lazy as! LazyMatrix<Double>).assign(to: &doubleDestination)
             destination = doubleDestination as! TensorFlatView<Scalar>
         } else {
-            expression.assign(to: &destination)
+            lazy.assign(to: &destination)
         }
     }
 

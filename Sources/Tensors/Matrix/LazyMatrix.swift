@@ -1,4 +1,4 @@
-struct MatrixExpression<S: PluScalar> {
+struct LazyMatrix<S: PluScalar> {
     struct Term {
         let coefficient: S
         let view: TensorFlatView<S>
@@ -10,20 +10,20 @@ struct MatrixExpression<S: PluScalar> {
         self.terms = terms
     }
 
-    static func view(_ view: TensorFlatView<S>) -> MatrixExpression<S> {
-        MatrixExpression(terms: [Term(coefficient: 1, view: view)])
+    static func view(_ view: TensorFlatView<S>) -> LazyMatrix<S> {
+        LazyMatrix(terms: [Term(coefficient: 1, view: view)])
     }
 
-    func adding(_ other: MatrixExpression<S>) -> MatrixExpression<S> {
-        MatrixExpression(terms: terms + other.terms)
+    func adding(_ other: LazyMatrix<S>) -> LazyMatrix<S> {
+        LazyMatrix(terms: terms + other.terms)
     }
 
-    func subtracting(_ other: MatrixExpression<S>) -> MatrixExpression<S> {
-        MatrixExpression(terms: terms + other.terms.map { Term(coefficient: S.zero - $0.coefficient, view: $0.view) })
+    func subtracting(_ other: LazyMatrix<S>) -> LazyMatrix<S> {
+        LazyMatrix(terms: terms + other.terms.map { Term(coefficient: S.zero - $0.coefficient, view: $0.view) })
     }
 
-    func scaled(by scalar: S) -> MatrixExpression<S> {
-        MatrixExpression(terms: terms.map { Term(coefficient: scalar * $0.coefficient, view: $0.view) })
+    func scaled(by scalar: S) -> LazyMatrix<S> {
+        LazyMatrix(terms: terms.map { Term(coefficient: scalar * $0.coefficient, view: $0.view) })
     }
 
     func value(row: Int, column: Int) -> S {
@@ -54,7 +54,7 @@ struct MatrixExpression<S: PluScalar> {
     }
 }
 
-extension MatrixExpression where S == Double {
+extension LazyMatrix where S == Double {
     func assign(to destination: inout TensorFlatView<Double>) {
         if terms.count == 7 {
             assignSevenTerms(to: &destination)
