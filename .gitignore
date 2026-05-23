@@ -2,8 +2,11 @@
 .build/
 .swiftpm/
 .vscode/
+__pycache__/
 .github/
 dist/
 CLAUDE.md
 AGENTS.md
 ARCHITECTURE.md
+CURRENT_NOTES.md
+BENCHMARKS.md

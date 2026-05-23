@@ -161,8 +161,7 @@ func determinantChecksum(_ value: Double) -> Double {
 }
 
 func writeBenchmarkResultToNullDevice(_ value: Double) {
-    // Make benchmark results observable so the compiler does not release builds do not optimize the
-    // calculations away by skipping them.
+    // Make benchmark results observable so release builds do not skip unused calculations.
     guard let output = FileHandle(forWritingAtPath: "/dev/null") else { return }
     output.write(Data("\(value)\n".utf8))
 }
@@ -712,9 +711,16 @@ func benchmarkAccelerateVsOpenBLAS() -> Double {
     #endif
 }
 
+if CommandLine.arguments.contains("--wave-stencil") {
+    writeBenchmarkResultToNullDevice(benchmarkWaveStencil())
+    exit(0)
+}
+if CommandLine.arguments.contains("--matrix-add-micro") {
+    writeBenchmarkResultToNullDevice(benchmarkMatrixAddMicro())
+    exit(0)
+}
 let swiftVersion = commandOutput("/usr/bin/env", ["swift", "--version"])
 let platform = commandOutput("/usr/bin/env", ["uname", "-m"])
-
 print("PlumeriaBenchmarks")
 print("Swift: \(swiftVersion)")
 print("Platform: \(platform)")

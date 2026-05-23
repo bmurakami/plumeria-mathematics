@@ -105,3 +105,226 @@ extension VectorDenseBLAS: PluVector {
         }
     }
 }
+
+extension VectorDenseBLAS {
+    public static func + (lhs: VectorDenseBLAS<S>, rhs: VectorDenseBLAS<S>) -> VectorDenseBLAS<S> {
+        precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
+        if S.self == Double.self {
+            return eagerDoubleVectorSum(lhs as! VectorDenseBLAS<Double>, rhs as! VectorDenseBLAS<Double>)
+                as! VectorDenseBLAS<S>
+        }
+        if S.self == Float.self {
+            return eagerFloatVectorSum(lhs as! VectorDenseBLAS<Float>, rhs as! VectorDenseBLAS<Float>)
+                as! VectorDenseBLAS<S>
+        }
+        if S.self == ComplexDouble.self {
+            return VectorDenseBLAS<ComplexDouble>(eagerComplexDoubleSum(lhs.elements as! [ComplexDouble],
+                                                                        rhs.elements as! [ComplexDouble]))
+                as! VectorDenseBLAS<S>
+        }
+        if S.self == ComplexFloat.self {
+            return VectorDenseBLAS<ComplexFloat>(eagerComplexFloatSum(lhs.elements as! [ComplexFloat],
+                                                                      rhs.elements as! [ComplexFloat]))
+                as! VectorDenseBLAS<S>
+        }
+        fatalError("Unsupported scalar type")
+    }
+
+    public static func - (lhs: VectorDenseBLAS<S>, rhs: VectorDenseBLAS<S>) -> VectorDenseBLAS<S> {
+        precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
+        if S.self == Double.self {
+            return eagerDoubleVectorDifference(lhs as! VectorDenseBLAS<Double>, rhs as! VectorDenseBLAS<Double>)
+                as! VectorDenseBLAS<S>
+        }
+        if S.self == Float.self {
+            return eagerFloatVectorDifference(lhs as! VectorDenseBLAS<Float>, rhs as! VectorDenseBLAS<Float>)
+                as! VectorDenseBLAS<S>
+        }
+        var result = lhs
+        for index in 0..<lhs.elements.count { result.elements[index] = lhs.elements[index] - rhs.elements[index] }
+        return result
+    }
+
+    public static prefix func - (operand: VectorDenseBLAS<S>) -> VectorDenseBLAS<S> {
+        operand * -1
+    }
+
+    public static func * (vector: VectorDenseBLAS<S>, scalar: S) -> VectorDenseBLAS<S> {
+        if S.self == Double.self {
+            return eagerDoubleVectorScale(vector as! VectorDenseBLAS<Double>, by: scalar as! Double)
+                as! VectorDenseBLAS<S>
+        }
+        if S.self == Float.self {
+            return eagerFloatVectorScale(vector as! VectorDenseBLAS<Float>, by: scalar as! Float) as! VectorDenseBLAS<S>
+        }
+        if S.self == ComplexDouble.self {
+            return VectorDenseBLAS<ComplexDouble>(eagerComplexDoubleScale(vector.elements as! [ComplexDouble],
+                                                                          by: scalar as! ComplexDouble))
+                as! VectorDenseBLAS<S>
+        }
+        if S.self == ComplexFloat.self {
+            return VectorDenseBLAS<ComplexFloat>(eagerComplexFloatScale(vector.elements as! [ComplexFloat],
+                                                                        by: scalar as! ComplexFloat))
+                as! VectorDenseBLAS<S>
+        }
+        fatalError("Unsupported scalar type")
+    }
+
+    public static func * (scalar: S, vector: VectorDenseBLAS<S>) -> VectorDenseBLAS<S> {
+        vector * scalar
+    }
+
+    public static func / (vector: VectorDenseBLAS<S>, scalar: S) -> VectorDenseBLAS<S> {
+        vector * (1 / scalar)
+    }
+}
+
+public func + (lhs: VectorDenseBLAS<Double>, rhs: VectorDenseBLAS<Double>) -> VectorDenseBLAS<Double> {
+    eagerDoubleVectorSum(lhs, rhs)
+}
+
+public func + (lhs: VectorDenseBLAS<Float>, rhs: VectorDenseBLAS<Float>) -> VectorDenseBLAS<Float> {
+    eagerFloatVectorSum(lhs, rhs)
+}
+
+public func - (lhs: VectorDenseBLAS<Double>, rhs: VectorDenseBLAS<Double>) -> VectorDenseBLAS<Double> {
+    eagerDoubleVectorDifference(lhs, rhs)
+}
+
+public func - (lhs: VectorDenseBLAS<Float>, rhs: VectorDenseBLAS<Float>) -> VectorDenseBLAS<Float> {
+    eagerFloatVectorDifference(lhs, rhs)
+}
+
+public prefix func - (operand: VectorDenseBLAS<Double>) -> VectorDenseBLAS<Double> {
+    operand * -1.0
+}
+
+public prefix func - (operand: VectorDenseBLAS<Float>) -> VectorDenseBLAS<Float> {
+    operand * -1.0
+}
+
+public func * (vector: VectorDenseBLAS<Double>, scalar: Double) -> VectorDenseBLAS<Double> {
+    eagerDoubleVectorScale(vector, by: scalar)
+}
+
+public func * (scalar: Double, vector: VectorDenseBLAS<Double>) -> VectorDenseBLAS<Double> {
+    vector * scalar
+}
+
+public func / (vector: VectorDenseBLAS<Double>, scalar: Double) -> VectorDenseBLAS<Double> {
+    vector * (1 / scalar)
+}
+
+public func * (vector: VectorDenseBLAS<Float>, scalar: Float) -> VectorDenseBLAS<Float> {
+    eagerFloatVectorScale(vector, by: scalar)
+}
+
+public func * (scalar: Float, vector: VectorDenseBLAS<Float>) -> VectorDenseBLAS<Float> {
+    vector * scalar
+}
+
+public func / (vector: VectorDenseBLAS<Float>, scalar: Float) -> VectorDenseBLAS<Float> {
+    vector * (1 / scalar)
+}
+
+private func eagerDoubleVectorSum(
+    _ left: VectorDenseBLAS<Double>, _ right: VectorDenseBLAS<Double>
+) -> VectorDenseBLAS<Double> {
+    precondition(left.shape == right.shape, "Tensors must have the same shape")
+    return VectorDenseBLAS<Double>(eagerDoubleSum(left.elements, right.elements))
+}
+
+private func eagerFloatVectorSum(
+    _ left: VectorDenseBLAS<Float>, _ right: VectorDenseBLAS<Float>
+) -> VectorDenseBLAS<Float> {
+    precondition(left.shape == right.shape, "Tensors must have the same shape")
+    return VectorDenseBLAS<Float>(eagerFloatSum(left.elements, right.elements))
+}
+
+private func eagerDoubleVectorDifference(
+    _ left: VectorDenseBLAS<Double>,
+    _ right: VectorDenseBLAS<Double>
+) -> VectorDenseBLAS<Double> {
+    precondition(left.shape == right.shape, "Tensors must have the same shape")
+    return VectorDenseBLAS<Double>(eagerDoubleDifference(left.elements, right.elements))
+}
+
+private func eagerFloatVectorDifference(
+    _ left: VectorDenseBLAS<Float>,
+    _ right: VectorDenseBLAS<Float>
+) -> VectorDenseBLAS<Float> {
+    precondition(left.shape == right.shape, "Tensors must have the same shape")
+    return VectorDenseBLAS<Float>(eagerFloatDifference(left.elements, right.elements))
+}
+
+private func eagerDoubleVectorScale(_ vector: VectorDenseBLAS<Double>, by scalar: Double) -> VectorDenseBLAS<Double> {
+    VectorDenseBLAS<Double>(eagerDoubleScale(vector.elements, by: scalar))
+}
+
+private func eagerFloatVectorScale(_ vector: VectorDenseBLAS<Float>, by scalar: Float) -> VectorDenseBLAS<Float> {
+    VectorDenseBLAS<Float>(eagerFloatScale(vector.elements, by: scalar))
+}
+
+private func eagerDoubleSum(_ left: [Double], _ right: [Double]) -> [Double] {
+    var result = Array(repeating: 0.0, count: left.count)
+    for index in 0..<left.count { result[index] = left[index] + right[index] }
+    return result
+}
+
+private func eagerFloatSum(_ left: [Float], _ right: [Float]) -> [Float] {
+    var result = Array(repeating: Float.zero, count: left.count)
+    for index in 0..<left.count { result[index] = left[index] + right[index] }
+    return result
+}
+
+private func eagerDoubleDifference(_ left: [Double], _ right: [Double]) -> [Double] {
+    var result = Array(repeating: 0.0, count: left.count)
+    for index in 0..<left.count { result[index] = left[index] - right[index] }
+    return result
+}
+
+private func eagerFloatDifference(_ left: [Float], _ right: [Float]) -> [Float] {
+    var result = Array(repeating: Float.zero, count: left.count)
+    for index in 0..<left.count { result[index] = left[index] - right[index] }
+    return result
+}
+
+private func eagerDoubleScale(_ values: [Double], by scalar: Double) -> [Double] {
+    var result = Array(repeating: 0.0, count: values.count)
+    for index in 0..<values.count { result[index] = values[index] * scalar }
+    return result
+}
+
+private func eagerFloatScale(_ values: [Float], by scalar: Float) -> [Float] {
+    var result = Array(repeating: Float.zero, count: values.count)
+    for index in 0..<values.count { result[index] = values[index] * scalar }
+    return result
+}
+
+private func eagerComplexDoubleSum(_ left: [ComplexDouble], _ right: [ComplexDouble]) -> [ComplexDouble] {
+    var x = BLASComplexStorage.interleaved(right)
+    var y = BLASComplexStorage.interleaved(left)
+    BLAS.zaxpy(Int32(right.count), &x, &y)
+    return BLASComplexStorage.complexValues(y)
+}
+
+private func eagerComplexFloatSum(_ left: [ComplexFloat], _ right: [ComplexFloat]) -> [ComplexFloat] {
+    var x = BLASComplexStorage.interleaved(right)
+    var y = BLASComplexStorage.interleaved(left)
+    BLAS.caxpy(Int32(right.count), &x, &y)
+    return BLASComplexStorage.complexValues(y)
+}
+
+private func eagerComplexDoubleScale(_ values: [ComplexDouble], by scalar: ComplexDouble) -> [ComplexDouble] {
+    var result = BLASComplexStorage.interleaved(values)
+    var alpha = BLASComplexStorage.interleaved([scalar])
+    BLAS.zscal(Int32(values.count), &alpha, &result)
+    return BLASComplexStorage.complexValues(result)
+}
+
+private func eagerComplexFloatScale(_ values: [ComplexFloat], by scalar: ComplexFloat) -> [ComplexFloat] {
+    var result = BLASComplexStorage.interleaved(values)
+    var alpha = BLASComplexStorage.interleaved([scalar])
+    BLAS.cscal(Int32(values.count), &alpha, &result)
+    return BLASComplexStorage.complexValues(result)
+}

@@ -83,12 +83,36 @@ def determinant_checksum(value):
     return sign * math.log10(abs(value))
 
 
+def ends_1d(values):
+    return float(values[0] + values[-1])
+
+
+def ends_2d(values):
+    return float(values[0, 0] + values[-1, -1])
+
+
+def ends_3d(values):
+    return float(values[0, 0, 0] + values[-1, -1, -1])
+
+
+def real_ends_1d(values):
+    return float((values[0] + values[-1]).real)
+
+
+def real_ends_2d(values):
+    return float((values[0, 0] + values[-1, -1]).real)
+
+
+def real_ends_3d(values):
+    return float((values[0, 0, 0] + values[-1, -1, -1]).real)
+
+
 def benchmark_vectors(samples):
     print("Vector")
     small = vector_values(10_000)
     large = vector_values(100_000)
-    print_result("add", "10,000", measure(samples, 20, lambda: (small + small)[0] + (small + small)[-1]))
-    print_result("scale", "100,000", measure(samples, 10, lambda: (large * 1.25)[0] + (large * 1.25)[-1]))
+    print_result("add", "10,000", measure(samples, 20, lambda: ends_1d(small + small)))
+    print_result("scale", "100,000", measure(samples, 10, lambda: ends_1d(large * 1.25)))
     print_result("magnitude", "100,000", measure(samples, 10, lambda: np.linalg.norm(large)))
 
 
@@ -103,16 +127,14 @@ def benchmark_matrices(samples):
     left = matrix_values(128, 128)
     right = matrix_values(128, 128)
     det = invertible_matrix_values(96)
-    print_result("add", "256x256", measure(samples, 5, lambda: (add + add)[0, 0] + (add + add)[-1, -1]))
-    print_result("add", "1,024x1,024",
-                 measure(3, 1, lambda: (large_add + large_add)[0, 0] + (large_add + large_add)[-1, -1]))
-    print_result("matrix-vector multiply", "384x384", measure(samples, 1, lambda: (mv @ vector)[0] + (mv @ vector)[-1]))
+    print_result("add", "256x256", measure(samples, 5, lambda: ends_2d(add + add)))
+    print_result("add", "1,024x1,024", measure(3, 1, lambda: ends_2d(large_add + large_add)))
+    print_result("matrix-vector multiply", "384x384", measure(samples, 1, lambda: ends_1d(mv @ vector)))
     print_result("matrix-vector multiply", "1,536x1,536",
-                 measure(3, 1, lambda: (large_mv @ large_vector)[0] + (large_mv @ large_vector)[-1]))
-    print_result("matrix-matrix multiply", "128x128",
-                 measure(samples, 1, lambda: (left @ right)[0, 0] + (left @ right)[-1, -1]))
+                 measure(3, 1, lambda: ends_1d(large_mv @ large_vector)))
+    print_result("matrix-matrix multiply", "128x128", measure(samples, 1, lambda: ends_2d(left @ right)))
     print_result("determinant", "96x96", measure(3, 1, lambda: determinant_checksum(np.linalg.det(det))))
-    print_result("inverse", "96x96", measure(3, 1, lambda: np.linalg.inv(det)[0, 0] + np.linalg.inv(det)[-1, -1]))
+    print_result("inverse", "96x96", measure(3, 1, lambda: ends_2d(np.linalg.inv(det))))
 
 
 def benchmark_tensors(samples):
@@ -122,13 +144,11 @@ def benchmark_tensors(samples):
     right = tensor_values((16, 16))
     large_left = tensor_values((32, 32, 32))
     large_right = tensor_values((32, 32))
-    print_result("add", "40x40x10", measure(samples, 3, lambda: (add + add)[0, 0, 0] + (add + add)[-1, -1, -1]))
+    print_result("add", "40x40x10", measure(samples, 3, lambda: ends_3d(add + add)))
     print_result("contraction", "16x24x16,16x16",
-                 measure(samples, 1, lambda: np.einsum("ijk,kl", left, right)[0, 0, 0]
-                         + np.einsum("ijk,kl", left, right)[-1, -1, -1]))
+                 measure(samples, 1, lambda: ends_3d(np.einsum("ijk,kl", left, right))))
     print_result("contraction", "32x32x32,32x32",
-                 measure(3, 1, lambda: np.einsum("ijk,kl", large_left, large_right)[0, 0, 0]
-                         + np.einsum("ijk,kl", large_left, large_right)[-1, -1, -1]))
+                 measure(3, 1, lambda: ends_3d(np.einsum("ijk,kl", large_left, large_right))))
 
 
 def benchmark_float_scalars(samples):
@@ -147,26 +167,22 @@ def benchmark_float_scalars(samples):
     double_right_tensor = tensor_values((16, 16))
     float_tensor = tensor_values((16, 24, 16), np.float32)
     float_right_tensor = tensor_values((16, 16), np.float32)
-    print_result("Float64 vector add", "100,000",
-                 measure(samples, 10, lambda: (double_vector + double_vector)[0] + (double_vector + double_vector)[-1]))
-    print_result("Float32 vector add", "100,000",
-                 measure(samples, 10, lambda: (float_vector + float_vector)[0] + (float_vector + float_vector)[-1]))
+    print_result("Float64 vector add", "100,000", measure(samples, 10, lambda: ends_1d(double_vector + double_vector)))
+    print_result("Float32 vector add", "100,000", measure(samples, 10, lambda: ends_1d(float_vector + float_vector)))
     print_result("Float64 magnitude", "100,000", measure(samples, 10, lambda: np.linalg.norm(double_vector)))
     print_result("Float32 magnitude", "100,000", measure(samples, 10, lambda: np.linalg.norm(float_vector)))
     print_result("Float64 matrix-vector multiply", "384x384",
-                 measure(samples, 1, lambda: (double_matrix @ double_matrix_vector)[0]
-                         + (double_matrix @ double_matrix_vector)[-1]))
+                 measure(samples, 1, lambda: ends_1d(double_matrix @ double_matrix_vector)))
     print_result("Float32 matrix-vector multiply", "384x384",
-                 measure(samples, 1, lambda: (float_matrix @ float_matrix_vector)[0]
-                         + (float_matrix @ float_matrix_vector)[-1]))
+                 measure(samples, 1, lambda: ends_1d(float_matrix @ float_matrix_vector)))
     print_result("Float64 matrix-matrix multiply", "128x128",
-                 measure(samples, 1, lambda: (double_left @ double_right)[0, 0] + (double_left @ double_right)[-1, -1]))
+                 measure(samples, 1, lambda: ends_2d(double_left @ double_right)))
     print_result("Float32 matrix-matrix multiply", "128x128",
-                 measure(samples, 1, lambda: (float_left @ float_right)[0, 0] + (float_left @ float_right)[-1, -1]))
+                 measure(samples, 1, lambda: ends_2d(float_left @ float_right)))
     print_result("Float64 tensor contraction", "16x24x16,16x16",
-                 measure(samples, 1, lambda: np.einsum("ijk,kl", double_tensor, double_right_tensor)[0, 0, 0]))
+                 measure(samples, 1, lambda: ends_3d(np.einsum("ijk,kl", double_tensor, double_right_tensor))))
     print_result("Float32 tensor contraction", "16x24x16,16x16",
-                 measure(samples, 1, lambda: np.einsum("ijk,kl", float_tensor, float_right_tensor)[0, 0, 0]))
+                 measure(samples, 1, lambda: ends_3d(np.einsum("ijk,kl", float_tensor, float_right_tensor))))
 
 
 def benchmark_complex_float_scalars(samples):
@@ -186,30 +202,24 @@ def benchmark_complex_float_scalars(samples):
     complex_float_tensor = tensor_complex_values((16, 24, 16), np.complex64)
     complex_float_right_tensor = tensor_complex_values((16, 16), np.complex64)
     print_result("Complex128 vector add", "100,000",
-                 measure(samples, 10, lambda: ((complex_vector + complex_vector)[0]
-                         + (complex_vector + complex_vector)[-1]).real))
+                 measure(samples, 10, lambda: real_ends_1d(complex_vector + complex_vector)))
     print_result("Complex64 vector add", "100,000",
-                 measure(samples, 10, lambda: ((complex_float_vector + complex_float_vector)[0]
-                         + (complex_float_vector + complex_float_vector)[-1]).real))
+                 measure(samples, 10, lambda: real_ends_1d(complex_float_vector + complex_float_vector)))
     print_result("Complex128 magnitude", "100,000", measure(samples, 10, lambda: np.linalg.norm(complex_vector)))
     print_result("Complex64 magnitude", "100,000", measure(samples, 10, lambda: np.linalg.norm(complex_float_vector)))
     print_result("Complex128 matrix-vector multiply", "384x384",
-                 measure(samples, 1, lambda: ((complex_matrix @ complex_matrix_vector)[0]
-                         + (complex_matrix @ complex_matrix_vector)[-1]).real))
+                 measure(samples, 1, lambda: real_ends_1d(complex_matrix @ complex_matrix_vector)))
     print_result("Complex64 matrix-vector multiply", "384x384",
-                 measure(samples, 1, lambda: ((complex_float_matrix @ complex_float_matrix_vector)[0]
-                         + (complex_float_matrix @ complex_float_matrix_vector)[-1]).real))
+                 measure(samples, 1, lambda: real_ends_1d(complex_float_matrix @ complex_float_matrix_vector)))
     print_result("Complex128 matrix-matrix multiply", "128x128",
-                 measure(samples, 1, lambda: ((complex_left @ complex_right)[0, 0]
-                         + (complex_left @ complex_right)[-1, -1]).real))
+                 measure(samples, 1, lambda: real_ends_2d(complex_left @ complex_right)))
     print_result("Complex64 matrix-matrix multiply", "128x128",
-                 measure(samples, 1, lambda: ((complex_float_left @ complex_float_right)[0, 0]
-                         + (complex_float_left @ complex_float_right)[-1, -1]).real))
+                 measure(samples, 1, lambda: real_ends_2d(complex_float_left @ complex_float_right)))
     print_result("Complex128 tensor contraction", "16x24x16,16x16",
-                 measure(samples, 1, lambda: np.einsum("ijk,kl", complex_tensor, complex_right_tensor)[0, 0, 0].real))
+                 measure(samples, 1, lambda: real_ends_3d(np.einsum("ijk,kl", complex_tensor, complex_right_tensor))))
     print_result("Complex64 tensor contraction", "16x24x16,16x16",
-                 measure(samples, 1, lambda: np.einsum("ijk,kl", complex_float_tensor,
-                                                       complex_float_right_tensor)[0, 0, 0].real))
+                 measure(samples, 1, lambda: real_ends_3d(np.einsum("ijk,kl", complex_float_tensor,
+                                                                     complex_float_right_tensor))))
 
 
 def main():

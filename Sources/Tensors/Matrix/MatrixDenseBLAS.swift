@@ -198,6 +198,19 @@ extension MatrixDenseBLAS {
 extension MatrixDenseBLAS {
     public static func + (lhs: MatrixDenseBLAS<S>, rhs: MatrixDenseBLAS<S>) -> MatrixDenseBLAS<S> {
         precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
+        if S.self == Double.self {
+            return eagerDoubleMatrixSum(lhs as! MatrixDenseBLAS<Double>, rhs as! MatrixDenseBLAS<Double>)
+                as! MatrixDenseBLAS<S>
+        }
+        if S.self == Float.self {
+            return eagerFloatMatrixSum(lhs as! MatrixDenseBLAS<Float>, rhs as! MatrixDenseBLAS<Float>)
+                as! MatrixDenseBLAS<S>
+        }
+        if lhs.isWholeMaterializedMatrix && rhs.isWholeMaterializedMatrix {
+            return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
+                                   values: lhs.eagerSum(lhs.view.storage.elements, rhs.view.storage.elements),
+                                   blasImplementation: lhs.blasImplementation)
+        }
         return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
                                expression: lhs.matrixExpression.adding(rhs.matrixExpression),
                                blasImplementation: lhs.blasImplementation)
@@ -205,6 +218,14 @@ extension MatrixDenseBLAS {
 
     public static func - (lhs: MatrixDenseBLAS<S>, rhs: MatrixDenseBLAS<S>) -> MatrixDenseBLAS<S> {
         precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
+        if S.self == Double.self {
+            return eagerDoubleMatrixDifference(lhs as! MatrixDenseBLAS<Double>, rhs as! MatrixDenseBLAS<Double>)
+                as! MatrixDenseBLAS<S>
+        }
+        if S.self == Float.self {
+            return eagerFloatMatrixDifference(lhs as! MatrixDenseBLAS<Float>, rhs as! MatrixDenseBLAS<Float>)
+                as! MatrixDenseBLAS<S>
+        }
         return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
                                expression: lhs.matrixExpression.subtracting(rhs.matrixExpression),
                                blasImplementation: lhs.blasImplementation)
@@ -215,9 +236,15 @@ extension MatrixDenseBLAS {
     }
 
     public static func * (matrix: MatrixDenseBLAS<S>, scalar: S) -> MatrixDenseBLAS<S> {
-        MatrixDenseBLAS(rows: matrix.rows, columns: matrix.columns,
-                        expression: matrix.matrixExpression.scaled(by: scalar),
-                        blasImplementation: matrix.blasImplementation)
+        if S.self == Double.self {
+            return eagerDoubleMatrixScale(matrix as! MatrixDenseBLAS<Double>, by: scalar as! Double) as! MatrixDenseBLAS<S>
+        }
+        if S.self == Float.self {
+            return eagerFloatMatrixScale(matrix as! MatrixDenseBLAS<Float>, by: scalar as! Float) as! MatrixDenseBLAS<S>
+        }
+        return MatrixDenseBLAS(rows: matrix.rows, columns: matrix.columns,
+                               expression: matrix.matrixExpression.scaled(by: scalar),
+                               blasImplementation: matrix.blasImplementation)
     }
 
     public static func * (scalar: S, matrix: MatrixDenseBLAS<S>) -> MatrixDenseBLAS<S> {
@@ -390,9 +417,230 @@ extension MatrixDenseBLAS {
     }
 }
 
-extension MatrixDenseBLAS {
-    private var matrixExpression: MatrixExpression<S> { expression ?? .view(view) }
+public func + (lhs: MatrixDenseBLAS<Double>, rhs: MatrixDenseBLAS<Double>) -> MatrixDenseBLAS<Double> {
+    precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
+    return eagerDoubleMatrixSum(lhs, rhs)
+}
 
+public func + (lhs: MatrixDenseBLAS<Float>, rhs: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
+    precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
+    return eagerFloatMatrixSum(lhs, rhs)
+}
+
+public func - (lhs: MatrixDenseBLAS<Double>, rhs: MatrixDenseBLAS<Double>) -> MatrixDenseBLAS<Double> {
+    precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
+    return eagerDoubleMatrixDifference(lhs, rhs)
+}
+
+public func - (lhs: MatrixDenseBLAS<Float>, rhs: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
+    precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
+    return eagerFloatMatrixDifference(lhs, rhs)
+}
+
+public func * (matrix: MatrixDenseBLAS<Double>, scalar: Double) -> MatrixDenseBLAS<Double> {
+    eagerDoubleMatrixScale(matrix, by: scalar)
+}
+
+public func * (scalar: Double, matrix: MatrixDenseBLAS<Double>) -> MatrixDenseBLAS<Double> {
+    matrix * scalar
+}
+
+public func / (matrix: MatrixDenseBLAS<Double>, scalar: Double) -> MatrixDenseBLAS<Double> {
+    matrix * (1 / scalar)
+}
+
+public func * (matrix: MatrixDenseBLAS<Float>, scalar: Float) -> MatrixDenseBLAS<Float> {
+    eagerFloatMatrixScale(matrix, by: scalar)
+}
+
+public func * (scalar: Float, matrix: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
+    matrix * scalar
+}
+
+public func / (matrix: MatrixDenseBLAS<Float>, scalar: Float) -> MatrixDenseBLAS<Float> {
+    matrix * (1 / scalar)
+}
+
+private func eagerDoubleMatrixSum(
+    _ lhs: MatrixDenseBLAS<Double>, _ rhs: MatrixDenseBLAS<Double>
+) -> MatrixDenseBLAS<Double> {
+    if lhs.isWholeMaterializedMatrix && rhs.isWholeMaterializedMatrix {
+        return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
+                               values: eagerDoubleSum(lhs.view.storage.elements, rhs.view.storage.elements),
+                               blasImplementation: lhs.blasImplementation)
+    }
+    return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
+                           expression: lhs.matrixExpression.adding(rhs.matrixExpression),
+                           blasImplementation: lhs.blasImplementation)
+}
+
+private func eagerFloatMatrixSum(_ lhs: MatrixDenseBLAS<Float>, _ rhs: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
+    if lhs.isWholeMaterializedMatrix && rhs.isWholeMaterializedMatrix {
+        return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
+                               values: eagerFloatSum(lhs.view.storage.elements, rhs.view.storage.elements),
+                               blasImplementation: lhs.blasImplementation)
+    }
+    return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
+                           expression: lhs.matrixExpression.adding(rhs.matrixExpression),
+                           blasImplementation: lhs.blasImplementation)
+}
+
+private func eagerDoubleMatrixDifference(
+    _ lhs: MatrixDenseBLAS<Double>, _ rhs: MatrixDenseBLAS<Double>
+) -> MatrixDenseBLAS<Double> {
+    if lhs.isWholeMaterializedMatrix && rhs.isWholeMaterializedMatrix {
+        return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
+                               values: eagerDoubleDifference(lhs.view.storage.elements, rhs.view.storage.elements),
+                               blasImplementation: lhs.blasImplementation)
+    }
+    return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
+                           expression: lhs.matrixExpression.subtracting(rhs.matrixExpression),
+                           blasImplementation: lhs.blasImplementation)
+}
+
+private func eagerFloatMatrixDifference(
+    _ lhs: MatrixDenseBLAS<Float>, _ rhs: MatrixDenseBLAS<Float>
+) -> MatrixDenseBLAS<Float> {
+    if lhs.isWholeMaterializedMatrix && rhs.isWholeMaterializedMatrix {
+        return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
+                               values: eagerFloatDifference(lhs.view.storage.elements, rhs.view.storage.elements),
+                               blasImplementation: lhs.blasImplementation)
+    }
+    return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
+                           expression: lhs.matrixExpression.subtracting(rhs.matrixExpression),
+                           blasImplementation: lhs.blasImplementation)
+}
+
+private func eagerDoubleMatrixScale(_ matrix: MatrixDenseBLAS<Double>, by scalar: Double) -> MatrixDenseBLAS<Double> {
+    if matrix.isWholeMaterializedMatrix {
+        return MatrixDenseBLAS(rows: matrix.rows, columns: matrix.columns,
+                               values: eagerDoubleScale(matrix.view.storage.elements, by: scalar),
+                               blasImplementation: matrix.blasImplementation)
+    }
+    return MatrixDenseBLAS(rows: matrix.rows, columns: matrix.columns,
+                           expression: matrix.matrixExpression.scaled(by: scalar),
+                           blasImplementation: matrix.blasImplementation)
+}
+
+private func eagerFloatMatrixScale(_ matrix: MatrixDenseBLAS<Float>, by scalar: Float) -> MatrixDenseBLAS<Float> {
+    if matrix.isWholeMaterializedMatrix {
+        return MatrixDenseBLAS(rows: matrix.rows, columns: matrix.columns,
+                               values: eagerFloatScale(matrix.view.storage.elements, by: scalar),
+                               blasImplementation: matrix.blasImplementation)
+    }
+    return MatrixDenseBLAS(rows: matrix.rows, columns: matrix.columns,
+                           expression: matrix.matrixExpression.scaled(by: scalar),
+                           blasImplementation: matrix.blasImplementation)
+}
+
+extension MatrixDenseBLAS {
+    fileprivate var matrixExpression: MatrixExpression<S> { expression ?? .view(view) }
+    fileprivate var isWholeMaterializedMatrix: Bool {
+        expression == nil && view.offset == 0 && view.isContiguous && view.storage.elements.count == rows * columns
+    }
+
+    private func eagerSum(_ left: [S], _ right: [S]) -> [S] {
+        switch S.self {
+        case is Double.Type:
+            let x = right as! [Double]
+            var y = left as! [Double]
+            axpy(Int32(y.count), x, &y)
+            return y as! [S]
+        case is Float.Type:
+            let x = right as! [Float]
+            var y = left as! [Float]
+            axpy(Int32(y.count), x, &y)
+            return y as! [S]
+        case is ComplexDouble.Type:
+            var x = BLASComplexStorage.interleaved(right as! [ComplexDouble])
+            var y = BLASComplexStorage.interleaved(left as! [ComplexDouble])
+            zaxpy(Int32(right.count), &x, &y)
+            return BLASComplexStorage.complexValues(y) as! [S]
+        case is ComplexFloat.Type:
+            var x = BLASComplexStorage.interleaved(right as! [ComplexFloat])
+            var y = BLASComplexStorage.interleaved(left as! [ComplexFloat])
+            caxpy(Int32(right.count), &x, &y)
+            return BLASComplexStorage.complexValues(y) as! [S]
+        default:
+            fatalError("Unsupported scalar type")
+        }
+    }
+
+    private func axpy(_ n: Int32, _ x: [Double], _ y: inout [Double]) {
+        switch blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate: AccelerateOperations.daxpy(n, x, &y)
+        #endif
+        case .openBLAS: OpenBLASOperations.daxpy(n, x, &y)
+        }
+    }
+
+    private func axpy(_ n: Int32, _ x: [Float], _ y: inout [Float]) {
+        switch blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate: AccelerateOperations.saxpy(n, x, &y)
+        #endif
+        case .openBLAS: OpenBLASOperations.saxpy(n, x, &y)
+        }
+    }
+
+    private func zaxpy(_ n: Int32, _ x: inout [Double], _ y: inout [Double]) {
+        switch blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate: AccelerateOperations.zaxpy(n, &x, &y)
+        #endif
+        case .openBLAS: OpenBLASOperations.zaxpy(n, &x, &y)
+        }
+    }
+
+    private func caxpy(_ n: Int32, _ x: inout [Float], _ y: inout [Float]) {
+        switch blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate: AccelerateOperations.caxpy(n, &x, &y)
+        #endif
+        case .openBLAS: OpenBLASOperations.caxpy(n, &x, &y)
+        }
+    }
+
+}
+
+private func eagerDoubleSum(_ left: [Double], _ right: [Double]) -> [Double] {
+    var result = Array(repeating: 0.0, count: left.count)
+    for index in 0..<left.count { result[index] = left[index] + right[index] }
+    return result
+}
+
+private func eagerFloatSum(_ left: [Float], _ right: [Float]) -> [Float] {
+    var result = Array(repeating: Float.zero, count: left.count)
+    for index in 0..<left.count { result[index] = left[index] + right[index] }
+    return result
+}
+
+private func eagerDoubleDifference(_ left: [Double], _ right: [Double]) -> [Double] {
+    var result = Array(repeating: 0.0, count: left.count)
+    for index in 0..<left.count { result[index] = left[index] - right[index] }
+    return result
+}
+
+private func eagerFloatDifference(_ left: [Float], _ right: [Float]) -> [Float] {
+    var result = Array(repeating: Float.zero, count: left.count)
+    for index in 0..<left.count { result[index] = left[index] - right[index] }
+    return result
+}
+
+private func eagerDoubleScale(_ values: [Double], by scalar: Double) -> [Double] {
+    var result = Array(repeating: 0.0, count: values.count)
+    for index in 0..<values.count { result[index] = values[index] * scalar }
+    return result
+}
+
+private func eagerFloatScale(_ values: [Float], by scalar: Float) -> [Float] {
+    var result = Array(repeating: Float.zero, count: values.count)
+    for index in 0..<values.count { result[index] = values[index] * scalar }
+    return result
+}
+
+extension MatrixDenseBLAS {
     private func value(row: Int, column: Int) -> S {
         if let expression { return expression.value(row: row, column: column) }
         return view.value(index0: row, index1: column)
