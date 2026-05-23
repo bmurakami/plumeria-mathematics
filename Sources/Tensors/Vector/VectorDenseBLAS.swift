@@ -70,36 +70,20 @@ extension VectorDenseBLAS: PluVector {
         self.init(elements)
     }
 
+    @_specialize(where S == Double)
+    @_specialize(where S == Float)
+    @_specialize(where S == ComplexDouble)
+    @_specialize(where S == ComplexFloat)
     public func magnitude() -> S.Magnitude {
         switch S.self {
         case is Double.Type:
-            let values = elements as! [Double]
-            #if canImport(Accelerate)
-            return AccelerateOperations.dnrm2(Int32(size), values) as! S.Magnitude
-            #else
-            return OpenBLASOperations.dnrm2(Int32(size), values) as! S.Magnitude
-            #endif
+            return doubleMagnitude(self as! VectorDenseBLAS<Double>) as! S.Magnitude
         case is Float.Type:
-            let values = elements as! [Float]
-            #if canImport(Accelerate)
-            return AccelerateOperations.snrm2(Int32(size), values) as! S.Magnitude
-            #else
-            return OpenBLASOperations.snrm2(Int32(size), values) as! S.Magnitude
-            #endif
+            return floatMagnitude(self as! VectorDenseBLAS<Float>) as! S.Magnitude
         case is ComplexDouble.Type:
-            var values = BLASComplexStorage.interleaved(elements as! [ComplexDouble])
-            #if canImport(Accelerate)
-            return AccelerateOperations.dznrm2(Int32(size), &values) as! S.Magnitude
-            #else
-            return OpenBLASOperations.dznrm2(Int32(size), &values) as! S.Magnitude
-            #endif
+            return complexDoubleMagnitude(self as! VectorDenseBLAS<ComplexDouble>) as! S.Magnitude
         case is ComplexFloat.Type:
-            var values = BLASComplexStorage.interleaved(elements as! [ComplexFloat])
-            #if canImport(Accelerate)
-            return AccelerateOperations.scnrm2(Int32(size), &values) as! S.Magnitude
-            #else
-            return OpenBLASOperations.scnrm2(Int32(size), &values) as! S.Magnitude
-            #endif
+            return complexFloatMagnitude(self as! VectorDenseBLAS<ComplexFloat>) as! S.Magnitude
         default:
             return elements.map { $0.magnitude * $0.magnitude }.reduce(.zero, +).squareRoot()
         }
@@ -187,6 +171,18 @@ public func + (lhs: VectorDenseBLAS<Float>, rhs: VectorDenseBLAS<Float>) -> Vect
     floatVectorSum(lhs, rhs)
 }
 
+public func + (lhs: VectorDenseBLAS<ComplexDouble>, rhs: VectorDenseBLAS<ComplexDouble>)
+    -> VectorDenseBLAS<ComplexDouble> {
+    precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
+    return VectorDenseBLAS<ComplexDouble>(complexDoubleSum(lhs.elements, rhs.elements))
+}
+
+public func + (lhs: VectorDenseBLAS<ComplexFloat>, rhs: VectorDenseBLAS<ComplexFloat>)
+    -> VectorDenseBLAS<ComplexFloat> {
+    precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
+    return VectorDenseBLAS<ComplexFloat>(complexFloatSum(lhs.elements, rhs.elements))
+}
+
 public func - (lhs: VectorDenseBLAS<Double>, rhs: VectorDenseBLAS<Double>) -> VectorDenseBLAS<Double> {
     doubleVectorDifference(lhs, rhs)
 }
@@ -195,11 +191,31 @@ public func - (lhs: VectorDenseBLAS<Float>, rhs: VectorDenseBLAS<Float>) -> Vect
     floatVectorDifference(lhs, rhs)
 }
 
+public func - (lhs: VectorDenseBLAS<ComplexDouble>, rhs: VectorDenseBLAS<ComplexDouble>)
+    -> VectorDenseBLAS<ComplexDouble> {
+    precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
+    return VectorDenseBLAS<ComplexDouble>(complexDoubleDifference(lhs.elements, rhs.elements))
+}
+
+public func - (lhs: VectorDenseBLAS<ComplexFloat>, rhs: VectorDenseBLAS<ComplexFloat>)
+    -> VectorDenseBLAS<ComplexFloat> {
+    precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
+    return VectorDenseBLAS<ComplexFloat>(complexFloatDifference(lhs.elements, rhs.elements))
+}
+
 public prefix func - (operand: VectorDenseBLAS<Double>) -> VectorDenseBLAS<Double> {
     operand * -1.0
 }
 
 public prefix func - (operand: VectorDenseBLAS<Float>) -> VectorDenseBLAS<Float> {
+    operand * -1.0
+}
+
+public prefix func - (operand: VectorDenseBLAS<ComplexDouble>) -> VectorDenseBLAS<ComplexDouble> {
+    operand * -1.0
+}
+
+public prefix func - (operand: VectorDenseBLAS<ComplexFloat>) -> VectorDenseBLAS<ComplexFloat> {
     operand * -1.0
 }
 
@@ -224,6 +240,33 @@ public func * (scalar: Float, vector: VectorDenseBLAS<Float>) -> VectorDenseBLAS
 }
 
 public func / (vector: VectorDenseBLAS<Float>, scalar: Float) -> VectorDenseBLAS<Float> {
+    vector * (1 / scalar)
+}
+
+public func * (vector: VectorDenseBLAS<ComplexDouble>, scalar: ComplexDouble)
+    -> VectorDenseBLAS<ComplexDouble> {
+    VectorDenseBLAS<ComplexDouble>(complexDoubleScale(vector.elements, by: scalar))
+}
+
+public func * (scalar: ComplexDouble, vector: VectorDenseBLAS<ComplexDouble>)
+    -> VectorDenseBLAS<ComplexDouble> {
+    vector * scalar
+}
+
+public func / (vector: VectorDenseBLAS<ComplexDouble>, scalar: ComplexDouble)
+    -> VectorDenseBLAS<ComplexDouble> {
+    vector * (1 / scalar)
+}
+
+public func * (vector: VectorDenseBLAS<ComplexFloat>, scalar: ComplexFloat) -> VectorDenseBLAS<ComplexFloat> {
+    VectorDenseBLAS<ComplexFloat>(complexFloatScale(vector.elements, by: scalar))
+}
+
+public func * (scalar: ComplexFloat, vector: VectorDenseBLAS<ComplexFloat>) -> VectorDenseBLAS<ComplexFloat> {
+    vector * scalar
+}
+
+public func / (vector: VectorDenseBLAS<ComplexFloat>, scalar: ComplexFloat) -> VectorDenseBLAS<ComplexFloat> {
     vector * (1 / scalar)
 }
 
@@ -265,6 +308,40 @@ private func floatVectorScale(_ vector: VectorDenseBLAS<Float>, by scalar: Float
     VectorDenseBLAS<Float>(floatScale(vector.elements, by: scalar))
 }
 
+private func doubleMagnitude(_ vector: VectorDenseBLAS<Double>) -> Double {
+    #if canImport(Accelerate)
+    return AccelerateOperations.dnrm2(Int32(vector.size), vector.elements)
+    #else
+    return OpenBLASOperations.dnrm2(Int32(vector.size), vector.elements)
+    #endif
+}
+
+private func floatMagnitude(_ vector: VectorDenseBLAS<Float>) -> Float {
+    #if canImport(Accelerate)
+    return AccelerateOperations.snrm2(Int32(vector.size), vector.elements)
+    #else
+    return OpenBLASOperations.snrm2(Int32(vector.size), vector.elements)
+    #endif
+}
+
+private func complexDoubleMagnitude(_ vector: VectorDenseBLAS<ComplexDouble>) -> Double {
+    var values = BLASComplexStorage.interleaved(vector.elements)
+    #if canImport(Accelerate)
+    return AccelerateOperations.dznrm2(Int32(vector.size), &values)
+    #else
+    return OpenBLASOperations.dznrm2(Int32(vector.size), &values)
+    #endif
+}
+
+private func complexFloatMagnitude(_ vector: VectorDenseBLAS<ComplexFloat>) -> Float {
+    var values = BLASComplexStorage.interleaved(vector.elements)
+    #if canImport(Accelerate)
+    return AccelerateOperations.scnrm2(Int32(vector.size), &values)
+    #else
+    return OpenBLASOperations.scnrm2(Int32(vector.size), &values)
+    #endif
+}
+
 private func doubleSum(_ left: [Double], _ right: [Double]) -> [Double] {
     var result = Array(repeating: 0.0, count: left.count)
     for index in 0..<left.count { result[index] = left[index] + right[index] }
@@ -302,29 +379,37 @@ private func floatScale(_ values: [Float], by scalar: Float) -> [Float] {
 }
 
 private func complexDoubleSum(_ left: [ComplexDouble], _ right: [ComplexDouble]) -> [ComplexDouble] {
-    var x = BLASComplexStorage.interleaved(right)
-    var y = BLASComplexStorage.interleaved(left)
-    BLAS.zaxpy(Int32(right.count), &x, &y)
-    return BLASComplexStorage.complexValues(y)
+    var result = Array(repeating: ComplexDouble.zero, count: left.count)
+    for index in 0..<left.count { result[index] = left[index] + right[index] }
+    return result
 }
 
 private func complexFloatSum(_ left: [ComplexFloat], _ right: [ComplexFloat]) -> [ComplexFloat] {
-    var x = BLASComplexStorage.interleaved(right)
-    var y = BLASComplexStorage.interleaved(left)
-    BLAS.caxpy(Int32(right.count), &x, &y)
-    return BLASComplexStorage.complexValues(y)
+    var result = Array(repeating: ComplexFloat.zero, count: left.count)
+    for index in 0..<left.count { result[index] = left[index] + right[index] }
+    return result
+}
+
+private func complexDoubleDifference(_ left: [ComplexDouble], _ right: [ComplexDouble]) -> [ComplexDouble] {
+    var result = Array(repeating: ComplexDouble.zero, count: left.count)
+    for index in 0..<left.count { result[index] = left[index] - right[index] }
+    return result
+}
+
+private func complexFloatDifference(_ left: [ComplexFloat], _ right: [ComplexFloat]) -> [ComplexFloat] {
+    var result = Array(repeating: ComplexFloat.zero, count: left.count)
+    for index in 0..<left.count { result[index] = left[index] - right[index] }
+    return result
 }
 
 private func complexDoubleScale(_ values: [ComplexDouble], by scalar: ComplexDouble) -> [ComplexDouble] {
-    var result = BLASComplexStorage.interleaved(values)
-    var alpha = BLASComplexStorage.interleaved([scalar])
-    BLAS.zscal(Int32(values.count), &alpha, &result)
-    return BLASComplexStorage.complexValues(result)
+    var result = Array(repeating: ComplexDouble.zero, count: values.count)
+    for index in 0..<values.count { result[index] = values[index] * scalar }
+    return result
 }
 
 private func complexFloatScale(_ values: [ComplexFloat], by scalar: ComplexFloat) -> [ComplexFloat] {
-    var result = BLASComplexStorage.interleaved(values)
-    var alpha = BLASComplexStorage.interleaved([scalar])
-    BLAS.cscal(Int32(values.count), &alpha, &result)
-    return BLASComplexStorage.complexValues(result)
+    var result = Array(repeating: ComplexFloat.zero, count: values.count)
+    for index in 0..<values.count { result[index] = values[index] * scalar }
+    return result
 }

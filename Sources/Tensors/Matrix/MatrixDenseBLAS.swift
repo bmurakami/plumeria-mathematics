@@ -457,12 +457,40 @@ public func * (scalar: Float, matrix: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS
     matrix * scalar
 }
 
+public func * (left: MatrixDenseBLAS<Double>, right: MatrixDenseBLAS<Double>) -> MatrixDenseBLAS<Double> {
+    doubleMatrixProduct(left, right)
+}
+
+public func * (left: MatrixDenseBLAS<Float>, right: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
+    floatMatrixProduct(left, right)
+}
+
+public func * (left: MatrixDenseBLAS<ComplexDouble>, right: MatrixDenseBLAS<ComplexDouble>)
+    -> MatrixDenseBLAS<ComplexDouble> {
+    complexDoubleMatrixProduct(left, right)
+}
+
+public func * (left: MatrixDenseBLAS<ComplexFloat>, right: MatrixDenseBLAS<ComplexFloat>)
+    -> MatrixDenseBLAS<ComplexFloat> {
+    complexFloatMatrixProduct(left, right)
+}
+
 public func * (matrix: MatrixDenseBLAS<Double>, vector: VectorDenseBLAS<Double>) -> VectorDenseBLAS<Double> {
     doubleMatrixVectorProduct(matrix, vector)
 }
 
 public func * (matrix: MatrixDenseBLAS<Float>, vector: VectorDenseBLAS<Float>) -> VectorDenseBLAS<Float> {
     floatMatrixVectorProduct(matrix, vector)
+}
+
+public func * (matrix: MatrixDenseBLAS<ComplexDouble>, vector: VectorDenseBLAS<ComplexDouble>)
+    -> VectorDenseBLAS<ComplexDouble> {
+    complexDoubleMatrixVectorProduct(matrix, vector)
+}
+
+public func * (matrix: MatrixDenseBLAS<ComplexFloat>, vector: VectorDenseBLAS<ComplexFloat>)
+    -> VectorDenseBLAS<ComplexFloat> {
+    complexFloatMatrixVectorProduct(matrix, vector)
 }
 
 public func / (matrix: MatrixDenseBLAS<Float>, scalar: Float) -> MatrixDenseBLAS<Float> {
@@ -541,6 +569,103 @@ private func floatMatrixScale(_ matrix: MatrixDenseBLAS<Float>, by scalar: Float
                            blasImplementation: matrix.blasImplementation)
 }
 
+private func complexDoubleSum(_ left: [ComplexDouble], _ right: [ComplexDouble]) -> [ComplexDouble] {
+    var result = Array(repeating: ComplexDouble.zero, count: left.count)
+    for index in 0..<left.count { result[index] = left[index] + right[index] }
+    return result
+}
+
+private func complexFloatSum(_ left: [ComplexFloat], _ right: [ComplexFloat]) -> [ComplexFloat] {
+    var result = Array(repeating: ComplexFloat.zero, count: left.count)
+    for index in 0..<left.count { result[index] = left[index] + right[index] }
+    return result
+}
+
+private func doubleMatrixProduct(
+    _ left: MatrixDenseBLAS<Double>, _ right: MatrixDenseBLAS<Double>
+) -> MatrixDenseBLAS<Double> {
+    precondition(left.columns == right.rows, "Number of matrix columns must match matrix rows")
+    let leftElements = left.columnMajorStorage()
+    let rightElements = right.columnMajorStorage()
+    var result = Array(repeating: 0.0, count: left.rows * right.columns)
+    switch left.blasImplementation {
+    #if canImport(Accelerate)
+    case .accelerate:
+        AccelerateOperations.dgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
+                                   leftElements, rightElements, &result)
+    #endif
+    case .openBLAS:
+        OpenBLASOperations.dgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
+                                 leftElements, rightElements, &result)
+    }
+    return MatrixDenseBLAS<Double>(rows: left.rows, columns: right.columns, values: result,
+                                   blasImplementation: left.blasImplementation)
+}
+
+private func floatMatrixProduct(_ left: MatrixDenseBLAS<Float>, _ right: MatrixDenseBLAS<Float>)
+    -> MatrixDenseBLAS<Float> {
+    precondition(left.columns == right.rows, "Number of matrix columns must match matrix rows")
+    let leftElements = left.columnMajorStorage()
+    let rightElements = right.columnMajorStorage()
+    var result = Array(repeating: Float.zero, count: left.rows * right.columns)
+    switch left.blasImplementation {
+    #if canImport(Accelerate)
+    case .accelerate:
+        AccelerateOperations.sgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
+                                   leftElements, rightElements, &result)
+    #endif
+    case .openBLAS:
+        OpenBLASOperations.sgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
+                                 leftElements, rightElements, &result)
+    }
+    return MatrixDenseBLAS<Float>(rows: left.rows, columns: right.columns, values: result,
+                                  blasImplementation: left.blasImplementation)
+}
+
+private func complexDoubleMatrixProduct(
+    _ left: MatrixDenseBLAS<ComplexDouble>, _ right: MatrixDenseBLAS<ComplexDouble>
+) -> MatrixDenseBLAS<ComplexDouble> {
+    precondition(left.columns == right.rows, "Number of matrix columns must match matrix rows")
+    var leftElements = BLASComplexStorage.interleaved(left.columnMajorStorage())
+    var rightElements = BLASComplexStorage.interleaved(right.columnMajorStorage())
+    var result = Array(repeating: 0.0, count: left.rows * right.columns * 2)
+    switch left.blasImplementation {
+    #if canImport(Accelerate)
+    case .accelerate:
+        AccelerateOperations.zgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
+                                   &leftElements, &rightElements, &result)
+    #endif
+    case .openBLAS:
+        OpenBLASOperations.zgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
+                                 &leftElements, &rightElements, &result)
+    }
+    return MatrixDenseBLAS<ComplexDouble>(rows: left.rows, columns: right.columns,
+                                          values: BLASComplexStorage.complexValues(result),
+                                          blasImplementation: left.blasImplementation)
+}
+
+private func complexFloatMatrixProduct(
+    _ left: MatrixDenseBLAS<ComplexFloat>, _ right: MatrixDenseBLAS<ComplexFloat>
+) -> MatrixDenseBLAS<ComplexFloat> {
+    precondition(left.columns == right.rows, "Number of matrix columns must match matrix rows")
+    var leftElements = BLASComplexStorage.interleaved(left.columnMajorStorage())
+    var rightElements = BLASComplexStorage.interleaved(right.columnMajorStorage())
+    var result = Array(repeating: Float.zero, count: left.rows * right.columns * 2)
+    switch left.blasImplementation {
+    #if canImport(Accelerate)
+    case .accelerate:
+        AccelerateOperations.cgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
+                                   &leftElements, &rightElements, &result)
+    #endif
+    case .openBLAS:
+        OpenBLASOperations.cgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
+                                 &leftElements, &rightElements, &result)
+    }
+    return MatrixDenseBLAS<ComplexFloat>(rows: left.rows, columns: right.columns,
+                                         values: BLASComplexStorage.complexValues(result),
+                                         blasImplementation: left.blasImplementation)
+}
+
 private func doubleMatrixVectorProduct(
     _ matrix: MatrixDenseBLAS<Double>, _ vector: VectorDenseBLAS<Double>
 ) -> VectorDenseBLAS<Double> {
@@ -577,6 +702,42 @@ private func floatMatrixVectorProduct(
     return VectorDenseBLAS<Float>(result)
 }
 
+private func complexDoubleMatrixVectorProduct(
+    _ matrix: MatrixDenseBLAS<ComplexDouble>, _ vector: VectorDenseBLAS<ComplexDouble>
+) -> VectorDenseBLAS<ComplexDouble> {
+    precondition(matrix.columns == vector.size, "Number of columns in matrix must equal size of vector")
+    var matrixElements = BLASComplexStorage.interleaved(matrix.columnMajorStorage())
+    var vectorElements = BLASComplexStorage.interleaved(vector.elements)
+    var result = Array(repeating: 0.0, count: matrix.rows * 2)
+    switch matrix.blasImplementation {
+    #if canImport(Accelerate)
+    case .accelerate:
+        AccelerateOperations.zgemv(Int32(matrix.rows), Int32(matrix.columns), &matrixElements, &vectorElements, &result)
+    #endif
+    case .openBLAS:
+        OpenBLASOperations.zgemv(Int32(matrix.rows), Int32(matrix.columns), &matrixElements, &vectorElements, &result)
+    }
+    return VectorDenseBLAS<ComplexDouble>(BLASComplexStorage.complexValues(result))
+}
+
+private func complexFloatMatrixVectorProduct(
+    _ matrix: MatrixDenseBLAS<ComplexFloat>, _ vector: VectorDenseBLAS<ComplexFloat>
+) -> VectorDenseBLAS<ComplexFloat> {
+    precondition(matrix.columns == vector.size, "Number of columns in matrix must equal size of vector")
+    var matrixElements = BLASComplexStorage.interleaved(matrix.columnMajorStorage())
+    var vectorElements = BLASComplexStorage.interleaved(vector.elements)
+    var result = Array(repeating: Float.zero, count: matrix.rows * 2)
+    switch matrix.blasImplementation {
+    #if canImport(Accelerate)
+    case .accelerate:
+        AccelerateOperations.cgemv(Int32(matrix.rows), Int32(matrix.columns), &matrixElements, &vectorElements, &result)
+    #endif
+    case .openBLAS:
+        OpenBLASOperations.cgemv(Int32(matrix.rows), Int32(matrix.columns), &matrixElements, &vectorElements, &result)
+    }
+    return VectorDenseBLAS<ComplexFloat>(BLASComplexStorage.complexValues(result))
+}
+
 extension MatrixDenseBLAS {
     fileprivate var lazyMatrix: LazyMatrix<S> { lazy ?? .view(view) }
     fileprivate var isWholeMaterializedMatrix: Bool {
@@ -596,15 +757,9 @@ extension MatrixDenseBLAS {
             axpy(Int32(y.count), x, &y)
             return y as! [S]
         case is ComplexDouble.Type:
-            var x = BLASComplexStorage.interleaved(right as! [ComplexDouble])
-            var y = BLASComplexStorage.interleaved(left as! [ComplexDouble])
-            zaxpy(Int32(right.count), &x, &y)
-            return BLASComplexStorage.complexValues(y) as! [S]
+            return complexDoubleSum(left as! [ComplexDouble], right as! [ComplexDouble]) as! [S]
         case is ComplexFloat.Type:
-            var x = BLASComplexStorage.interleaved(right as! [ComplexFloat])
-            var y = BLASComplexStorage.interleaved(left as! [ComplexFloat])
-            caxpy(Int32(right.count), &x, &y)
-            return BLASComplexStorage.complexValues(y) as! [S]
+            return complexFloatSum(left as! [ComplexFloat], right as! [ComplexFloat]) as! [S]
         default:
             fatalError("Unsupported scalar type")
         }

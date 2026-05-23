@@ -2,10 +2,17 @@ import Numerics
 
 public enum BLASComplexStorage {
     public static func interleaved<RealType: Real>(_ values: [Numerics.Complex<RealType>]) -> [RealType] {
-        values.flatMap { [$0.real, $0.imaginary] }
+        var interleaved = Array(repeating: RealType.zero, count: values.count * 2)
+        for index in 0..<values.count {
+            interleaved[2 * index] = values[index].real
+            interleaved[2 * index + 1] = values[index].imaginary
+        }
+        return interleaved
     }
 
     public static func complexValues<RealType: Real>(_ values: [RealType]) -> [Numerics.Complex<RealType>] {
-        stride(from: 0, to: values.count, by: 2).map { Numerics.Complex(values[$0], values[$0 + 1]) }
+        var complex = Array(repeating: Numerics.Complex<RealType>.zero, count: values.count / 2)
+        for index in 0..<complex.count { complex[index] = Numerics.Complex(values[2 * index], values[2 * index + 1]) }
+        return complex
     }
 }
