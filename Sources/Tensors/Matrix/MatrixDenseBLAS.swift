@@ -457,6 +457,14 @@ public func * (scalar: Float, matrix: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS
     matrix * scalar
 }
 
+public func * (matrix: MatrixDenseBLAS<Double>, vector: VectorDenseBLAS<Double>) -> VectorDenseBLAS<Double> {
+    doubleMatrixVectorProduct(matrix, vector)
+}
+
+public func * (matrix: MatrixDenseBLAS<Float>, vector: VectorDenseBLAS<Float>) -> VectorDenseBLAS<Float> {
+    floatMatrixVectorProduct(matrix, vector)
+}
+
 public func / (matrix: MatrixDenseBLAS<Float>, scalar: Float) -> MatrixDenseBLAS<Float> {
     matrix * (1 / scalar)
 }
@@ -531,6 +539,42 @@ private func floatMatrixScale(_ matrix: MatrixDenseBLAS<Float>, by scalar: Float
     return MatrixDenseBLAS(rows: matrix.rows, columns: matrix.columns,
                            lazy: matrix.lazyMatrix.scaled(by: scalar),
                            blasImplementation: matrix.blasImplementation)
+}
+
+private func doubleMatrixVectorProduct(
+    _ matrix: MatrixDenseBLAS<Double>, _ vector: VectorDenseBLAS<Double>
+) -> VectorDenseBLAS<Double> {
+    precondition(matrix.columns == vector.size, "Number of columns in matrix must equal size of vector")
+    let matrixElements = matrix.columnMajorStorage()
+    let vectorElements = vector.elements
+    var result = Array(repeating: 0.0, count: matrix.rows)
+    switch matrix.blasImplementation {
+    #if canImport(Accelerate)
+    case .accelerate:
+        AccelerateOperations.dgemv(Int32(matrix.rows), Int32(matrix.columns), matrixElements, vectorElements, &result)
+    #endif
+    case .openBLAS:
+        OpenBLASOperations.dgemv(Int32(matrix.rows), Int32(matrix.columns), matrixElements, vectorElements, &result)
+    }
+    return VectorDenseBLAS<Double>(result)
+}
+
+private func floatMatrixVectorProduct(
+    _ matrix: MatrixDenseBLAS<Float>, _ vector: VectorDenseBLAS<Float>
+) -> VectorDenseBLAS<Float> {
+    precondition(matrix.columns == vector.size, "Number of columns in matrix must equal size of vector")
+    let matrixElements = matrix.columnMajorStorage()
+    let vectorElements = vector.elements
+    var result = Array(repeating: Float.zero, count: matrix.rows)
+    switch matrix.blasImplementation {
+    #if canImport(Accelerate)
+    case .accelerate:
+        AccelerateOperations.sgemv(Int32(matrix.rows), Int32(matrix.columns), matrixElements, vectorElements, &result)
+    #endif
+    case .openBLAS:
+        OpenBLASOperations.sgemv(Int32(matrix.rows), Int32(matrix.columns), matrixElements, vectorElements, &result)
+    }
+    return VectorDenseBLAS<Float>(result)
 }
 
 extension MatrixDenseBLAS {
@@ -690,7 +734,7 @@ extension MatrixDenseBLAS {
         return rowMajorElements
     }
 
-    private func columnMajorStorage() -> [S] {
+    fileprivate func columnMajorStorage() -> [S] {
         if let lazy { return lazy.materializedElements(rows: rows, columns: columns) }
         return view.contiguousElements ?? flattenedFromView(columnMajorOrder: true)
     }
