@@ -252,7 +252,8 @@ extension MatrixDenseBLAS {
     }
 
     public static func / (matrix: MatrixDenseBLAS<S>, scalar: S) -> MatrixDenseBLAS<S> {
-        matrix * (1 / scalar)
+        let one: S = 1
+        return matrix * (one / scalar)
     }
 
     public func times<V: PluVector>(_ v: V) -> V where V.S == S {
@@ -458,7 +459,7 @@ public func * (scalar: Double, matrix: MatrixDenseBLAS<Double>) -> MatrixDenseBL
 }
 
 public func / (matrix: MatrixDenseBLAS<Double>, scalar: Double) -> MatrixDenseBLAS<Double> {
-    matrix * (1 / scalar)
+    matrix * (1.0 / scalar)
 }
 
 public func * (matrix: MatrixDenseBLAS<Float>, scalar: Float) -> MatrixDenseBLAS<Float> {
@@ -506,7 +507,7 @@ public func * (matrix: MatrixDenseBLAS<ComplexFloat>, vector: VectorDenseBLAS<Co
 }
 
 public func / (matrix: MatrixDenseBLAS<Float>, scalar: Float) -> MatrixDenseBLAS<Float> {
-    matrix * (1 / scalar)
+    matrix * (Float(1.0) / scalar)
 }
 
 private func doubleMatrixSum(

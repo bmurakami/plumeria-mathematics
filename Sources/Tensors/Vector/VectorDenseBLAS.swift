@@ -159,7 +159,8 @@ extension VectorDenseBLAS {
     }
 
     public static func / (vector: VectorDenseBLAS<S>, scalar: S) -> VectorDenseBLAS<S> {
-        vector * (1 / scalar)
+        let one: S = 1
+        return vector * (one / scalar)
     }
 }
 
@@ -228,7 +229,7 @@ public func * (scalar: Double, vector: VectorDenseBLAS<Double>) -> VectorDenseBL
 }
 
 public func / (vector: VectorDenseBLAS<Double>, scalar: Double) -> VectorDenseBLAS<Double> {
-    vector * (1 / scalar)
+    vector * (1.0 / scalar)
 }
 
 public func * (vector: VectorDenseBLAS<Float>, scalar: Float) -> VectorDenseBLAS<Float> {
@@ -240,7 +241,7 @@ public func * (scalar: Float, vector: VectorDenseBLAS<Float>) -> VectorDenseBLAS
 }
 
 public func / (vector: VectorDenseBLAS<Float>, scalar: Float) -> VectorDenseBLAS<Float> {
-    vector * (1 / scalar)
+    vector * (Float(1.0) / scalar)
 }
 
 public func * (vector: VectorDenseBLAS<ComplexDouble>, scalar: ComplexDouble)
@@ -255,7 +256,7 @@ public func * (scalar: ComplexDouble, vector: VectorDenseBLAS<ComplexDouble>)
 
 public func / (vector: VectorDenseBLAS<ComplexDouble>, scalar: ComplexDouble)
     -> VectorDenseBLAS<ComplexDouble> {
-    vector * (1 / scalar)
+    vector * (ComplexDouble(1.0, 0.0) / scalar)
 }
 
 public func * (vector: VectorDenseBLAS<ComplexFloat>, scalar: ComplexFloat) -> VectorDenseBLAS<ComplexFloat> {
@@ -267,7 +268,7 @@ public func * (scalar: ComplexFloat, vector: VectorDenseBLAS<ComplexFloat>) -> V
 }
 
 public func / (vector: VectorDenseBLAS<ComplexFloat>, scalar: ComplexFloat) -> VectorDenseBLAS<ComplexFloat> {
-    vector * (1 / scalar)
+    vector * (ComplexFloat(1.0, 0.0) / scalar)
 }
 
 private func doubleVectorSum(

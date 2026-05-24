@@ -215,7 +215,8 @@ extension TensorDenseBLAS {
     }
 
     public static func / (tensor: TensorDenseBLAS<S>, scalar: S) -> TensorDenseBLAS<S> {
-        tensor * (1 / scalar)
+        let one: S = 1
+        return tensor * (one / scalar)
     }
 
     public static func == (left: TensorDenseBLAS<S>, right: TensorDenseBLAS<S>) -> Bool {
@@ -363,7 +364,7 @@ public func * (scalar: Double, tensor: TensorDenseBLAS<Double>) -> TensorDenseBL
 }
 
 public func / (tensor: TensorDenseBLAS<Double>, scalar: Double) -> TensorDenseBLAS<Double> {
-    tensor * (1 / scalar)
+    tensor * (1.0 / scalar)
 }
 
 public func * (tensor: TensorDenseBLAS<Float>, scalar: Float) -> TensorDenseBLAS<Float> {
@@ -375,7 +376,7 @@ public func * (scalar: Float, tensor: TensorDenseBLAS<Float>) -> TensorDenseBLAS
 }
 
 public func / (tensor: TensorDenseBLAS<Float>, scalar: Float) -> TensorDenseBLAS<Float> {
-    tensor * (1 / scalar)
+    tensor * (Float(1.0) / scalar)
 }
 
 public func * (tensor: TensorDenseBLAS<ComplexDouble>, scalar: ComplexDouble) -> TensorDenseBLAS<ComplexDouble> {
@@ -387,7 +388,7 @@ public func * (scalar: ComplexDouble, tensor: TensorDenseBLAS<ComplexDouble>) ->
 }
 
 public func / (tensor: TensorDenseBLAS<ComplexDouble>, scalar: ComplexDouble) -> TensorDenseBLAS<ComplexDouble> {
-    tensor * (1 / scalar)
+    tensor * (ComplexDouble(1.0, 0.0) / scalar)
 }
 
 public func * (tensor: TensorDenseBLAS<ComplexFloat>, scalar: ComplexFloat) -> TensorDenseBLAS<ComplexFloat> {
@@ -399,7 +400,7 @@ public func * (scalar: ComplexFloat, tensor: TensorDenseBLAS<ComplexFloat>) -> T
 }
 
 public func / (tensor: TensorDenseBLAS<ComplexFloat>, scalar: ComplexFloat) -> TensorDenseBLAS<ComplexFloat> {
-    tensor * (1 / scalar)
+    tensor * (ComplexFloat(1.0, 0.0) / scalar)
 }
 
 private func doubleTensorSum(

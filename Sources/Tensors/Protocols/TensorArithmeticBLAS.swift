@@ -28,7 +28,8 @@ extension TensorArithmeticBLAS {
     }
 
     public static func / (tensor: Self, scalar: S) -> Self {
-        tensor * (1 / scalar)
+        let one: S = 1
+        return tensor * (one / scalar)
     }
 
     public func isApproximatelyEqual(
