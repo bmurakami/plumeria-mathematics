@@ -70,10 +70,10 @@ extension VectorDenseBLAS: PluVector {
         self.init(elements)
     }
 
-    @_specialize(where S == Double)
-    @_specialize(where S == Float)
-    @_specialize(where S == ComplexDouble)
-    @_specialize(where S == ComplexFloat)
+    @specialized(where S == Double)
+    @specialized(where S == Float)
+    @specialized(where S == ComplexDouble)
+    @specialized(where S == ComplexFloat)
     public func magnitude() -> S.Magnitude {
         switch S.self {
         case is Double.Type:
