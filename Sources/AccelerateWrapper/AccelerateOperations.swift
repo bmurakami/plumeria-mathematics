@@ -3,6 +3,12 @@ import Accelerate
 
 public struct AccelerateOperations {
     public static func sgemv(_ m: Int32, _ n: Int32, _ a: [Float], _ x: [Float], _ y: inout [Float]) {
+        y.withUnsafeMutableBufferPointer { y in sgemv(m, n, a, x, y) }
+    }
+
+    public static func sgemv(
+        _ m: Int32, _ n: Int32, _ a: [Float], _ x: [Float], _ y: UnsafeMutableBufferPointer<Float>
+    ) {
         let alpha: Float = 1.0
         let beta: Float = 0.0
         let lda = Int32(m)
@@ -10,17 +16,21 @@ public struct AccelerateOperations {
         let incy = Int32(1)
         a.withUnsafeBufferPointer { a in
             x.withUnsafeBufferPointer { x in
-                y.withUnsafeMutableBufferPointer { y in
-                    Accelerate.cblas_sgemv(
-                        CblasColMajor, CblasNoTrans, m, n, alpha, a.baseAddress!, lda, x.baseAddress!, incx,
-                        beta, y.baseAddress!, incy
-                    )
-                }
+                Accelerate.cblas_sgemv(
+                    CblasColMajor, CblasNoTrans, m, n, alpha, a.baseAddress!, lda, x.baseAddress!, incx,
+                    beta, y.baseAddress!, incy
+                )
             }
         }
     }
 
     public static func dgemv(_ m: Int32, _ n: Int32, _ a: [Double], _ x: [Double], _ y: inout [Double]) {
+        y.withUnsafeMutableBufferPointer { y in dgemv(m, n, a, x, y) }
+    }
+
+    public static func dgemv(
+        _ m: Int32, _ n: Int32, _ a: [Double], _ x: [Double], _ y: UnsafeMutableBufferPointer<Double>
+    ) {
         let alpha: Double = 1.0
         let beta = 0.0
         let lda = Int32(m)
@@ -28,12 +38,10 @@ public struct AccelerateOperations {
         let incy = Int32(1)
         a.withUnsafeBufferPointer { a in
             x.withUnsafeBufferPointer { x in
-                y.withUnsafeMutableBufferPointer { y in
-                    Accelerate.cblas_dgemv(
-                        CblasColMajor, CblasNoTrans, m, n, alpha, a.baseAddress!, lda, x.baseAddress!, incx,
-                        beta, y.baseAddress!, incy
-                    )
-                }
+                Accelerate.cblas_dgemv(
+                    CblasColMajor, CblasNoTrans, m, n, alpha, a.baseAddress!, lda, x.baseAddress!, incx,
+                    beta, y.baseAddress!, incy
+                )
             }
         }
     }
@@ -125,7 +133,8 @@ public struct AccelerateOperations {
     }
 
     public static func dgemm(
-        _ m: Int32, _ n: Int32, _ k: Int32, _ a: [Double], _ b: [Double], _ c: inout [Double]
+        _ m: Int32, _ n: Int32, _ k: Int32, _ a: [Double], _ b: [Double],
+        _ c: inout [Double]
     ) {
         let alpha: Double = 1.0
         let beta = 0.0
@@ -145,7 +154,8 @@ public struct AccelerateOperations {
     }
 
     public static func sgemm(
-        _ m: Int32, _ n: Int32, _ k: Int32, _ a: [Float], _ b: [Float], _ c: inout [Float]
+        _ m: Int32, _ n: Int32, _ k: Int32, _ a: [Float], _ b: [Float],
+        _ c: inout [Float]
     ) {
         let alpha: Float = 1.0
         let beta: Float = 0.0

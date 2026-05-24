@@ -25,6 +25,20 @@ public enum BLASComplexStorage {
         return values.withUnsafeMutableBytes { body($0.baseAddress!) }
     }
 
+    public static func withUnsafeMutableInterleavedStorage<RealType: Real, Result>(
+        _ values: UnsafeMutableBufferPointer<Numerics.Complex<RealType>>,
+        _ body: (UnsafeMutableRawPointer) -> Result
+    ) -> Result {
+        precondition(MemoryLayout<Numerics.Complex<RealType>>.stride == 2 * MemoryLayout<RealType>.stride,
+                     "Complex storage must be interleaved real and imaginary values")
+        if values.isEmpty {
+            var placeholder = [RealType.zero, RealType.zero]
+            return placeholder.withUnsafeMutableBytes { body($0.baseAddress!) }
+        }
+        let bytes = UnsafeMutableRawBufferPointer(values)
+        return body(bytes.baseAddress!)
+    }
+
     public static func sum(_ left: [ComplexDouble], _ right: [ComplexDouble]) -> [ComplexDouble] {
         Array<ComplexDouble>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
             left.withUnsafeBytes { left in
