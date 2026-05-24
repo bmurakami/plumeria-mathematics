@@ -274,6 +274,20 @@ public enum OpenBLASOperations {
         COpenBLAS.cblas_dnrm2(n, x.assumingMemoryBound(to: Double.self), Int32(1))
     }
 
+    public static func ddot(_ n: Int32, _ x: [Double], _ y: [Double]) -> Double {
+        let inc = Int32(1)
+        return x.withUnsafeBufferPointer { x in
+            y.withUnsafeBufferPointer { y in
+                COpenBLAS.cblas_ddot(n, x.baseAddress!, inc, y.baseAddress!, inc)
+            }
+        }
+    }
+
+    public static func ddotRaw(_ n: Int32, _ x: UnsafeRawPointer, _ y: UnsafeRawPointer) -> Double {
+        COpenBLAS.cblas_ddot(n, x.assumingMemoryBound(to: Double.self), Int32(1),
+                             y.assumingMemoryBound(to: Double.self), Int32(1))
+    }
+
     public static func snrm2(_ n: Int32, _ x: [Float]) -> Float {
         let inc = Int32(1)
         return x.withUnsafeBufferPointer { x in
@@ -283,6 +297,20 @@ public enum OpenBLASOperations {
 
     public static func snrm2Raw(_ n: Int32, _ x: UnsafeRawPointer) -> Float {
         COpenBLAS.cblas_snrm2(n, x.assumingMemoryBound(to: Float.self), Int32(1))
+    }
+
+    public static func sdot(_ n: Int32, _ x: [Float], _ y: [Float]) -> Float {
+        let inc = Int32(1)
+        return x.withUnsafeBufferPointer { x in
+            y.withUnsafeBufferPointer { y in
+                COpenBLAS.cblas_sdot(n, x.baseAddress!, inc, y.baseAddress!, inc)
+            }
+        }
+    }
+
+    public static func sdotRaw(_ n: Int32, _ x: UnsafeRawPointer, _ y: UnsafeRawPointer) -> Float {
+        COpenBLAS.cblas_sdot(n, x.assumingMemoryBound(to: Float.self), Int32(1),
+                             y.assumingMemoryBound(to: Float.self), Int32(1))
     }
 
     public static func dznrm2(_ n: Int32, _ x: inout [Double]) -> Double {

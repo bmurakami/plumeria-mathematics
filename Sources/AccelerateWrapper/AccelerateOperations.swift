@@ -276,78 +276,20 @@ public struct AccelerateOperations {
         }
     }
 
-    public static func add(_ left: [Double], _ right: [Double]) -> [Double] {
-        Array<Double>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
-            left.withUnsafeBufferPointer { left in
-                right.withUnsafeBufferPointer { right in
-                    Accelerate.vDSP_vaddD(left.baseAddress!, 1, right.baseAddress!, 1, result.baseAddress!, 1,
-                                          vDSP_Length(result.count))
-                }
-            }
-            initializedCount = left.count
-        }
-    }
-
-    public static func add(_ left: [Float], _ right: [Float]) -> [Float] {
-        Array<Float>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
-            left.withUnsafeBufferPointer { left in
-                right.withUnsafeBufferPointer { right in
-                    Accelerate.vDSP_vadd(left.baseAddress!, 1, right.baseAddress!, 1, result.baseAddress!, 1,
-                                         vDSP_Length(result.count))
-                }
-            }
-            initializedCount = left.count
-        }
-    }
-
-    public static func scale(_ values: [Double], by scalar: Double) -> [Double] {
-        var scalar = scalar
-        return Array<Double>(unsafeUninitializedCapacity: values.count) { result, initializedCount in
-            values.withUnsafeBufferPointer { values in
-                Accelerate.vDSP_vsmulD(values.baseAddress!, 1, &scalar, result.baseAddress!, 1,
-                                       vDSP_Length(result.count))
-            }
-            initializedCount = values.count
-        }
-    }
-
-    public static func scale(_ values: [Float], by scalar: Float) -> [Float] {
-        var scalar = scalar
-        return Array<Float>(unsafeUninitializedCapacity: values.count) { result, initializedCount in
-            values.withUnsafeBufferPointer { values in
-                Accelerate.vDSP_vsmul(values.baseAddress!, 1, &scalar, result.baseAddress!, 1,
-                                      vDSP_Length(result.count))
-            }
-            initializedCount = values.count
-        }
-    }
-
     public static func norm(_ values: [Double]) -> Double {
-        var sumOfSquares = 0.0
-        values.withUnsafeBufferPointer { values in
-            Accelerate.vDSP_svesqD(values.baseAddress!, 1, &sumOfSquares, vDSP_Length(values.count))
-        }
-        return sumOfSquares.squareRoot()
+        ddot(Int32(values.count), values, values).squareRoot()
     }
 
     public static func norm(_ values: [Float]) -> Float {
-        var sumOfSquares = Float.zero
-        values.withUnsafeBufferPointer { values in
-            Accelerate.vDSP_svesq(values.baseAddress!, 1, &sumOfSquares, vDSP_Length(values.count))
-        }
-        return sumOfSquares.squareRoot()
+        sdot(Int32(values.count), values, values).squareRoot()
     }
 
     public static func normRaw(_ n: Int, _ values: UnsafeRawPointer) -> Double {
-        var sumOfSquares = 0.0
-        Accelerate.vDSP_svesqD(values.assumingMemoryBound(to: Double.self), 1, &sumOfSquares, vDSP_Length(n))
-        return sumOfSquares.squareRoot()
+        ddotRaw(Int32(n), values, values).squareRoot()
     }
 
     public static func normRaw(_ n: Int, _ values: UnsafeRawPointer) -> Float {
-        var sumOfSquares = Float.zero
-        Accelerate.vDSP_svesq(values.assumingMemoryBound(to: Float.self), 1, &sumOfSquares, vDSP_Length(n))
-        return sumOfSquares.squareRoot()
+        sdotRaw(Int32(n), values, values).squareRoot()
     }
 
     public static func dscal(_ n: Int32, _ alpha: Double, _ x: inout [Double]) {
@@ -371,6 +313,20 @@ public struct AccelerateOperations {
         Accelerate.cblas_dnrm2(n, x.assumingMemoryBound(to: Double.self), Int32(1))
     }
 
+    public static func ddot(_ n: Int32, _ x: [Double], _ y: [Double]) -> Double {
+        let inc = Int32(1)
+        return x.withUnsafeBufferPointer { x in
+            y.withUnsafeBufferPointer { y in
+                Accelerate.cblas_ddot(n, x.baseAddress!, inc, y.baseAddress!, inc)
+            }
+        }
+    }
+
+    public static func ddotRaw(_ n: Int32, _ x: UnsafeRawPointer, _ y: UnsafeRawPointer) -> Double {
+        Accelerate.cblas_ddot(n, x.assumingMemoryBound(to: Double.self), Int32(1),
+                              y.assumingMemoryBound(to: Double.self), Int32(1))
+    }
+
     public static func snrm2(_ n: Int32, _ x: [Float]) -> Float {
         let inc = Int32(1)
         return x.withUnsafeBufferPointer { x in
@@ -380,6 +336,20 @@ public struct AccelerateOperations {
 
     public static func snrm2Raw(_ n: Int32, _ x: UnsafeRawPointer) -> Float {
         Accelerate.cblas_snrm2(n, x.assumingMemoryBound(to: Float.self), Int32(1))
+    }
+
+    public static func sdot(_ n: Int32, _ x: [Float], _ y: [Float]) -> Float {
+        let inc = Int32(1)
+        return x.withUnsafeBufferPointer { x in
+            y.withUnsafeBufferPointer { y in
+                Accelerate.cblas_sdot(n, x.baseAddress!, inc, y.baseAddress!, inc)
+            }
+        }
+    }
+
+    public static func sdotRaw(_ n: Int32, _ x: UnsafeRawPointer, _ y: UnsafeRawPointer) -> Float {
+        Accelerate.cblas_sdot(n, x.assumingMemoryBound(to: Float.self), Int32(1),
+                              y.assumingMemoryBound(to: Float.self), Int32(1))
     }
 
     public static func dznrm2(_ n: Int32, _ x: inout [Double]) -> Double {

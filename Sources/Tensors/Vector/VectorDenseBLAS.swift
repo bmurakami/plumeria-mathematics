@@ -312,7 +312,7 @@ private func doubleMagnitude(_ vector: VectorDenseBLAS<Double>) -> Double {
     #if canImport(Accelerate)
     return AccelerateOperations.norm(vector.elements)
     #else
-    return OpenBLASOperations.dnrm2(Int32(vector.size), vector.elements)
+    return OpenBLASOperations.ddot(Int32(vector.size), vector.elements, vector.elements).squareRoot()
     #endif
 }
 
@@ -320,7 +320,7 @@ private func floatMagnitude(_ vector: VectorDenseBLAS<Float>) -> Float {
     #if canImport(Accelerate)
     return AccelerateOperations.norm(vector.elements)
     #else
-    return OpenBLASOperations.snrm2(Int32(vector.size), vector.elements)
+    return OpenBLASOperations.sdot(Int32(vector.size), vector.elements, vector.elements).squareRoot()
     #endif
 }
 
@@ -331,7 +331,7 @@ private func complexDoubleMagnitude(_ vector: VectorDenseBLAS<ComplexDouble>) ->
     }
     #else
     return BLASComplexStorage.withUnsafeInterleavedStorage(vector.elements) {
-        OpenBLASOperations.dnrm2Raw(Int32(vector.size * 2), $0)
+        OpenBLASOperations.ddotRaw(Int32(vector.size * 2), $0, $0).squareRoot()
     }
     #endif
 }
@@ -343,61 +343,51 @@ private func complexFloatMagnitude(_ vector: VectorDenseBLAS<ComplexFloat>) -> F
     }
     #else
     return BLASComplexStorage.withUnsafeInterleavedStorage(vector.elements) {
-        OpenBLASOperations.snrm2Raw(Int32(vector.size * 2), $0)
+        OpenBLASOperations.sdotRaw(Int32(vector.size * 2), $0, $0).squareRoot()
     }
     #endif
 }
 
 private func doubleSum(_ left: [Double], _ right: [Double]) -> [Double] {
-    #if canImport(Accelerate)
-    return AccelerateOperations.add(left, right)
-    #else
-    var result = Array(repeating: 0.0, count: left.count)
-    for index in 0..<left.count { result[index] = left[index] + right[index] }
-    return result
-    #endif
+    Array<Double>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
+        for index in 0..<left.count { result[index] = left[index] + right[index] }
+        initializedCount = left.count
+    }
 }
 
 private func floatSum(_ left: [Float], _ right: [Float]) -> [Float] {
-    #if canImport(Accelerate)
-    return AccelerateOperations.add(left, right)
-    #else
-    var result = Array(repeating: Float.zero, count: left.count)
-    for index in 0..<left.count { result[index] = left[index] + right[index] }
-    return result
-    #endif
+    Array<Float>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
+        for index in 0..<left.count { result[index] = left[index] + right[index] }
+        initializedCount = left.count
+    }
 }
 
 private func doubleDifference(_ left: [Double], _ right: [Double]) -> [Double] {
-    var result = Array(repeating: 0.0, count: left.count)
-    for index in 0..<left.count { result[index] = left[index] - right[index] }
-    return result
+    Array<Double>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
+        for index in 0..<left.count { result[index] = left[index] - right[index] }
+        initializedCount = left.count
+    }
 }
 
 private func floatDifference(_ left: [Float], _ right: [Float]) -> [Float] {
-    var result = Array(repeating: Float.zero, count: left.count)
-    for index in 0..<left.count { result[index] = left[index] - right[index] }
-    return result
+    Array<Float>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
+        for index in 0..<left.count { result[index] = left[index] - right[index] }
+        initializedCount = left.count
+    }
 }
 
 private func doubleScale(_ values: [Double], by scalar: Double) -> [Double] {
-    #if canImport(Accelerate)
-    return AccelerateOperations.scale(values, by: scalar)
-    #else
-    var result = Array(repeating: 0.0, count: values.count)
-    for index in 0..<values.count { result[index] = values[index] * scalar }
-    return result
-    #endif
+    Array<Double>(unsafeUninitializedCapacity: values.count) { result, initializedCount in
+        for index in 0..<values.count { result[index] = values[index] * scalar }
+        initializedCount = values.count
+    }
 }
 
 private func floatScale(_ values: [Float], by scalar: Float) -> [Float] {
-    #if canImport(Accelerate)
-    return AccelerateOperations.scale(values, by: scalar)
-    #else
-    var result = Array(repeating: Float.zero, count: values.count)
-    for index in 0..<values.count { result[index] = values[index] * scalar }
-    return result
-    #endif
+    Array<Float>(unsafeUninitializedCapacity: values.count) { result, initializedCount in
+        for index in 0..<values.count { result[index] = values[index] * scalar }
+        initializedCount = values.count
+    }
 }
 
 private func complexDoubleScale(_ values: [ComplexDouble], by scalar: ComplexDouble) -> [ComplexDouble] {
