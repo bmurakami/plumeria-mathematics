@@ -501,6 +501,17 @@ public enum OpenBLASOperations {
         return info
     }
 
+    public static func dgesv(_ n: Int32, _ nrhs: Int32, _ a: inout [Double], _ b: inout [Double]) -> Int32 {
+        var nMutable = n
+        var nrhsMutable = nrhs
+        var lda = n
+        var ipiv = Array<Int32>(repeating: 0, count: Int(n))
+        var ldb = n
+        var info = Int32(0)
+        COpenBLAS.dgesv_(&nMutable, &nrhsMutable, &a, &lda, &ipiv, &b, &ldb, &info)
+        return info
+    }
+
     public static func zgesv(_ n: Int32, _ a: inout [Double], _ b: inout [Double]) -> Int32 {
         var nMutable = n
         var nrhs = Int32(1)

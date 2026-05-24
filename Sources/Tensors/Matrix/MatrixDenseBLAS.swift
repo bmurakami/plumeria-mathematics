@@ -1072,12 +1072,19 @@ extension MatrixDenseBLAS {
         return result
     }
 
+    private func doubleIdentityElements() -> [Double] {
+        var identity = Array(repeating: 0.0, count: rows * columns)
+        for index in 0..<rows { identity[index + rows * index] = 1.0 }
+        return identity
+    }
+
     private func doubleInverse() -> MatrixDenseBLAS<Double> {
-        var factorization = doubleFactorization()
-        precondition(factorization.info == 0, "Matrix must be invertible")
-        let info = doubleGetri(Int32(rows), &factorization.matrix, factorization.pivots)
+        let n = Int32(rows)
+        var matrix = columnMajorStorage() as! [Double]
+        var inverse = doubleIdentityElements()
+        let info = doubleGesv(n, n, &matrix, &inverse)
         precondition(info == 0, "LAPACK inverse failed with info \(info)")
-        return MatrixDenseBLAS<Double>(rows: rows, columns: columns, values: factorization.matrix)
+        return MatrixDenseBLAS<Double>(rows: rows, columns: columns, values: inverse)
     }
 
     private func floatInverse() -> MatrixDenseBLAS<Float> {
@@ -1148,6 +1155,15 @@ extension MatrixDenseBLAS {
         case .accelerate: return AccelerateOperations.dgetri(n, &matrix, pivots)
         #endif
         case .openBLAS: return OpenBLASOperations.dgetri(n, &matrix, pivots)
+        }
+    }
+
+    private func doubleGesv(_ n: Int32, _ nrhs: Int32, _ matrix: inout [Double], _ rhs: inout [Double]) -> Int32 {
+        switch blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate: return AccelerateOperations.dgesv(n, nrhs, &matrix, &rhs)
+        #endif
+        case .openBLAS: return OpenBLASOperations.dgesv(n, nrhs, &matrix, &rhs)
         }
     }
 
