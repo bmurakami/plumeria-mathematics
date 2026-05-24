@@ -26,59 +26,59 @@ public enum BLASComplexStorage {
     }
 
     public static func sum(_ left: [ComplexDouble], _ right: [ComplexDouble]) -> [ComplexDouble] {
-        var result = Array(repeating: ComplexDouble.zero, count: left.count)
-        left.withUnsafeBytes { left in
-            right.withUnsafeBytes { right in
-                result.withUnsafeMutableBytes { result in
+        Array<ComplexDouble>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
+            left.withUnsafeBytes { left in
+                right.withUnsafeBytes { right in
+                    let rawResult = UnsafeMutableRawBufferPointer(result)
                     let left = left.bindMemory(to: Double.self), right = right.bindMemory(to: Double.self)
-                    let result = result.bindMemory(to: Double.self)
+                    let result = rawResult.bindMemory(to: Double.self)
                     for index in 0..<result.count { result[index] = left[index] + right[index] }
                 }
             }
+            initializedCount = left.count
         }
-        return result
     }
 
     public static func sum(_ left: [ComplexFloat], _ right: [ComplexFloat]) -> [ComplexFloat] {
-        var result = Array(repeating: ComplexFloat.zero, count: left.count)
-        left.withUnsafeBytes { left in
-            right.withUnsafeBytes { right in
-                result.withUnsafeMutableBytes { result in
+        Array<ComplexFloat>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
+            left.withUnsafeBytes { left in
+                right.withUnsafeBytes { right in
+                    let rawResult = UnsafeMutableRawBufferPointer(result)
                     let left = left.bindMemory(to: Float.self), right = right.bindMemory(to: Float.self)
-                    let result = result.bindMemory(to: Float.self)
+                    let result = rawResult.bindMemory(to: Float.self)
                     for index in 0..<result.count { result[index] = left[index] + right[index] }
                 }
             }
+            initializedCount = left.count
         }
-        return result
     }
 
     public static func difference(_ left: [ComplexDouble], _ right: [ComplexDouble]) -> [ComplexDouble] {
-        var result = Array(repeating: ComplexDouble.zero, count: left.count)
-        left.withUnsafeBytes { left in
-            right.withUnsafeBytes { right in
-                result.withUnsafeMutableBytes { result in
+        Array<ComplexDouble>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
+            left.withUnsafeBytes { left in
+                right.withUnsafeBytes { right in
+                    let rawResult = UnsafeMutableRawBufferPointer(result)
                     let left = left.bindMemory(to: Double.self), right = right.bindMemory(to: Double.self)
-                    let result = result.bindMemory(to: Double.self)
+                    let result = rawResult.bindMemory(to: Double.self)
                     for index in 0..<result.count { result[index] = left[index] - right[index] }
                 }
             }
+            initializedCount = left.count
         }
-        return result
     }
 
     public static func difference(_ left: [ComplexFloat], _ right: [ComplexFloat]) -> [ComplexFloat] {
-        var result = Array(repeating: ComplexFloat.zero, count: left.count)
-        left.withUnsafeBytes { left in
-            right.withUnsafeBytes { right in
-                result.withUnsafeMutableBytes { result in
+        Array<ComplexFloat>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
+            left.withUnsafeBytes { left in
+                right.withUnsafeBytes { right in
+                    let rawResult = UnsafeMutableRawBufferPointer(result)
                     let left = left.bindMemory(to: Float.self), right = right.bindMemory(to: Float.self)
-                    let result = result.bindMemory(to: Float.self)
+                    let result = rawResult.bindMemory(to: Float.self)
                     for index in 0..<result.count { result[index] = left[index] - right[index] }
                 }
             }
+            initializedCount = left.count
         }
-        return result
     }
 
     public static func interleaved<RealType: Real>(_ values: [Numerics.Complex<RealType>]) -> [RealType] {

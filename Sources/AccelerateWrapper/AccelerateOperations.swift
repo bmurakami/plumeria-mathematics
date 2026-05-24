@@ -277,53 +277,49 @@ public struct AccelerateOperations {
     }
 
     public static func add(_ left: [Double], _ right: [Double]) -> [Double] {
-        var result = Array(repeating: 0.0, count: left.count)
-        left.withUnsafeBufferPointer { left in
-            right.withUnsafeBufferPointer { right in
-                result.withUnsafeMutableBufferPointer { result in
+        Array<Double>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
+            left.withUnsafeBufferPointer { left in
+                right.withUnsafeBufferPointer { right in
                     Accelerate.vDSP_vaddD(left.baseAddress!, 1, right.baseAddress!, 1, result.baseAddress!, 1,
                                           vDSP_Length(result.count))
                 }
             }
+            initializedCount = left.count
         }
-        return result
     }
 
     public static func add(_ left: [Float], _ right: [Float]) -> [Float] {
-        var result = Array(repeating: Float.zero, count: left.count)
-        left.withUnsafeBufferPointer { left in
-            right.withUnsafeBufferPointer { right in
-                result.withUnsafeMutableBufferPointer { result in
+        Array<Float>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
+            left.withUnsafeBufferPointer { left in
+                right.withUnsafeBufferPointer { right in
                     Accelerate.vDSP_vadd(left.baseAddress!, 1, right.baseAddress!, 1, result.baseAddress!, 1,
                                          vDSP_Length(result.count))
                 }
             }
+            initializedCount = left.count
         }
-        return result
     }
 
     public static func scale(_ values: [Double], by scalar: Double) -> [Double] {
         var scalar = scalar
-        var result = Array(repeating: 0.0, count: values.count)
-        values.withUnsafeBufferPointer { values in
-            result.withUnsafeMutableBufferPointer { result in
+        return Array<Double>(unsafeUninitializedCapacity: values.count) { result, initializedCount in
+            values.withUnsafeBufferPointer { values in
                 Accelerate.vDSP_vsmulD(values.baseAddress!, 1, &scalar, result.baseAddress!, 1,
                                        vDSP_Length(result.count))
             }
+            initializedCount = values.count
         }
-        return result
     }
 
     public static func scale(_ values: [Float], by scalar: Float) -> [Float] {
         var scalar = scalar
-        var result = Array(repeating: Float.zero, count: values.count)
-        values.withUnsafeBufferPointer { values in
-            result.withUnsafeMutableBufferPointer { result in
+        return Array<Float>(unsafeUninitializedCapacity: values.count) { result, initializedCount in
+            values.withUnsafeBufferPointer { values in
                 Accelerate.vDSP_vsmul(values.baseAddress!, 1, &scalar, result.baseAddress!, 1,
                                       vDSP_Length(result.count))
             }
+            initializedCount = values.count
         }
-        return result
     }
 
     public static func norm(_ values: [Double]) -> Double {
