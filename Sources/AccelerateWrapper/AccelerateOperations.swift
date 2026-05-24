@@ -492,11 +492,8 @@ public struct AccelerateOperations {
         var nMutable = n
         var lda = n
         var pivots = pivots
-        var workQuery = Float.zero
-        var lwork = Int32(-1)
+        var lwork = n * 32
         var info = Int32(0)
-        Accelerate.sgetri_(&nMutable, &a, &lda, &pivots, &workQuery, &lwork, &info)
-        lwork = Int32(workQuery)
         var work = Array(repeating: Float.zero, count: Int(lwork))
         Accelerate.sgetri_(&nMutable, &a, &lda, &pivots, &work, &lwork, &info)
         return info
@@ -506,11 +503,8 @@ public struct AccelerateOperations {
         var nMutable = n
         var lda = n
         var pivots = pivots
-        var workQuery = Double.zero
-        var lwork = Int32(-1)
+        var lwork = n * 32
         var info = Int32(0)
-        Accelerate.dgetri_(&nMutable, &a, &lda, &pivots, &workQuery, &lwork, &info)
-        lwork = Int32(workQuery)
         var work = Array(repeating: Double.zero, count: Int(lwork))
         Accelerate.dgetri_(&nMutable, &a, &lda, &pivots, &work, &lwork, &info)
         return info
@@ -520,18 +514,8 @@ public struct AccelerateOperations {
         var nMutable = n
         var lda = n
         var pivots = pivots
-        var workQuery = [Float.zero, Float.zero]
-        var lwork = Int32(-1)
+        var lwork = n * 32
         var info = Int32(0)
-        a.withUnsafeMutableBufferPointer { a in
-            workQuery.withUnsafeMutableBufferPointer { work in
-                Accelerate.cgetri_(
-                    &nMutable, OpaquePointer(UnsafeMutableRawPointer(a.baseAddress!)), &lda, &pivots,
-                    OpaquePointer(UnsafeMutableRawPointer(work.baseAddress!)), &lwork, &info
-                )
-            }
-        }
-        lwork = Int32(workQuery[0])
         var work = Array(repeating: Float.zero, count: Int(lwork) * 2)
         a.withUnsafeMutableBufferPointer { a in
             work.withUnsafeMutableBufferPointer { work in
@@ -548,18 +532,8 @@ public struct AccelerateOperations {
         var nMutable = n
         var lda = n
         var pivots = pivots
-        var workQuery = [Double.zero, Double.zero]
-        var lwork = Int32(-1)
+        var lwork = n * 32
         var info = Int32(0)
-        a.withUnsafeMutableBufferPointer { a in
-            workQuery.withUnsafeMutableBufferPointer { work in
-                Accelerate.zgetri_(
-                    &nMutable, OpaquePointer(UnsafeMutableRawPointer(a.baseAddress!)), &lda, &pivots,
-                    OpaquePointer(UnsafeMutableRawPointer(work.baseAddress!)), &lwork, &info
-                )
-            }
-        }
-        lwork = Int32(workQuery[0])
         var work = Array(repeating: Double.zero, count: Int(lwork) * 2)
         a.withUnsafeMutableBufferPointer { a in
             work.withUnsafeMutableBufferPointer { work in

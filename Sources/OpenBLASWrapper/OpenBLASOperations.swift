@@ -435,11 +435,8 @@ public enum OpenBLASOperations {
         var nMutable = n
         var lda = n
         var pivots = pivots
-        var workQuery = Float.zero
-        var lwork = Int32(-1)
+        var lwork = n * 32
         var info = Int32(0)
-        COpenBLAS.sgetri_(&nMutable, &a, &lda, &pivots, &workQuery, &lwork, &info)
-        lwork = Int32(workQuery)
         var work = Array(repeating: Float.zero, count: Int(lwork))
         COpenBLAS.sgetri_(&nMutable, &a, &lda, &pivots, &work, &lwork, &info)
         return info
@@ -449,11 +446,8 @@ public enum OpenBLASOperations {
         var nMutable = n
         var lda = n
         var pivots = pivots
-        var workQuery = Double.zero
-        var lwork = Int32(-1)
+        var lwork = n * 32
         var info = Int32(0)
-        COpenBLAS.dgetri_(&nMutable, &a, &lda, &pivots, &workQuery, &lwork, &info)
-        lwork = Int32(workQuery)
         var work = Array(repeating: Double.zero, count: Int(lwork))
         COpenBLAS.dgetri_(&nMutable, &a, &lda, &pivots, &work, &lwork, &info)
         return info
@@ -463,18 +457,8 @@ public enum OpenBLASOperations {
         var nMutable = n
         var lda = n
         var pivots = pivots
-        var workQuery = [Float.zero, Float.zero]
-        var lwork = Int32(-1)
+        var lwork = n * 32
         var info = Int32(0)
-        a.withUnsafeMutableBufferPointer { a in
-            workQuery.withUnsafeMutableBufferPointer { work in
-                COpenBLAS.cgetri_(
-                    &nMutable, OpaquePointer(UnsafeMutableRawPointer(a.baseAddress!)), &lda, &pivots,
-                    OpaquePointer(UnsafeMutableRawPointer(work.baseAddress!)), &lwork, &info
-                )
-            }
-        }
-        lwork = Int32(workQuery[0])
         var work = Array(repeating: Float.zero, count: Int(lwork) * 2)
         a.withUnsafeMutableBufferPointer { a in
             work.withUnsafeMutableBufferPointer { work in
@@ -491,18 +475,8 @@ public enum OpenBLASOperations {
         var nMutable = n
         var lda = n
         var pivots = pivots
-        var workQuery = [Double.zero, Double.zero]
-        var lwork = Int32(-1)
+        var lwork = n * 32
         var info = Int32(0)
-        a.withUnsafeMutableBufferPointer { a in
-            workQuery.withUnsafeMutableBufferPointer { work in
-                COpenBLAS.zgetri_(
-                    &nMutable, OpaquePointer(UnsafeMutableRawPointer(a.baseAddress!)), &lda, &pivots,
-                    OpaquePointer(UnsafeMutableRawPointer(work.baseAddress!)), &lwork, &info
-                )
-            }
-        }
-        lwork = Int32(workQuery[0])
         var work = Array(repeating: Double.zero, count: Int(lwork) * 2)
         a.withUnsafeMutableBufferPointer { a in
             work.withUnsafeMutableBufferPointer { work in
