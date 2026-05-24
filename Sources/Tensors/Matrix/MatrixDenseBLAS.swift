@@ -382,10 +382,10 @@ extension MatrixDenseBLAS {
         determinant()
     }
 
-    @specialized(where S == Double)
-    @specialized(where S == Float)
-    @specialized(where S == ComplexDouble)
-    @specialized(where S == ComplexFloat)
+    @_specialize(where S == Double)
+    @_specialize(where S == Float)
+    @_specialize(where S == ComplexDouble)
+    @_specialize(where S == ComplexFloat)
     private func determinant() -> S {
         precondition(rows == columns, "Determinant requires a square matrix")
         switch S.self {
@@ -397,10 +397,10 @@ extension MatrixDenseBLAS {
         }
     }
 
-    @specialized(where S == Double)
-    @specialized(where S == Float)
-    @specialized(where S == ComplexDouble)
-    @specialized(where S == ComplexFloat)
+    @_specialize(where S == Double)
+    @_specialize(where S == Float)
+    @_specialize(where S == ComplexDouble)
+    @_specialize(where S == ComplexFloat)
     public func inverse() -> MatrixDenseBLAS<S> {
         precondition(rows == columns, "Inverse requires a square matrix")
         switch S.self {

@@ -67,10 +67,10 @@ extension TensorDenseBLAS: TensorMultiplication {
 }
 
 extension TensorDenseBLAS {
-    @specialized(where S == Double)
-    @specialized(where S == Float)
-    @specialized(where S == ComplexDouble)
-    @specialized(where S == ComplexFloat)
+    @_specialize(where S == Double)
+    @_specialize(where S == Float)
+    @_specialize(where S == ComplexDouble)
+    @_specialize(where S == ComplexFloat)
     public func times(_ other: TensorDenseBLAS<S>, contract indices: [(left: Int, right: Int)]) -> TensorDenseBLAS<S> {
         let plan = contractionPlan(with: other, contract: indices)
         if plan.resultShape.contains(0) || plan.contractShape.contains(0) {
