@@ -1,5 +1,16 @@
 import Numerics
 
+private struct TensorDenseContractionPlan {
+    let leftFreeIndices: [Int]
+    let rightFreeIndices: [Int]
+    let leftContractIndices: [Int]
+    let rightContractIndices: [Int]
+    let leftFreeShape: [Int]
+    let rightFreeShape: [Int]
+    let contractShape: [Int]
+    var resultShape: [Int] { leftFreeShape + rightFreeShape }
+}
+
 public struct TensorDenseBLAS<S: PluScalar>: TensorArithmeticBLAS, Equatable {
     private var view: TensorFlatView<S>
 
@@ -53,39 +64,80 @@ extension TensorDenseBLAS: TensorMultiplication {
 }
 
 extension TensorDenseBLAS {
+    @_specialize(where S == Double)
+    @_specialize(where S == Float)
+    @_specialize(where S == ComplexDouble)
+    @_specialize(where S == ComplexFloat)
     public func times(_ other: TensorDenseBLAS<S>, contract indices: [(left: Int, right: Int)]) -> TensorDenseBLAS<S> {
-        validateContraction(indices, with: other)
-        let leftContractedIndices = Set(indices.map(\.left))
-        let rightContractedIndices = Set(indices.map(\.right))
-        let leftFreeIndices = (0..<rank).filter { !leftContractedIndices.contains($0) }
-        let rightFreeIndices = (0..<other.rank).filter { !rightContractedIndices.contains($0) }
-        let leftFreeShape = leftFreeIndices.map { shape[$0] }
-        let rightFreeShape = rightFreeIndices.map { other.shape[$0] }
-        let contractShape = indices.map { shape[$0.left] }
-        let resultShape = leftFreeShape + rightFreeShape
-        if resultShape.contains(0) || contractShape.contains(0) {
-            return TensorDenseBLAS(shape: resultShape, initialValue: .zero)
+        let plan = contractionPlan(with: other, contract: indices)
+        if plan.resultShape.contains(0) || plan.contractShape.contains(0) {
+            return TensorDenseBLAS(shape: plan.resultShape, initialValue: .zero)
         }
-        let leftContractIndices = indices.map(\.left)
-        let rightContractIndices = indices.map(\.right)
-        if leftFreeIndices + leftContractIndices == Array(0..<rank) &&
-            rightContractIndices + rightFreeIndices == Array(0..<other.rank) {
-            return contiguousProduct(
-                resultShape: resultShape,
-                leftRows: countElements(for: leftFreeShape),
-                shared: countElements(for: contractShape),
-                rightColumns: countElements(for: rightFreeShape),
-                leftElements: elements,
-                rightElements: other.elements
-            )
+        if areStorageOrdered(plan.leftFreeIndices, plan.leftContractIndices, rank: rank) &&
+            areStorageOrdered(plan.rightContractIndices, plan.rightFreeIndices, rank: other.rank) {
+            let leftMatrix = MatrixDenseBLAS<S>(rows: countElements(for: plan.leftFreeShape),
+                                                columns: countElements(for: plan.contractShape), values: elements)
+            let rightMatrix = MatrixDenseBLAS<S>(rows: countElements(for: plan.contractShape),
+                                                 columns: countElements(for: plan.rightFreeShape),
+                                                 values: other.elements)
+            let product = matrixProduct(leftMatrix, rightMatrix)
+            return TensorDenseBLAS(shape: plan.resultShape, elements: product.flatten(columnMajorOrder: true))
         }
-        let leftMatrix = matricizedLeftTensor(freeIndices: leftFreeIndices, contractIndices: leftContractIndices)
-        let rightMatrix = other.matricizedRightTensor(
-            freeIndices: rightFreeIndices,
-            contractIndices: rightContractIndices
-        )
+        let leftMatrix = matricizedLeftTensor(freeIndices: plan.leftFreeIndices,
+                                              contractIndices: plan.leftContractIndices)
+        let rightMatrix = other.matricizedRightTensor(freeIndices: plan.rightFreeIndices,
+                                                      contractIndices: plan.rightContractIndices)
         let product = matrixProduct(leftMatrix, rightMatrix)
-        return TensorDenseBLAS(shape: resultShape, elements: product.flatten(columnMajorOrder: true))
+        return TensorDenseBLAS(shape: plan.resultShape, elements: product.flatten(columnMajorOrder: true))
+    }
+
+    fileprivate func contractionPlan(
+        with other: TensorDenseBLAS<S>, contract indices: [(left: Int, right: Int)]
+    ) -> TensorDenseContractionPlan {
+        var leftContracted = Array(repeating: false, count: rank)
+        var rightContracted = Array(repeating: false, count: other.rank)
+        var leftContractIndices: [Int] = []
+        var rightContractIndices: [Int] = []
+        var contractShape: [Int] = []
+        leftContractIndices.reserveCapacity(indices.count)
+        rightContractIndices.reserveCapacity(indices.count)
+        contractShape.reserveCapacity(indices.count)
+        for indexPair in indices {
+            precondition(indexPair.left >= 0 && indexPair.left < rank, "Left contraction index is out of bounds")
+            precondition(
+                indexPair.right >= 0 && indexPair.right < other.rank,
+                "Right contraction index is out of bounds"
+            )
+            precondition(!leftContracted[indexPair.left], "Left contraction indices must be unique")
+            precondition(!rightContracted[indexPair.right], "Right contraction indices must be unique")
+            precondition(shape[indexPair.left] == other.shape[indexPair.right], "Contracted dimensions must match")
+            leftContracted[indexPair.left] = true
+            rightContracted[indexPair.right] = true
+            leftContractIndices.append(indexPair.left)
+            rightContractIndices.append(indexPair.right)
+            contractShape.append(shape[indexPair.left])
+        }
+        var leftFreeIndices: [Int] = []
+        var rightFreeIndices: [Int] = []
+        var leftFreeShape: [Int] = []
+        var rightFreeShape: [Int] = []
+        for index in 0..<rank where !leftContracted[index] {
+            leftFreeIndices.append(index)
+            leftFreeShape.append(shape[index])
+        }
+        for index in 0..<other.rank where !rightContracted[index] {
+            rightFreeIndices.append(index)
+            rightFreeShape.append(other.shape[index])
+        }
+        return TensorDenseContractionPlan(
+            leftFreeIndices: leftFreeIndices,
+            rightFreeIndices: rightFreeIndices,
+            leftContractIndices: leftContractIndices,
+            rightContractIndices: rightContractIndices,
+            leftFreeShape: leftFreeShape,
+            rightFreeShape: rightFreeShape,
+            contractShape: contractShape
+        )
     }
 
     public static func + (lhs: TensorDenseBLAS<S>, rhs: TensorDenseBLAS<S>) -> TensorDenseBLAS<S> {
@@ -184,6 +236,60 @@ public func multiply<S: PluScalar>(
         return (leftPosition, rightPosition)
     }
     return left.times(right, contract: contractedIndices)
+}
+
+public func multiply(
+    _ left: TensorDenseBLAS<Double>, _ leftIndices: [TensorIndex],
+    _ right: TensorDenseBLAS<Double>, _ rightIndices: [TensorIndex]
+) -> TensorDenseBLAS<Double> {
+    tensorDenseBLASMultiply(left, leftIndices, right, rightIndices, product: *)
+}
+
+public func multiply(
+    _ left: TensorDenseBLAS<Float>, _ leftIndices: [TensorIndex],
+    _ right: TensorDenseBLAS<Float>, _ rightIndices: [TensorIndex]
+) -> TensorDenseBLAS<Float> {
+    tensorDenseBLASMultiply(left, leftIndices, right, rightIndices, product: *)
+}
+
+public func multiply(
+    _ left: TensorDenseBLAS<ComplexDouble>, _ leftIndices: [TensorIndex],
+    _ right: TensorDenseBLAS<ComplexDouble>, _ rightIndices: [TensorIndex]
+) -> TensorDenseBLAS<ComplexDouble> {
+    tensorDenseBLASMultiply(left, leftIndices, right, rightIndices, product: *)
+}
+
+public func multiply(
+    _ left: TensorDenseBLAS<ComplexFloat>, _ leftIndices: [TensorIndex],
+    _ right: TensorDenseBLAS<ComplexFloat>, _ rightIndices: [TensorIndex]
+) -> TensorDenseBLAS<ComplexFloat> {
+    tensorDenseBLASMultiply(left, leftIndices, right, rightIndices, product: *)
+}
+
+public func multiply(_ left: TensorDenseBLAS<Double>, _ right: TensorDenseBLAS<Double>, _ notation: String)
+    -> TensorDenseBLAS<Double> {
+    let (leftIndices, rightIndices) = denseTensorIndices(notation)
+    return multiply(left, leftIndices, right, rightIndices)
+}
+
+public func multiply(_ left: TensorDenseBLAS<Float>, _ right: TensorDenseBLAS<Float>, _ notation: String)
+    -> TensorDenseBLAS<Float> {
+    let (leftIndices, rightIndices) = denseTensorIndices(notation)
+    return multiply(left, leftIndices, right, rightIndices)
+}
+
+public func multiply(
+    _ left: TensorDenseBLAS<ComplexDouble>, _ right: TensorDenseBLAS<ComplexDouble>, _ notation: String
+) -> TensorDenseBLAS<ComplexDouble> {
+    let (leftIndices, rightIndices) = denseTensorIndices(notation)
+    return multiply(left, leftIndices, right, rightIndices)
+}
+
+public func multiply(
+    _ left: TensorDenseBLAS<ComplexFloat>, _ right: TensorDenseBLAS<ComplexFloat>, _ notation: String
+) -> TensorDenseBLAS<ComplexFloat> {
+    let (leftIndices, rightIndices) = denseTensorIndices(notation)
+    return multiply(left, leftIndices, right, rightIndices)
 }
 
 public func + (lhs: TensorDenseBLAS<Double>, rhs: TensorDenseBLAS<Double>) -> TensorDenseBLAS<Double> {
@@ -350,44 +456,51 @@ private func matrixProduct<S: PluScalar>(
     fatalError("Unsupported scalar type")
 }
 
-extension TensorDenseBLAS {
-    private func contiguousProduct(
-        resultShape: [Int], leftRows: Int, shared: Int, rightColumns: Int, leftElements: [S], rightElements: [S]
-    ) -> TensorDenseBLAS<S> {
-        if S.self == Double.self {
-            var result = Array(repeating: 0.0, count: leftRows * rightColumns)
-            BLAS.gemm(Int32(leftRows), Int32(rightColumns), Int32(shared),
-                      leftElements as! [Double], rightElements as! [Double], &result)
-            return TensorDenseBLAS<Double>(shape: resultShape, elements: result) as! TensorDenseBLAS<S>
-        }
-        if S.self == Float.self {
-            var result = Array(repeating: Float.zero, count: leftRows * rightColumns)
-            BLAS.gemm(Int32(leftRows), Int32(rightColumns), Int32(shared),
-                      leftElements as! [Float], rightElements as! [Float], &result)
-            return TensorDenseBLAS<Float>(shape: resultShape, elements: result) as! TensorDenseBLAS<S>
-        }
-        if S.self == ComplexDouble.self {
-            var left = BLASComplexStorage.interleaved(leftElements as! [ComplexDouble])
-            var right = BLASComplexStorage.interleaved(rightElements as! [ComplexDouble])
-            var result = Array(repeating: 0.0, count: leftRows * rightColumns * 2)
-            BLAS.zgemm(Int32(leftRows), Int32(rightColumns), Int32(shared), &left, &right, &result)
-            return TensorDenseBLAS<ComplexDouble>(shape: resultShape,
-                                                  elements: BLASComplexStorage.complexValues(result))
-                as! TensorDenseBLAS<S>
-        }
-        if S.self == ComplexFloat.self {
-            var left = BLASComplexStorage.interleaved(leftElements as! [ComplexFloat])
-            var right = BLASComplexStorage.interleaved(rightElements as! [ComplexFloat])
-            var result = Array(repeating: Float.zero, count: leftRows * rightColumns * 2)
-            BLAS.cgemm(Int32(leftRows), Int32(rightColumns), Int32(shared), &left, &right, &result)
-            return TensorDenseBLAS<ComplexFloat>(shape: resultShape,
-                                                 elements: BLASComplexStorage.complexValues(result))
-                as! TensorDenseBLAS<S>
-        }
-        fatalError("Unsupported scalar type")
+private func tensorDenseBLASMultiply<S: PluScalar>(
+    _ left: TensorDenseBLAS<S>, _ leftIndices: [TensorIndex],
+    _ right: TensorDenseBLAS<S>, _ rightIndices: [TensorIndex],
+    product: (MatrixDenseBLAS<S>, MatrixDenseBLAS<S>) -> MatrixDenseBLAS<S>
+) -> TensorDenseBLAS<S> {
+    let contractIndices = denseTensorContractIndices(left, leftIndices, right, rightIndices)
+    let plan = left.contractionPlan(with: right, contract: contractIndices)
+    if plan.resultShape.contains(0) || plan.contractShape.contains(0) {
+        return TensorDenseBLAS(shape: plan.resultShape, initialValue: .zero)
     }
+    let leftMatrix = left.matricizedLeftTensor(freeIndices: plan.leftFreeIndices,
+                                               contractIndices: plan.leftContractIndices)
+    let rightMatrix = right.matricizedRightTensor(freeIndices: plan.rightFreeIndices,
+                                                  contractIndices: plan.rightContractIndices)
+    let matrix = product(leftMatrix, rightMatrix)
+    return TensorDenseBLAS(shape: plan.resultShape, elements: matrix.flatten(columnMajorOrder: true))
+}
 
-    private func matricizedLeftTensor(freeIndices: [Int], contractIndices: [Int]) -> MatrixDenseBLAS<S> {
+private func denseTensorContractIndices<S: PluScalar>(
+    _ left: TensorDenseBLAS<S>, _ leftIndices: [TensorIndex],
+    _ right: TensorDenseBLAS<S>, _ rightIndices: [TensorIndex]
+) -> [(left: Int, right: Int)] {
+    precondition(leftIndices.count == left.rank, "Left index count must match tensor rank")
+    precondition(rightIndices.count == right.rank, "Right index count must match tensor rank")
+    precondition(Set(leftIndices).count == leftIndices.count, "Left indices must not repeat")
+    precondition(Set(rightIndices).count == rightIndices.count, "Right indices must not repeat")
+    let rightPositionByIndex = Dictionary(
+        uniqueKeysWithValues: rightIndices.enumerated().map { ($0.element, $0.offset) }
+    )
+    return leftIndices.enumerated().compactMap { leftPosition, index -> (left: Int, right: Int)? in
+        guard let rightPosition = rightPositionByIndex[index] else { return nil }
+        return (leftPosition, rightPosition)
+    }
+}
+
+private func denseTensorIndices(_ notation: String) -> ([TensorIndex], [TensorIndex]) {
+    let compact = notation.filter { !$0.isWhitespace }
+    precondition(!compact.contains("->"), "Tensor multiplication notation must not include an output clause")
+    let operands = compact.split(separator: ",", omittingEmptySubsequences: false)
+    precondition(operands.count == 2, "Tensor multiplication notation must contain two operands")
+    return (operands[0].map { TensorIndex(String($0)) }, operands[1].map { TensorIndex(String($0)) })
+}
+
+extension TensorDenseBLAS {
+    fileprivate func matricizedLeftTensor(freeIndices: [Int], contractIndices: [Int]) -> MatrixDenseBLAS<S> {
         let freeShape = freeIndices.map { shape[$0] }
         let contractShape = contractIndices.map { shape[$0] }
         if freeIndices + contractIndices == Array(0..<rank) {
@@ -407,7 +520,7 @@ extension TensorDenseBLAS {
         return matrix
     }
 
-    private func matricizedRightTensor(freeIndices: [Int], contractIndices: [Int]) -> MatrixDenseBLAS<S> {
+    fileprivate func matricizedRightTensor(freeIndices: [Int], contractIndices: [Int]) -> MatrixDenseBLAS<S> {
         let freeShape = freeIndices.map { shape[$0] }
         let contractShape = contractIndices.map { shape[$0] }
         if contractIndices + freeIndices == Array(0..<rank) {
@@ -425,21 +538,6 @@ extension TensorDenseBLAS {
             }
         }
         return matrix
-    }
-
-    private func validateContraction(_ indices: [(left: Int, right: Int)], with other: TensorDenseBLAS<S>) {
-        var leftIndices = Set<Int>()
-        var rightIndices = Set<Int>()
-        for indexPair in indices {
-            precondition(indexPair.left >= 0 && indexPair.left < rank, "Left contraction index is out of bounds")
-            precondition(
-                indexPair.right >= 0 && indexPair.right < other.rank,
-                "Right contraction index is out of bounds"
-            )
-            precondition(leftIndices.insert(indexPair.left).inserted, "Left contraction indices must be unique")
-            precondition(rightIndices.insert(indexPair.right).inserted, "Right contraction indices must be unique")
-            precondition(shape[indexPair.left] == other.shape[indexPair.right], "Contracted dimensions must match")
-        }
     }
 
     private func indexCombinations(for shape: [Int]) -> [[Int]] {
@@ -466,6 +564,19 @@ extension TensorDenseBLAS {
     }
 
     private func countElements(for shape: [Int]) -> Int { shape.reduce(1, *) }
+
+    private func areStorageOrdered(_ first: [Int], _ second: [Int], rank: Int) -> Bool {
+        var expected = 0
+        for index in first {
+            if index != expected { return false }
+            expected += 1
+        }
+        for index in second {
+            if index != expected { return false }
+            expected += 1
+        }
+        return expected == rank
+    }
 }
 
 private func doubleSum(_ left: [Double], _ right: [Double]) -> [Double] {
