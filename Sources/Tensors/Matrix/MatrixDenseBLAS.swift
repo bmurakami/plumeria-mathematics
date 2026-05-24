@@ -581,18 +581,6 @@ private func floatMatrixScale(_ matrix: MatrixDenseBLAS<Float>, by scalar: Float
                            blasImplementation: matrix.blasImplementation)
 }
 
-private func complexDoubleSum(_ left: [ComplexDouble], _ right: [ComplexDouble]) -> [ComplexDouble] {
-    var result = Array(repeating: ComplexDouble.zero, count: left.count)
-    for index in 0..<left.count { result[index] = left[index] + right[index] }
-    return result
-}
-
-private func complexFloatSum(_ left: [ComplexFloat], _ right: [ComplexFloat]) -> [ComplexFloat] {
-    var result = Array(repeating: ComplexFloat.zero, count: left.count)
-    for index in 0..<left.count { result[index] = left[index] + right[index] }
-    return result
-}
-
 private func doubleMatrixProduct(
     _ left: MatrixDenseBLAS<Double>, _ right: MatrixDenseBLAS<Double>
 ) -> MatrixDenseBLAS<Double> {
@@ -638,21 +626,20 @@ private func complexDoubleMatrixProduct(
     _ left: MatrixDenseBLAS<ComplexDouble>, _ right: MatrixDenseBLAS<ComplexDouble>
 ) -> MatrixDenseBLAS<ComplexDouble> {
     precondition(left.columns == right.rows, "Number of matrix columns must match matrix rows")
-    var leftElements = BLASComplexStorage.interleaved(left.columnMajorStorage())
-    var rightElements = BLASComplexStorage.interleaved(right.columnMajorStorage())
-    var result = Array(repeating: 0.0, count: left.rows * right.columns * 2)
+    let leftElements = left.columnMajorStorage()
+    let rightElements = right.columnMajorStorage()
+    var result = Array(repeating: ComplexDouble.zero, count: left.rows * right.columns)
     switch left.blasImplementation {
     #if canImport(Accelerate)
     case .accelerate:
-        AccelerateOperations.zgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
-                                   &leftElements, &rightElements, &result)
+        complexDoubleGEMM(left.rows, right.columns, left.columns, leftElements, rightElements, &result,
+                          AccelerateOperations.zgemmRaw)
     #endif
     case .openBLAS:
-        OpenBLASOperations.zgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
-                                 &leftElements, &rightElements, &result)
+        complexDoubleGEMM(left.rows, right.columns, left.columns, leftElements, rightElements, &result,
+                          OpenBLASOperations.zgemmRaw)
     }
-    return MatrixDenseBLAS<ComplexDouble>(rows: left.rows, columns: right.columns,
-                                          values: BLASComplexStorage.complexValues(result),
+    return MatrixDenseBLAS<ComplexDouble>(rows: left.rows, columns: right.columns, values: result,
                                           blasImplementation: left.blasImplementation)
 }
 
@@ -660,21 +647,20 @@ private func complexFloatMatrixProduct(
     _ left: MatrixDenseBLAS<ComplexFloat>, _ right: MatrixDenseBLAS<ComplexFloat>
 ) -> MatrixDenseBLAS<ComplexFloat> {
     precondition(left.columns == right.rows, "Number of matrix columns must match matrix rows")
-    var leftElements = BLASComplexStorage.interleaved(left.columnMajorStorage())
-    var rightElements = BLASComplexStorage.interleaved(right.columnMajorStorage())
-    var result = Array(repeating: Float.zero, count: left.rows * right.columns * 2)
+    let leftElements = left.columnMajorStorage()
+    let rightElements = right.columnMajorStorage()
+    var result = Array(repeating: ComplexFloat.zero, count: left.rows * right.columns)
     switch left.blasImplementation {
     #if canImport(Accelerate)
     case .accelerate:
-        AccelerateOperations.cgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
-                                   &leftElements, &rightElements, &result)
+        complexFloatGEMM(left.rows, right.columns, left.columns, leftElements, rightElements, &result,
+                         AccelerateOperations.cgemmRaw)
     #endif
     case .openBLAS:
-        OpenBLASOperations.cgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
-                                 &leftElements, &rightElements, &result)
+        complexFloatGEMM(left.rows, right.columns, left.columns, leftElements, rightElements, &result,
+                         OpenBLASOperations.cgemmRaw)
     }
-    return MatrixDenseBLAS<ComplexFloat>(rows: left.rows, columns: right.columns,
-                                         values: BLASComplexStorage.complexValues(result),
+    return MatrixDenseBLAS<ComplexFloat>(rows: left.rows, columns: right.columns, values: result,
                                          blasImplementation: left.blasImplementation)
 }
 
@@ -718,36 +704,88 @@ private func complexDoubleMatrixVectorProduct(
     _ matrix: MatrixDenseBLAS<ComplexDouble>, _ vector: VectorDenseBLAS<ComplexDouble>
 ) -> VectorDenseBLAS<ComplexDouble> {
     precondition(matrix.columns == vector.size, "Number of columns in matrix must equal size of vector")
-    var matrixElements = BLASComplexStorage.interleaved(matrix.columnMajorStorage())
-    var vectorElements = BLASComplexStorage.interleaved(vector.elements)
-    var result = Array(repeating: 0.0, count: matrix.rows * 2)
+    let matrixElements = matrix.columnMajorStorage()
+    let vectorElements = vector.elements
+    var result = Array(repeating: ComplexDouble.zero, count: matrix.rows)
     switch matrix.blasImplementation {
     #if canImport(Accelerate)
     case .accelerate:
-        AccelerateOperations.zgemv(Int32(matrix.rows), Int32(matrix.columns), &matrixElements, &vectorElements, &result)
+        complexDoubleGEMV(matrix.rows, matrix.columns, matrixElements, vectorElements, &result,
+                          AccelerateOperations.zgemvRaw)
     #endif
     case .openBLAS:
-        OpenBLASOperations.zgemv(Int32(matrix.rows), Int32(matrix.columns), &matrixElements, &vectorElements, &result)
+        complexDoubleGEMV(matrix.rows, matrix.columns, matrixElements, vectorElements, &result,
+                          OpenBLASOperations.zgemvRaw)
     }
-    return VectorDenseBLAS<ComplexDouble>(BLASComplexStorage.complexValues(result))
+    return VectorDenseBLAS<ComplexDouble>(result)
 }
 
 private func complexFloatMatrixVectorProduct(
     _ matrix: MatrixDenseBLAS<ComplexFloat>, _ vector: VectorDenseBLAS<ComplexFloat>
 ) -> VectorDenseBLAS<ComplexFloat> {
     precondition(matrix.columns == vector.size, "Number of columns in matrix must equal size of vector")
-    var matrixElements = BLASComplexStorage.interleaved(matrix.columnMajorStorage())
-    var vectorElements = BLASComplexStorage.interleaved(vector.elements)
-    var result = Array(repeating: Float.zero, count: matrix.rows * 2)
+    let matrixElements = matrix.columnMajorStorage()
+    let vectorElements = vector.elements
+    var result = Array(repeating: ComplexFloat.zero, count: matrix.rows)
     switch matrix.blasImplementation {
     #if canImport(Accelerate)
     case .accelerate:
-        AccelerateOperations.cgemv(Int32(matrix.rows), Int32(matrix.columns), &matrixElements, &vectorElements, &result)
+        complexFloatGEMV(matrix.rows, matrix.columns, matrixElements, vectorElements, &result,
+                         AccelerateOperations.cgemvRaw)
     #endif
     case .openBLAS:
-        OpenBLASOperations.cgemv(Int32(matrix.rows), Int32(matrix.columns), &matrixElements, &vectorElements, &result)
+        complexFloatGEMV(matrix.rows, matrix.columns, matrixElements, vectorElements, &result,
+                         OpenBLASOperations.cgemvRaw)
     }
-    return VectorDenseBLAS<ComplexFloat>(BLASComplexStorage.complexValues(result))
+    return VectorDenseBLAS<ComplexFloat>(result)
+}
+
+private func complexDoubleGEMM(
+    _ m: Int, _ n: Int, _ k: Int, _ a: [ComplexDouble], _ b: [ComplexDouble], _ c: inout [ComplexDouble],
+    _ gemm: (Int32, Int32, Int32, UnsafeRawPointer, UnsafeRawPointer, UnsafeMutableRawPointer) -> Void
+) {
+    BLASComplexStorage.withUnsafeInterleavedStorage(a) { a in
+        BLASComplexStorage.withUnsafeInterleavedStorage(b) { b in
+            BLASComplexStorage.withUnsafeMutableInterleavedStorage(&c) { c in
+                gemm(Int32(m), Int32(n), Int32(k), a, b, c)
+            }
+        }
+    }
+}
+
+private func complexFloatGEMM(
+    _ m: Int, _ n: Int, _ k: Int, _ a: [ComplexFloat], _ b: [ComplexFloat], _ c: inout [ComplexFloat],
+    _ gemm: (Int32, Int32, Int32, UnsafeRawPointer, UnsafeRawPointer, UnsafeMutableRawPointer) -> Void
+) {
+    BLASComplexStorage.withUnsafeInterleavedStorage(a) { a in
+        BLASComplexStorage.withUnsafeInterleavedStorage(b) { b in
+            BLASComplexStorage.withUnsafeMutableInterleavedStorage(&c) { c in
+                gemm(Int32(m), Int32(n), Int32(k), a, b, c)
+            }
+        }
+    }
+}
+
+private func complexDoubleGEMV(
+    _ m: Int, _ n: Int, _ a: [ComplexDouble], _ x: [ComplexDouble], _ y: inout [ComplexDouble],
+    _ gemv: (Int32, Int32, UnsafeRawPointer, UnsafeRawPointer, UnsafeMutableRawPointer) -> Void
+) {
+    BLASComplexStorage.withUnsafeInterleavedStorage(a) { a in
+        BLASComplexStorage.withUnsafeInterleavedStorage(x) { x in
+            BLASComplexStorage.withUnsafeMutableInterleavedStorage(&y) { y in gemv(Int32(m), Int32(n), a, x, y) }
+        }
+    }
+}
+
+private func complexFloatGEMV(
+    _ m: Int, _ n: Int, _ a: [ComplexFloat], _ x: [ComplexFloat], _ y: inout [ComplexFloat],
+    _ gemv: (Int32, Int32, UnsafeRawPointer, UnsafeRawPointer, UnsafeMutableRawPointer) -> Void
+) {
+    BLASComplexStorage.withUnsafeInterleavedStorage(a) { a in
+        BLASComplexStorage.withUnsafeInterleavedStorage(x) { x in
+            BLASComplexStorage.withUnsafeMutableInterleavedStorage(&y) { y in gemv(Int32(m), Int32(n), a, x, y) }
+        }
+    }
 }
 
 extension MatrixDenseBLAS {
@@ -769,9 +807,9 @@ extension MatrixDenseBLAS {
             axpy(Int32(y.count), x, &y)
             return y as! [S]
         case is ComplexDouble.Type:
-            return complexDoubleSum(left as! [ComplexDouble], right as! [ComplexDouble]) as! [S]
+            return BLASComplexStorage.sum(left as! [ComplexDouble], right as! [ComplexDouble]) as! [S]
         case is ComplexFloat.Type:
-            return complexFloatSum(left as! [ComplexFloat], right as! [ComplexFloat]) as! [S]
+            return BLASComplexStorage.sum(left as! [ComplexFloat], right as! [ComplexFloat]) as! [S]
         default:
             fatalError("Unsupported scalar type")
         }
@@ -816,15 +854,23 @@ extension MatrixDenseBLAS {
 }
 
 private func doubleSum(_ left: [Double], _ right: [Double]) -> [Double] {
+    #if canImport(Accelerate)
+    return AccelerateOperations.add(left, right)
+    #else
     var result = Array(repeating: 0.0, count: left.count)
     for index in 0..<left.count { result[index] = left[index] + right[index] }
     return result
+    #endif
 }
 
 private func floatSum(_ left: [Float], _ right: [Float]) -> [Float] {
+    #if canImport(Accelerate)
+    return AccelerateOperations.add(left, right)
+    #else
     var result = Array(repeating: Float.zero, count: left.count)
     for index in 0..<left.count { result[index] = left[index] + right[index] }
     return result
+    #endif
 }
 
 private func doubleDifference(_ left: [Double], _ right: [Double]) -> [Double] {
@@ -840,15 +886,23 @@ private func floatDifference(_ left: [Float], _ right: [Float]) -> [Float] {
 }
 
 private func doubleScale(_ values: [Double], by scalar: Double) -> [Double] {
+    #if canImport(Accelerate)
+    return AccelerateOperations.scale(values, by: scalar)
+    #else
     var result = Array(repeating: 0.0, count: values.count)
     for index in 0..<values.count { result[index] = values[index] * scalar }
     return result
+    #endif
 }
 
 private func floatScale(_ values: [Float], by scalar: Float) -> [Float] {
+    #if canImport(Accelerate)
+    return AccelerateOperations.scale(values, by: scalar)
+    #else
     var result = Array(repeating: Float.zero, count: values.count)
     for index in 0..<values.count { result[index] = values[index] * scalar }
     return result
+    #endif
 }
 
 extension MatrixDenseBLAS {

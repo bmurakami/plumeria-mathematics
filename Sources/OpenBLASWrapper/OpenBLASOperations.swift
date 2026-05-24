@@ -60,6 +60,21 @@ public enum OpenBLASOperations {
         }
     }
 
+    public static func zgemvRaw(_ m: Int32, _ n: Int32, _ a: UnsafeRawPointer, _ x: UnsafeRawPointer,
+                                _ y: UnsafeMutableRawPointer) {
+        var alpha = [1.0, 0.0]
+        var beta = [0.0, 0.0]
+        let lda = Int32(m), incx = Int32(1), incy = Int32(1)
+        alpha.withUnsafeMutableBufferPointer { alpha in
+            beta.withUnsafeMutableBufferPointer { beta in
+                COpenBLAS.cblas_zgemv(
+                    CblasColMajor, CblasNoTrans, m, n, alpha.baseAddress, a, lda, x, incx,
+                    beta.baseAddress, y, incy
+                )
+            }
+        }
+    }
+
     public static func cgemv(_ m: Int32, _ n: Int32, _ a: inout [Float], _ x: inout [Float], _ y: inout [Float]) {
         var alpha: [Float] = [1.0, 0.0]
         var beta: [Float] = [0.0, 0.0]
@@ -79,6 +94,21 @@ public enum OpenBLASOperations {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    public static func cgemvRaw(_ m: Int32, _ n: Int32, _ a: UnsafeRawPointer, _ x: UnsafeRawPointer,
+                                _ y: UnsafeMutableRawPointer) {
+        var alpha: [Float] = [1.0, 0.0]
+        var beta: [Float] = [0.0, 0.0]
+        let lda = Int32(m), incx = Int32(1), incy = Int32(1)
+        alpha.withUnsafeMutableBufferPointer { alpha in
+            beta.withUnsafeMutableBufferPointer { beta in
+                COpenBLAS.cblas_cgemv(
+                    CblasColMajor, CblasNoTrans, m, n, alpha.baseAddress, a, lda, x, incx,
+                    beta.baseAddress, y, incy
+                )
             }
         }
     }
@@ -148,6 +178,21 @@ public enum OpenBLASOperations {
         }
     }
 
+    public static func zgemmRaw(_ m: Int32, _ n: Int32, _ k: Int32, _ a: UnsafeRawPointer,
+                                _ b: UnsafeRawPointer, _ c: UnsafeMutableRawPointer) {
+        var alpha = [1.0, 0.0]
+        var beta = [0.0, 0.0]
+        let lda = m, ldb = k, ldc = m
+        alpha.withUnsafeMutableBufferPointer { alpha in
+            beta.withUnsafeMutableBufferPointer { beta in
+                COpenBLAS.cblas_zgemm(
+                    CblasColMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha.baseAddress, a, lda, b, ldb,
+                    beta.baseAddress, c, ldc
+                )
+            }
+        }
+    }
+
     public static func cgemm(
         _ m: Int32, _ n: Int32, _ k: Int32, _ a: inout [Float], _ b: inout [Float], _ c: inout [Float]
     ) {
@@ -169,6 +214,21 @@ public enum OpenBLASOperations {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    public static func cgemmRaw(_ m: Int32, _ n: Int32, _ k: Int32, _ a: UnsafeRawPointer,
+                                _ b: UnsafeRawPointer, _ c: UnsafeMutableRawPointer) {
+        var alpha: [Float] = [1.0, 0.0]
+        var beta: [Float] = [0.0, 0.0]
+        let lda = m, ldb = k, ldc = m
+        alpha.withUnsafeMutableBufferPointer { alpha in
+            beta.withUnsafeMutableBufferPointer { beta in
+                COpenBLAS.cblas_cgemm(
+                    CblasColMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha.baseAddress, a, lda, b, ldb,
+                    beta.baseAddress, c, ldc
+                )
             }
         }
     }
@@ -210,11 +270,19 @@ public enum OpenBLASOperations {
         }
     }
 
+    public static func dnrm2Raw(_ n: Int32, _ x: UnsafeRawPointer) -> Double {
+        COpenBLAS.cblas_dnrm2(n, x.assumingMemoryBound(to: Double.self), Int32(1))
+    }
+
     public static func snrm2(_ n: Int32, _ x: [Float]) -> Float {
         let inc = Int32(1)
         return x.withUnsafeBufferPointer { x in
             COpenBLAS.cblas_snrm2(n, x.baseAddress!, inc)
         }
+    }
+
+    public static func snrm2Raw(_ n: Int32, _ x: UnsafeRawPointer) -> Float {
+        COpenBLAS.cblas_snrm2(n, x.assumingMemoryBound(to: Float.self), Int32(1))
     }
 
     public static func dznrm2(_ n: Int32, _ x: inout [Double]) -> Double {
@@ -224,11 +292,19 @@ public enum OpenBLASOperations {
         }
     }
 
+    public static func dznrm2Raw(_ n: Int32, _ x: UnsafeRawPointer) -> Double {
+        COpenBLAS.cblas_dznrm2(n, x, Int32(1))
+    }
+
     public static func scnrm2(_ n: Int32, _ x: inout [Float]) -> Float {
         let inc = Int32(1)
         return x.withUnsafeMutableBufferPointer { x in
             COpenBLAS.cblas_scnrm2(n, x.baseAddress, inc)
         }
+    }
+
+    public static func scnrm2Raw(_ n: Int32, _ x: UnsafeRawPointer) -> Float {
+        COpenBLAS.cblas_scnrm2(n, x, Int32(1))
     }
 
     public static func zaxpy(_ n: Int32, _ x: inout [Double], _ y: inout [Double]) {

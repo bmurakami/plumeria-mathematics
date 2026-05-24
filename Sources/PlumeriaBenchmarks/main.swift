@@ -551,6 +551,8 @@ func benchmarkAccelerateVsOpenBLAS() -> Double {
     let hugeRightRows = matrixRows(rows: 1_024, columns: 1_024)
     let hugeFloatLeftRows = hugeLeftRows.map { $0.map(Float.init) }
     let hugeFloatRightRows = hugeRightRows.map { $0.map(Float.init) }
+    let complexRows = matrixComplexRows(rows: 384, columns: 384)
+    let complexVector = VectorDenseBLAS(vectorComplexValues(count: 384))
     let lapackRows = invertibleMatrixRows(size: 160)
     let largeLAPACKRows = invertibleMatrixRows(size: 256)
     let eigenRows = matrixRows(rows: 96, columns: 96)
@@ -577,6 +579,8 @@ func benchmarkAccelerateVsOpenBLAS() -> Double {
     var openBLASHugeFloatLeft = MatrixDenseBLAS<Float>(hugeFloatLeftRows)
     var accelerateHugeFloatRight = MatrixDenseBLAS<Float>(hugeFloatRightRows)
     var openBLASHugeFloatRight = MatrixDenseBLAS<Float>(hugeFloatRightRows)
+    var accelerateComplexMatrix = MatrixDenseBLAS<ComplexDouble>(complexRows)
+    var openBLASComplexMatrix = MatrixDenseBLAS<ComplexDouble>(complexRows)
     var accelerateLAPACK = MatrixDenseBLAS(lapackRows)
     var openBLASLAPACK = MatrixDenseBLAS(lapackRows)
     var accelerateLargeLAPACK = MatrixDenseBLAS(largeLAPACKRows)
@@ -596,6 +600,7 @@ func benchmarkAccelerateVsOpenBLAS() -> Double {
     accelerateHugeRight.blasImplementation = .accelerate
     accelerateHugeFloatLeft.blasImplementation = .accelerate
     accelerateHugeFloatRight.blasImplementation = .accelerate
+    accelerateComplexMatrix.blasImplementation = .accelerate
     accelerateLAPACK.blasImplementation = .accelerate
     accelerateLargeLAPACK.blasImplementation = .accelerate
     accelerateEigen.blasImplementation = .accelerate
@@ -611,6 +616,7 @@ func benchmarkAccelerateVsOpenBLAS() -> Double {
     openBLASHugeRight.blasImplementation = .openBLAS
     openBLASHugeFloatLeft.blasImplementation = .openBLAS
     openBLASHugeFloatRight.blasImplementation = .openBLAS
+    openBLASComplexMatrix.blasImplementation = .openBLAS
     openBLASLAPACK.blasImplementation = .openBLAS
     openBLASLargeLAPACK.blasImplementation = .openBLAS
     openBLASEigen.blasImplementation = .openBLAS
@@ -664,6 +670,13 @@ func benchmarkAccelerateVsOpenBLAS() -> Double {
     }, openBLAS: {
         let result = openBLASHugeFloatLeft * openBLASHugeFloatRight
         return Double(result[0, 0] + result[result.rows - 1, result.columns - 1])
+    })
+    checksum += compareImplementationBenchmark("ComplexDouble matrix-vector multiply", "384x384", accelerate: {
+        let result = accelerateComplexMatrix * complexVector
+        return result[0].real + result[result.size - 1].real
+    }, openBLAS: {
+        let result = openBLASComplexMatrix * complexVector
+        return result[0].real + result[result.size - 1].real
     })
     checksum += compareImplementationBenchmark("determinant", "160x160", accelerate: {
         determinantChecksum(accelerateLAPACK.det)

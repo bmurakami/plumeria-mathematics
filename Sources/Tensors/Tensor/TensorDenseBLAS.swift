@@ -1,3 +1,6 @@
+#if canImport(Accelerate)
+import AccelerateWrapper
+#endif
 import Numerics
 
 private struct TensorDenseContractionPlan {
@@ -152,13 +155,13 @@ extension TensorDenseBLAS {
         }
         if S.self == ComplexDouble.self {
             return TensorDenseBLAS<ComplexDouble>(shape: lhs.shape,
-                                                  elements: complexDoubleSum(lhs.elements as! [ComplexDouble],
+                                                  elements: BLASComplexStorage.sum(lhs.elements as! [ComplexDouble],
                                                                                   rhs.elements as! [ComplexDouble]))
                 as! TensorDenseBLAS<S>
         }
         if S.self == ComplexFloat.self {
             return TensorDenseBLAS<ComplexFloat>(shape: lhs.shape,
-                                                 elements: complexFloatSum(lhs.elements as! [ComplexFloat],
+                                                 elements: BLASComplexStorage.sum(lhs.elements as! [ComplexFloat],
                                                                                 rhs.elements as! [ComplexFloat]))
                 as! TensorDenseBLAS<S>
         }
@@ -303,13 +306,14 @@ public func + (lhs: TensorDenseBLAS<Float>, rhs: TensorDenseBLAS<Float>) -> Tens
 public func + (lhs: TensorDenseBLAS<ComplexDouble>, rhs: TensorDenseBLAS<ComplexDouble>)
     -> TensorDenseBLAS<ComplexDouble> {
     precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
-    return TensorDenseBLAS<ComplexDouble>(shape: lhs.shape, elements: complexDoubleSum(lhs.elements, rhs.elements))
+    return TensorDenseBLAS<ComplexDouble>(shape: lhs.shape,
+                                          elements: BLASComplexStorage.sum(lhs.elements, rhs.elements))
 }
 
 public func + (lhs: TensorDenseBLAS<ComplexFloat>, rhs: TensorDenseBLAS<ComplexFloat>)
     -> TensorDenseBLAS<ComplexFloat> {
     precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
-    return TensorDenseBLAS<ComplexFloat>(shape: lhs.shape, elements: complexFloatSum(lhs.elements, rhs.elements))
+    return TensorDenseBLAS<ComplexFloat>(shape: lhs.shape, elements: BLASComplexStorage.sum(lhs.elements, rhs.elements))
 }
 
 public func - (lhs: TensorDenseBLAS<Double>, rhs: TensorDenseBLAS<Double>) -> TensorDenseBLAS<Double> {
@@ -324,14 +328,14 @@ public func - (lhs: TensorDenseBLAS<ComplexDouble>, rhs: TensorDenseBLAS<Complex
     -> TensorDenseBLAS<ComplexDouble> {
     precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
     return TensorDenseBLAS<ComplexDouble>(shape: lhs.shape,
-                                          elements: complexDoubleDifference(lhs.elements, rhs.elements))
+                                          elements: BLASComplexStorage.difference(lhs.elements, rhs.elements))
 }
 
 public func - (lhs: TensorDenseBLAS<ComplexFloat>, rhs: TensorDenseBLAS<ComplexFloat>)
     -> TensorDenseBLAS<ComplexFloat> {
     precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
     return TensorDenseBLAS<ComplexFloat>(shape: lhs.shape,
-                                         elements: complexFloatDifference(lhs.elements, rhs.elements))
+                                         elements: BLASComplexStorage.difference(lhs.elements, rhs.elements))
 }
 
 public prefix func - (operand: TensorDenseBLAS<Double>) -> TensorDenseBLAS<Double> {
@@ -580,15 +584,23 @@ extension TensorDenseBLAS {
 }
 
 private func doubleSum(_ left: [Double], _ right: [Double]) -> [Double] {
+    #if canImport(Accelerate)
+    return AccelerateOperations.add(left, right)
+    #else
     var result = Array(repeating: 0.0, count: left.count)
     for index in 0..<left.count { result[index] = left[index] + right[index] }
     return result
+    #endif
 }
 
 private func floatSum(_ left: [Float], _ right: [Float]) -> [Float] {
+    #if canImport(Accelerate)
+    return AccelerateOperations.add(left, right)
+    #else
     var result = Array(repeating: Float.zero, count: left.count)
     for index in 0..<left.count { result[index] = left[index] + right[index] }
     return result
+    #endif
 }
 
 private func doubleDifference(_ left: [Double], _ right: [Double]) -> [Double] {
@@ -604,39 +616,23 @@ private func floatDifference(_ left: [Float], _ right: [Float]) -> [Float] {
 }
 
 private func doubleScale(_ values: [Double], by scalar: Double) -> [Double] {
+    #if canImport(Accelerate)
+    return AccelerateOperations.scale(values, by: scalar)
+    #else
     var result = Array(repeating: 0.0, count: values.count)
     for index in 0..<values.count { result[index] = values[index] * scalar }
     return result
+    #endif
 }
 
 private func floatScale(_ values: [Float], by scalar: Float) -> [Float] {
+    #if canImport(Accelerate)
+    return AccelerateOperations.scale(values, by: scalar)
+    #else
     var result = Array(repeating: Float.zero, count: values.count)
     for index in 0..<values.count { result[index] = values[index] * scalar }
     return result
-}
-
-private func complexDoubleSum(_ left: [ComplexDouble], _ right: [ComplexDouble]) -> [ComplexDouble] {
-    var result = Array(repeating: ComplexDouble.zero, count: left.count)
-    for index in 0..<left.count { result[index] = left[index] + right[index] }
-    return result
-}
-
-private func complexFloatSum(_ left: [ComplexFloat], _ right: [ComplexFloat]) -> [ComplexFloat] {
-    var result = Array(repeating: ComplexFloat.zero, count: left.count)
-    for index in 0..<left.count { result[index] = left[index] + right[index] }
-    return result
-}
-
-private func complexDoubleDifference(_ left: [ComplexDouble], _ right: [ComplexDouble]) -> [ComplexDouble] {
-    var result = Array(repeating: ComplexDouble.zero, count: left.count)
-    for index in 0..<left.count { result[index] = left[index] - right[index] }
-    return result
-}
-
-private func complexFloatDifference(_ left: [ComplexFloat], _ right: [ComplexFloat]) -> [ComplexFloat] {
-    var result = Array(repeating: ComplexFloat.zero, count: left.count)
-    for index in 0..<left.count { result[index] = left[index] - right[index] }
-    return result
+    #endif
 }
 
 private func complexDoubleScale(_ values: [ComplexDouble], by scalar: ComplexDouble) -> [ComplexDouble] {

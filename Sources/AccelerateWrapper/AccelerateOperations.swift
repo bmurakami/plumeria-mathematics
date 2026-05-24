@@ -64,6 +64,23 @@ public struct AccelerateOperations {
         }
     }
 
+    public static func zgemvRaw(_ m: Int32, _ n: Int32, _ a: UnsafeRawPointer, _ x: UnsafeRawPointer,
+                                _ y: UnsafeMutableRawPointer) {
+        var alpha = [1.0, 0.0]
+        var beta = [0.0, 0.0]
+        let lda = Int32(m), incx = Int32(1), incy = Int32(1)
+        alpha.withUnsafeMutableBufferPointer { alpha in
+            beta.withUnsafeMutableBufferPointer { beta in
+                Accelerate.cblas_zgemv(
+                    CblasColMajor, CblasNoTrans, m, n, OpaquePointer(UnsafeMutableRawPointer(alpha.baseAddress!)),
+                    OpaquePointer(UnsafeMutableRawPointer(mutating: a)), lda,
+                    OpaquePointer(UnsafeMutableRawPointer(mutating: x)), incx,
+                    OpaquePointer(UnsafeMutableRawPointer(beta.baseAddress!)), OpaquePointer(y), incy
+                )
+            }
+        }
+    }
+
     public static func cgemv(_ m: Int32, _ n: Int32, _ a: inout [Float], _ x: inout [Float], _ y: inout [Float]) {
         var alpha: [Float] = [1.0, 0.0]
         var beta: [Float] = [0.0, 0.0]
@@ -86,6 +103,23 @@ public struct AccelerateOperations {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    public static func cgemvRaw(_ m: Int32, _ n: Int32, _ a: UnsafeRawPointer, _ x: UnsafeRawPointer,
+                                _ y: UnsafeMutableRawPointer) {
+        var alpha: [Float] = [1.0, 0.0]
+        var beta: [Float] = [0.0, 0.0]
+        let lda = Int32(m), incx = Int32(1), incy = Int32(1)
+        alpha.withUnsafeMutableBufferPointer { alpha in
+            beta.withUnsafeMutableBufferPointer { beta in
+                Accelerate.cblas_cgemv(
+                    CblasColMajor, CblasNoTrans, m, n, OpaquePointer(UnsafeMutableRawPointer(alpha.baseAddress!)),
+                    OpaquePointer(UnsafeMutableRawPointer(mutating: a)), lda,
+                    OpaquePointer(UnsafeMutableRawPointer(mutating: x)), incx,
+                    OpaquePointer(UnsafeMutableRawPointer(beta.baseAddress!)), OpaquePointer(y), incy
+                )
             }
         }
     }
@@ -158,6 +192,24 @@ public struct AccelerateOperations {
         }
     }
 
+    public static func zgemmRaw(_ m: Int32, _ n: Int32, _ k: Int32, _ a: UnsafeRawPointer,
+                                _ b: UnsafeRawPointer, _ c: UnsafeMutableRawPointer) {
+        var alpha = [1.0, 0.0]
+        var beta = [0.0, 0.0]
+        let lda = m, ldb = k, ldc = m
+        alpha.withUnsafeMutableBufferPointer { alpha in
+            beta.withUnsafeMutableBufferPointer { beta in
+                Accelerate.cblas_zgemm(
+                    CblasColMajor, CblasNoTrans, CblasNoTrans, m, n, k,
+                    OpaquePointer(UnsafeMutableRawPointer(alpha.baseAddress!)),
+                    OpaquePointer(UnsafeMutableRawPointer(mutating: a)), lda,
+                    OpaquePointer(UnsafeMutableRawPointer(mutating: b)), ldb,
+                    OpaquePointer(UnsafeMutableRawPointer(beta.baseAddress!)), OpaquePointer(c), ldc
+                )
+            }
+        }
+    }
+
     public static func cgemm(
         _ m: Int32, _ n: Int32, _ k: Int32, _ a: inout [Float], _ b: inout [Float], _ c: inout [Float]
     ) {
@@ -186,6 +238,24 @@ public struct AccelerateOperations {
         }
     }
 
+    public static func cgemmRaw(_ m: Int32, _ n: Int32, _ k: Int32, _ a: UnsafeRawPointer,
+                                _ b: UnsafeRawPointer, _ c: UnsafeMutableRawPointer) {
+        var alpha: [Float] = [1.0, 0.0]
+        var beta: [Float] = [0.0, 0.0]
+        let lda = m, ldb = k, ldc = m
+        alpha.withUnsafeMutableBufferPointer { alpha in
+            beta.withUnsafeMutableBufferPointer { beta in
+                Accelerate.cblas_cgemm(
+                    CblasColMajor, CblasNoTrans, CblasNoTrans, m, n, k,
+                    OpaquePointer(UnsafeMutableRawPointer(alpha.baseAddress!)),
+                    OpaquePointer(UnsafeMutableRawPointer(mutating: a)), lda,
+                    OpaquePointer(UnsafeMutableRawPointer(mutating: b)), ldb,
+                    OpaquePointer(UnsafeMutableRawPointer(beta.baseAddress!)), OpaquePointer(c), ldc
+                )
+            }
+        }
+    }
+
     public static func daxpy(_ n: Int32, _ x: [Double], _ y: inout [Double]) {
         let alpha = 1.0
         let inc = Int32(1)
@@ -206,6 +276,84 @@ public struct AccelerateOperations {
         }
     }
 
+    public static func add(_ left: [Double], _ right: [Double]) -> [Double] {
+        var result = Array(repeating: 0.0, count: left.count)
+        left.withUnsafeBufferPointer { left in
+            right.withUnsafeBufferPointer { right in
+                result.withUnsafeMutableBufferPointer { result in
+                    Accelerate.vDSP_vaddD(left.baseAddress!, 1, right.baseAddress!, 1, result.baseAddress!, 1,
+                                          vDSP_Length(result.count))
+                }
+            }
+        }
+        return result
+    }
+
+    public static func add(_ left: [Float], _ right: [Float]) -> [Float] {
+        var result = Array(repeating: Float.zero, count: left.count)
+        left.withUnsafeBufferPointer { left in
+            right.withUnsafeBufferPointer { right in
+                result.withUnsafeMutableBufferPointer { result in
+                    Accelerate.vDSP_vadd(left.baseAddress!, 1, right.baseAddress!, 1, result.baseAddress!, 1,
+                                         vDSP_Length(result.count))
+                }
+            }
+        }
+        return result
+    }
+
+    public static func scale(_ values: [Double], by scalar: Double) -> [Double] {
+        var scalar = scalar
+        var result = Array(repeating: 0.0, count: values.count)
+        values.withUnsafeBufferPointer { values in
+            result.withUnsafeMutableBufferPointer { result in
+                Accelerate.vDSP_vsmulD(values.baseAddress!, 1, &scalar, result.baseAddress!, 1,
+                                       vDSP_Length(result.count))
+            }
+        }
+        return result
+    }
+
+    public static func scale(_ values: [Float], by scalar: Float) -> [Float] {
+        var scalar = scalar
+        var result = Array(repeating: Float.zero, count: values.count)
+        values.withUnsafeBufferPointer { values in
+            result.withUnsafeMutableBufferPointer { result in
+                Accelerate.vDSP_vsmul(values.baseAddress!, 1, &scalar, result.baseAddress!, 1,
+                                      vDSP_Length(result.count))
+            }
+        }
+        return result
+    }
+
+    public static func norm(_ values: [Double]) -> Double {
+        var sumOfSquares = 0.0
+        values.withUnsafeBufferPointer { values in
+            Accelerate.vDSP_svesqD(values.baseAddress!, 1, &sumOfSquares, vDSP_Length(values.count))
+        }
+        return sumOfSquares.squareRoot()
+    }
+
+    public static func norm(_ values: [Float]) -> Float {
+        var sumOfSquares = Float.zero
+        values.withUnsafeBufferPointer { values in
+            Accelerate.vDSP_svesq(values.baseAddress!, 1, &sumOfSquares, vDSP_Length(values.count))
+        }
+        return sumOfSquares.squareRoot()
+    }
+
+    public static func normRaw(_ n: Int, _ values: UnsafeRawPointer) -> Double {
+        var sumOfSquares = 0.0
+        Accelerate.vDSP_svesqD(values.assumingMemoryBound(to: Double.self), 1, &sumOfSquares, vDSP_Length(n))
+        return sumOfSquares.squareRoot()
+    }
+
+    public static func normRaw(_ n: Int, _ values: UnsafeRawPointer) -> Float {
+        var sumOfSquares = Float.zero
+        Accelerate.vDSP_svesq(values.assumingMemoryBound(to: Float.self), 1, &sumOfSquares, vDSP_Length(n))
+        return sumOfSquares.squareRoot()
+    }
+
     public static func dscal(_ n: Int32, _ alpha: Double, _ x: inout [Double]) {
         let inc = Int32(1)
         Accelerate.cblas_dscal(n, alpha, &x, inc)
@@ -223,11 +371,19 @@ public struct AccelerateOperations {
         }
     }
 
+    public static func dnrm2Raw(_ n: Int32, _ x: UnsafeRawPointer) -> Double {
+        Accelerate.cblas_dnrm2(n, x.assumingMemoryBound(to: Double.self), Int32(1))
+    }
+
     public static func snrm2(_ n: Int32, _ x: [Float]) -> Float {
         let inc = Int32(1)
         return x.withUnsafeBufferPointer { x in
             Accelerate.cblas_snrm2(n, x.baseAddress!, inc)
         }
+    }
+
+    public static func snrm2Raw(_ n: Int32, _ x: UnsafeRawPointer) -> Float {
+        Accelerate.cblas_snrm2(n, x.assumingMemoryBound(to: Float.self), Int32(1))
     }
 
     public static func dznrm2(_ n: Int32, _ x: inout [Double]) -> Double {
@@ -237,11 +393,19 @@ public struct AccelerateOperations {
         }
     }
 
+    public static func dznrm2Raw(_ n: Int32, _ x: UnsafeRawPointer) -> Double {
+        Accelerate.cblas_dznrm2(n, OpaquePointer(UnsafeMutableRawPointer(mutating: x)), Int32(1))
+    }
+
     public static func scnrm2(_ n: Int32, _ x: inout [Float]) -> Float {
         let inc = Int32(1)
         return x.withUnsafeMutableBufferPointer { x in
             Accelerate.cblas_scnrm2(n, OpaquePointer(UnsafeMutableRawPointer(x.baseAddress!)), inc)
         }
+    }
+
+    public static func scnrm2Raw(_ n: Int32, _ x: UnsafeRawPointer) -> Float {
+        Accelerate.cblas_scnrm2(n, OpaquePointer(UnsafeMutableRawPointer(mutating: x)), Int32(1))
     }
 
     public static func zaxpy(_ n: Int32, _ x: inout [Double], _ y: inout [Double]) {
