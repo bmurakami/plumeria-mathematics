@@ -585,42 +585,62 @@ extension TensorDenseBLAS {
 
 private func doubleSum(_ left: [Double], _ right: [Double]) -> [Double] {
     Array<Double>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
-        for index in 0..<left.count { result[index] = left[index] + right[index] }
+        left.withUnsafeBufferPointer { left in
+            right.withUnsafeBufferPointer { right in
+                for index in 0..<left.count { result[index] = left[index] + right[index] }
+            }
+        }
         initializedCount = left.count
     }
 }
 
 private func floatSum(_ left: [Float], _ right: [Float]) -> [Float] {
     Array<Float>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
-        for index in 0..<left.count { result[index] = left[index] + right[index] }
+        left.withUnsafeBufferPointer { left in
+            right.withUnsafeBufferPointer { right in
+                for index in 0..<left.count { result[index] = left[index] + right[index] }
+            }
+        }
         initializedCount = left.count
     }
 }
 
 private func doubleDifference(_ left: [Double], _ right: [Double]) -> [Double] {
     Array<Double>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
-        for index in 0..<left.count { result[index] = left[index] - right[index] }
+        left.withUnsafeBufferPointer { left in
+            right.withUnsafeBufferPointer { right in
+                for index in 0..<left.count { result[index] = left[index] - right[index] }
+            }
+        }
         initializedCount = left.count
     }
 }
 
 private func floatDifference(_ left: [Float], _ right: [Float]) -> [Float] {
     Array<Float>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
-        for index in 0..<left.count { result[index] = left[index] - right[index] }
+        left.withUnsafeBufferPointer { left in
+            right.withUnsafeBufferPointer { right in
+                for index in 0..<left.count { result[index] = left[index] - right[index] }
+            }
+        }
         initializedCount = left.count
     }
 }
 
 private func doubleScale(_ values: [Double], by scalar: Double) -> [Double] {
     Array<Double>(unsafeUninitializedCapacity: values.count) { result, initializedCount in
-        for index in 0..<values.count { result[index] = values[index] * scalar }
+        values.withUnsafeBufferPointer { values in
+            for index in 0..<values.count { result[index] = values[index] * scalar }
+        }
         initializedCount = values.count
     }
 }
 
 private func floatScale(_ values: [Float], by scalar: Float) -> [Float] {
     Array<Float>(unsafeUninitializedCapacity: values.count) { result, initializedCount in
-        for index in 0..<values.count { result[index] = values[index] * scalar }
+        values.withUnsafeBufferPointer { values in
+            for index in 0..<values.count { result[index] = values[index] * scalar }
+        }
         initializedCount = values.count
     }
 }
