@@ -28,7 +28,8 @@ extension TensorArithmeticBLAS {
     }
 
     public static func / (tensor: Self, scalar: S) -> Self {
-        tensor * (1 / scalar)
+        let one: S = 1
+        return tensor * (one / scalar)
     }
 
     public func isApproximatelyEqual(
@@ -56,15 +57,9 @@ extension TensorArithmeticBLAS {
             BLAS.axpy(Int32(y.count), x, &y)
             return y as! [S]
         case is ComplexDouble.Type:
-            var x = BLASComplexStorage.interleaved(right as! [ComplexDouble])
-            var y = BLASComplexStorage.interleaved(left as! [ComplexDouble])
-            BLAS.zaxpy(Int32(right.count), &x, &y)
-            return BLASComplexStorage.complexValues(y) as! [S]
+            return BLASComplexStorage.sum(left as! [ComplexDouble], right as! [ComplexDouble]) as! [S]
         case is ComplexFloat.Type:
-            var x = BLASComplexStorage.interleaved(right as! [ComplexFloat])
-            var y = BLASComplexStorage.interleaved(left as! [ComplexFloat])
-            BLAS.caxpy(Int32(right.count), &x, &y)
-            return BLASComplexStorage.complexValues(y) as! [S]
+            return BLASComplexStorage.sum(left as! [ComplexFloat], right as! [ComplexFloat]) as! [S]
         default:
             fatalError("Unsupported scalar type")
         }

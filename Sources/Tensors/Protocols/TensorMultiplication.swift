@@ -7,6 +7,7 @@ public protocol TensorMultiplication: TensorStructure {
 
     var elements: [S] { get }
     init(shape: [Int], initialValue: S)
+    init(shape: [Int], elements: [S])
     subscript(_ indices: [Int]) -> S { get set }
 }
 
@@ -22,10 +23,8 @@ extension TensorMultiplication {
         let rightFreeShape = rightFreeIndices.map { other.shape[$0] }
         let contractShape = indices.map { shape[$0.left] }
         let resultShape = leftFreeShape + rightFreeShape
-        var result = Self(shape: resultShape, initialValue: .zero)
-        let leftRows = Self.countElements(for: leftFreeShape)
         let shared = Self.countElements(for: contractShape)
-        let rightColumns = Self.countElements(for: rightFreeShape)
+        let result = Self(shape: resultShape, initialValue: .zero)
         if Self.countElements(for: resultShape) == 0 || shared == 0 { return result }
         let leftMatrix = matricizedLeftTensor(freeIndices: leftFreeIndices, contractIndices: indices.map(\.left))
         let rightMatrix = other.matricizedRightTensor(
@@ -33,15 +32,7 @@ extension TensorMultiplication {
             contractIndices: indices.map(\.right)
         )
         let product = leftMatrix * rightMatrix
-        for resultIndex in Self.indexCombinations(for: resultShape) {
-            let leftFreeIndex = Array(resultIndex.prefix(leftFreeIndices.count))
-            let rightFreeIndex = Array(resultIndex.dropFirst(leftFreeIndices.count))
-            let row = Self.linearIndex(leftFreeIndex, shape: leftFreeShape)
-            let column = Self.linearIndex(rightFreeIndex, shape: rightFreeShape)
-            precondition(row < leftRows && column < rightColumns, "Tensor contraction output index is out of bounds")
-            result[resultIndex] = product[row, column]
-        }
-        return result
+        return Self(shape: resultShape, elements: product.flatten(columnMajorOrder: true))
     }
 
     private func matricizedLeftTensor(freeIndices: [Int], contractIndices: [Int]) -> MatrixImplementation {
