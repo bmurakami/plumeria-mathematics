@@ -4,6 +4,7 @@ import Testing
 protocol TensorDenseTestImplementation: TensorArithmetic, TensorMultiplication where S == Double {
     init(shape: [Int], initialValue: Double)
     init(shape: [Int], elements: [Double])
+    subscript(_ indices: TensorSliceIndex...) -> Self { get set }
     func flatten() -> [Double]
 }
 
@@ -90,6 +91,13 @@ enum TensorImplementation: CaseIterable, CustomStringConvertible {
         case .blas: verifyPermute(TensorDenseBLAS<Double>.self)
         }
     }
+
+    func checkSliceAssignment() {
+        switch self {
+        case .reference: verifySliceAssignment(TensorDenseReference<Double>.self)
+        case .blas: verifySliceAssignment(TensorDenseBLAS<Double>.self)
+        }
+    }
 }
 
 @Test(arguments: TensorImplementation.allCases)
@@ -140,6 +148,11 @@ func TensorDense_permute(implementation: TensorImplementation) {
     implementation.checkPermute()
 }
 
+@Test(arguments: TensorImplementation.allCases)
+func TensorDense_sliceAssignment(implementation: TensorImplementation) {
+    implementation.checkSliceAssignment()
+}
+
 @Test func TensorNotation_reportsInvalidMultiplyNotation() {
     let left = TensorDenseBLAS<Double>(shape: [2, 3], initialValue: 0.0)
     let right = TensorDenseBLAS<Double>(shape: [3, 2], initialValue: 0.0)
@@ -150,6 +163,8 @@ func TensorDense_permute(implementation: TensorImplementation) {
             "Tensor multiplication notation must contain two operands")
     #expect(tensorMultiplicationNotationValidationError(left, right, "ij,j1") ==
             "Right tensor index '1' must be an ASCII letter")
+    #expect(tensorMultiplicationNotationValidationError(left, right, "ij,jk,kl") ==
+            "Tensor multiplication notation must contain two operands")
 }
 
 @Test func TensorNotation_reportsInvalidMultiplyIndices() {
@@ -158,7 +173,10 @@ func TensorDense_permute(implementation: TensorImplementation) {
 
     #expect(tensorMultiplicationNotationValidationError(left, right, "i,jk") ==
             "Left index count must match tensor rank: got 1, expected 2")
+    #expect(tensorMultiplicationNotationValidationError(left, right, "ij,k") ==
+            "Right index count must match tensor rank: got 1, expected 2")
     #expect(tensorMultiplicationNotationValidationError(left, right, "ii,jk") == "Left index 'i' must not repeat")
+    #expect(tensorMultiplicationNotationValidationError(left, right, "ij,kk") == "Right index 'k' must not repeat")
     #expect(tensorMultiplicationNotationValidationError(left, right, "ij,jk") ==
             "Contracted dimensions for index 'j' must match: left 3, right 4")
 }
@@ -170,6 +188,8 @@ func TensorDense_permute(implementation: TensorImplementation) {
             "Tensor permutation notation must contain an output clause")
     #expect(tensorPermutationNotationValidationError(tensor, "ijk,jik,ikj") ==
             "Tensor permutation notation must contain one tensor")
+    #expect(tensorPermutationNotationValidationError(tensor, "ijk -> jik -> kij") ==
+            "Tensor permutation notation must contain one output clause")
     #expect(tensorPermutationNotationValidationError(tensor, "ijk -> j1k") ==
             "Destination tensor index '1' must be an ASCII letter")
 }
@@ -179,6 +199,9 @@ func TensorDense_permute(implementation: TensorImplementation) {
 
     #expect(tensorPermutationNotationValidationError(tensor, "ij -> ji") ==
             "Source index count must match tensor rank: got 2, expected 3")
+    #expect(tensorPermutationNotationValidationError(tensor, "ijk -> ji") ==
+            "Destination index count must match tensor rank: got 2, expected 3")
+    #expect(tensorPermutationNotationValidationError(tensor, "iik -> jik") == "Source index 'i' must not repeat")
     #expect(tensorPermutationNotationValidationError(tensor, "ijk -> jjk") ==
             "Destination index 'j' must not repeat")
     #expect(tensorPermutationNotationValidationError(tensor, "ijk -> ikl") ==
@@ -231,6 +254,19 @@ private func verifyFlatArrayRoundTrip<T: TensorDenseTestImplementation>(_ type: 
     #expect(tensor[[1, 2, 1]] == 0.0)
     #expect(tensor.flatten() == elements)
     #expect(copy == tensor)
+}
+
+private func verifySliceAssignment<T: TensorDenseTestImplementation>(_ type: T.Type) {
+    var tensor = T(shape: [2, 3, 2], elements: [
+        1.0, -1.0, 2.0, -2.0, 3.0, -3.0, 0.0, 1.0, -2.0, 2.0, 3.0, 0.0
+    ])
+    tensor[all, range(1..<3), 0] = T(shape: [2, 2], elements: [20.0, 30.0, 40.0, 50.0])
+
+    #expect(tensor[[0, 1, 0]] == 20.0)
+    #expect(tensor[[1, 1, 0]] == 30.0)
+    #expect(tensor[[0, 2, 0]] == 40.0)
+    #expect(tensor[[1, 2, 0]] == 50.0)
+    #expect(tensor[[0, 1, 1]] == -2.0)
 }
 
 private func verifyRankZeroTensors<T: TensorDenseTestImplementation>(_ type: T.Type) {

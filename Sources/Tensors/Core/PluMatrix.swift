@@ -25,4 +25,51 @@ extension PluMatrix {
             (0..<size).map { column in row == column ? 1 : 0 }
         })
     }
+
+    public subscript(rows: Range<Int>, columns: Range<Int>) -> Self {
+        get { self[TensorSliceIndex.range(rows), TensorSliceIndex.range(columns)] }
+        set { self[TensorSliceIndex.range(rows), TensorSliceIndex.range(columns)] = newValue }
+    }
+
+    public subscript(rows: Range<Int>, columns: TensorSliceIndex) -> Self {
+        get { self[TensorSliceIndex.range(rows), columns] }
+        set { self[TensorSliceIndex.range(rows), columns] = newValue }
+    }
+
+    public subscript(rows: TensorSliceIndex, columns: Range<Int>) -> Self {
+        get { self[rows, TensorSliceIndex.range(columns)] }
+        set { self[rows, TensorSliceIndex.range(columns)] = newValue }
+    }
+
+    public subscript(rows: TensorSliceIndex, columns: TensorSliceIndex) -> Self {
+        get {
+            let rowRange = rows.sliceRange(dimensionSize: self.rows)
+            let columnRange = columns.sliceRange(dimensionSize: self.columns)
+            var result = Self(rows: rowRange.length, columns: columnRange.length, initialValue: .zero)
+            for row in 0..<rowRange.length {
+                for column in 0..<columnRange.length {
+                    let sourceRow = rowRange.start + row * rowRange.step
+                    let sourceColumn = columnRange.start + column * columnRange.step
+                    result[row, column] = self[sourceRow, sourceColumn]
+                }
+            }
+            return result
+        }
+        set {
+            let rowRange = rows.sliceRange(dimensionSize: self.rows)
+            let columnRange = columns.sliceRange(dimensionSize: self.columns)
+            let destinationShape = [rowRange.length, columnRange.length]
+            let error = sliceAssignmentShapeError(destination: destinationShape, replacement: newValue.shape)
+            if let error {
+                preconditionFailure(error)
+            }
+            for row in 0..<rowRange.length {
+                for column in 0..<columnRange.length {
+                    let destinationRow = rowRange.start + row * rowRange.step
+                    let destinationColumn = columnRange.start + column * columnRange.step
+                    self[destinationRow, destinationColumn] = newValue[row, column]
+                }
+            }
+        }
+    }
 }

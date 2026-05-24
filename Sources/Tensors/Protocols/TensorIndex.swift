@@ -186,6 +186,7 @@ private func duplicateIndex(in indices: [TensorIndex]) -> TensorIndex? {
 }
 
 private func indexCombinations(for shape: [Int]) -> [[Int]] {
+    // Example: indexCombinations(for: [2, 3]) returns [[0, 0], [1, 0], [0, 1], [1, 1], [0, 2], [1, 2]].
     if shape.isEmpty { return [[]] }
     if shape.contains(0) { return [] }
     return (0..<shape.reduce(1, *)).map { flatIndex in

@@ -108,3 +108,37 @@ private func tensor(_ values: [[[Double]]]) -> TensorDenseBLAS<Double> {
     #expect(product[1, 0] == expected[1][0])
     #expect(product[1, 1] == expected[1][1])
 }
+
+@Test func TensorDenseBLAS_concreteMultiplyOverloads() {
+    let doubleLeft = TensorDenseBLAS<Double>(shape: [2, 2], elements: [1.0, -1.0, 2.0, 0.0])
+    let doubleRight = TensorDenseBLAS<Double>(shape: [2, 2], elements: [3.0, 1.0, -2.0, 2.0])
+    let floatLeft = TensorDenseBLAS<Float>(shape: [2, 2], elements: [1.0, -1.0, 2.0, 0.0])
+    let floatRight = TensorDenseBLAS<Float>(shape: [2, 2], elements: [3.0, 1.0, -2.0, 2.0])
+    let complexLeft = TensorDenseBLAS<ComplexDouble>(shape: [2, 2], elements: [
+        ComplexDouble(1.0, 0.0), ComplexDouble(-1.0, 0.0), ComplexDouble(2.0, 0.0), ComplexDouble(0.0, 0.0)
+    ])
+    let complexRight = TensorDenseBLAS<ComplexDouble>(shape: [2, 2], elements: [
+        ComplexDouble(3.0, 0.0), ComplexDouble(1.0, 0.0), ComplexDouble(-2.0, 0.0), ComplexDouble(2.0, 0.0)
+    ])
+    let complexFloatLeft = TensorDenseBLAS<ComplexFloat>(shape: [2, 2], elements: [
+        ComplexFloat(1.0, 0.0), ComplexFloat(-1.0, 0.0), ComplexFloat(2.0, 0.0), ComplexFloat(0.0, 0.0)
+    ])
+    let complexFloatRight = TensorDenseBLAS<ComplexFloat>(shape: [2, 2], elements: [
+        ComplexFloat(3.0, 0.0), ComplexFloat(1.0, 0.0), ComplexFloat(-2.0, 0.0), ComplexFloat(2.0, 0.0)
+    ])
+    let doubleProduct = multiply(doubleLeft, ["i", "j"], doubleRight, ["j", "k"])
+    let doubleStringProduct = multiply(doubleLeft, doubleRight, "ij, jk")
+    let floatProduct = multiply(floatLeft, ["i", "j"], floatRight, ["j", "k"])
+    let complexProduct = multiply(complexLeft, ["i", "j"], complexRight, ["j", "k"])
+    let complexFloatProduct = multiply(complexFloatLeft, complexFloatRight, "ij, jk")
+
+    #expect(doubleProduct.elements == [5.0, -3.0, 2.0, 2.0])
+    #expect(doubleStringProduct.elements == doubleProduct.elements)
+    #expect(floatProduct.elements == [5.0, -3.0, 2.0, 2.0])
+    #expect(complexProduct.elements == [
+        ComplexDouble(5.0, 0.0), ComplexDouble(-3.0, 0.0), ComplexDouble(2.0, 0.0), ComplexDouble(2.0, 0.0)
+    ])
+    #expect(complexFloatProduct.elements == [
+        ComplexFloat(5.0, 0.0), ComplexFloat(-3.0, 0.0), ComplexFloat(2.0, 0.0), ComplexFloat(2.0, 0.0)
+    ])
+}

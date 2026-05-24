@@ -80,4 +80,38 @@ public enum BLAS {
         OpenBLASOperations.cscal(n, &alpha, &x)
         #endif
     }
+
+    static func gemm(_ m: Int32, _ n: Int32, _ k: Int32, _ a: [Double], _ b: [Double], _ c: inout [Double]) {
+        #if canImport(Accelerate)
+        AccelerateOperations.dgemm(m, n, k, a, b, &c)
+        #else
+        OpenBLASOperations.dgemm(m, n, k, a, b, &c)
+        #endif
+    }
+
+    static func gemm(_ m: Int32, _ n: Int32, _ k: Int32, _ a: [Float], _ b: [Float], _ c: inout [Float]) {
+        #if canImport(Accelerate)
+        AccelerateOperations.sgemm(m, n, k, a, b, &c)
+        #else
+        OpenBLASOperations.sgemm(m, n, k, a, b, &c)
+        #endif
+    }
+
+    static func zgemm(_ m: Int32, _ n: Int32, _ k: Int32, _ a: inout [Double], _ b: inout [Double],
+                      _ c: inout [Double]) {
+        #if canImport(Accelerate)
+        AccelerateOperations.zgemm(m, n, k, &a, &b, &c)
+        #else
+        OpenBLASOperations.zgemm(m, n, k, &a, &b, &c)
+        #endif
+    }
+
+    static func cgemm(_ m: Int32, _ n: Int32, _ k: Int32, _ a: inout [Float], _ b: inout [Float],
+                      _ c: inout [Float]) {
+        #if canImport(Accelerate)
+        AccelerateOperations.cgemm(m, n, k, &a, &b, &c)
+        #else
+        OpenBLASOperations.cgemm(m, n, k, &a, &b, &c)
+        #endif
+    }
 }

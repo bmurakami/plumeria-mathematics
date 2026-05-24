@@ -102,6 +102,13 @@ enum MatrixImplementation: CaseIterable, CustomStringConvertible {
         case .blas: verifyArithmetic(MatrixDenseBLAS<Double>.self)
         }
     }
+
+    func checkSliceAssignment() {
+        switch self {
+        case .reference: verifySliceAssignment(MatrixDenseReference<Double>.self)
+        case .blas: verifySliceAssignment(MatrixDenseBLAS<Double>.self)
+        }
+    }
 }
 
 @Test(arguments: MatrixImplementation.allCases)
@@ -169,6 +176,23 @@ func MatrixDense_arithmetic(implementation: MatrixImplementation) {
     implementation.checkArithmetic()
 }
 
+@Test(arguments: MatrixImplementation.allCases)
+func MatrixDense_sliceAssignment(implementation: MatrixImplementation) {
+    implementation.checkSliceAssignment()
+}
+
+@Test func MatrixDense_sliceAssignmentReportsShapeMismatch() {
+    #expect(sliceAssignmentShapeError(destination: [2, 2], replacement: [2, 1]) ==
+            "Assigned slice shape [2, 1] must match destination slice shape [2, 2]")
+}
+
+@Test func DefaultMatrix_sliceAssignment() {
+    var matrix = Matrix<Double>([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+    matrix[0..<2, 1..<3] = Matrix<Double>([[20.0, 30.0], [50.0, 60.0]])
+
+    #expect(matrix.toArray() == [[1.0, 20.0, 30.0], [4.0, 50.0, 60.0], [7.0, 8.0, 9.0]])
+}
+
 private func verifyInitializerWithValues<M: PluMatrix>(_ type: M.Type) where M.S == Double {
     var matrix = M([[1.0, 2.0], [3.0, 4.0]])
     #expect(matrix[0, 0] == 1.0)
@@ -199,6 +223,14 @@ private func verifyNestedArrayInitializer<M: PluMatrix>(_ type: M.Type) where M.
     #expect(matrix.shape == [2, 3])
     #expect(matrix.rank == 2)
     #expect(matrix.toArray() == [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+}
+
+private func verifySliceAssignment<M: PluMatrix>(_ type: M.Type) where M.S == Double {
+    var matrix = M([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+    matrix[0..<2, 1..<3] = M([[20.0, 30.0], [50.0, 60.0]])
+    matrix[all, 0..<1] = M([[10.0], [40.0], [70.0]])
+
+    #expect(matrix.toArray() == [[10.0, 20.0, 30.0], [40.0, 50.0, 60.0], [70.0, 8.0, 9.0]])
 }
 
 private func verifyVectorMultiplication<M: PluMatrix>(_ type: M.Type) where M.S == Double {
