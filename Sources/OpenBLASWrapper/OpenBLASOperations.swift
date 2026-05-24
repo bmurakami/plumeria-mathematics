@@ -125,6 +125,13 @@ public enum OpenBLASOperations {
         _ m: Int32, _ n: Int32, _ k: Int32, _ a: [Double], _ b: [Double],
         _ c: inout [Double]
     ) {
+        c.withUnsafeMutableBufferPointer { c in dgemm(m, n, k, a, b, c) }
+    }
+
+    public static func dgemm(
+        _ m: Int32, _ n: Int32, _ k: Int32, _ a: [Double], _ b: [Double],
+        _ c: UnsafeMutableBufferPointer<Double>
+    ) {
         let alpha: Double = 1.0
         let beta = 0.0
         let lda = m
@@ -132,12 +139,8 @@ public enum OpenBLASOperations {
         let ldc = m
         a.withUnsafeBufferPointer { a in
             b.withUnsafeBufferPointer { b in
-                c.withUnsafeMutableBufferPointer { c in
-                    COpenBLAS.cblas_dgemm(
-                        CblasColMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha, a.baseAddress!, lda,
-                        b.baseAddress!, ldb, beta, c.baseAddress!, ldc
-                    )
-                }
+                COpenBLAS.cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha, a.baseAddress!,
+                                      lda, b.baseAddress!, ldb, beta, c.baseAddress!, ldc)
             }
         }
     }
@@ -146,6 +149,13 @@ public enum OpenBLASOperations {
         _ m: Int32, _ n: Int32, _ k: Int32, _ a: [Float], _ b: [Float],
         _ c: inout [Float]
     ) {
+        c.withUnsafeMutableBufferPointer { c in sgemm(m, n, k, a, b, c) }
+    }
+
+    public static func sgemm(
+        _ m: Int32, _ n: Int32, _ k: Int32, _ a: [Float], _ b: [Float],
+        _ c: UnsafeMutableBufferPointer<Float>
+    ) {
         let alpha: Float = 1.0
         let beta: Float = 0.0
         let lda = m
@@ -153,12 +163,8 @@ public enum OpenBLASOperations {
         let ldc = m
         a.withUnsafeBufferPointer { a in
             b.withUnsafeBufferPointer { b in
-                c.withUnsafeMutableBufferPointer { c in
-                    COpenBLAS.cblas_sgemm(
-                        CblasColMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha, a.baseAddress!, lda,
-                        b.baseAddress!, ldb, beta, c.baseAddress!, ldc
-                    )
-                }
+                COpenBLAS.cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m, n, k, alpha, a.baseAddress!,
+                                      lda, b.baseAddress!, ldb, beta, c.baseAddress!, ldc)
             }
         }
     }

@@ -587,16 +587,18 @@ private func doubleMatrixProduct(
     precondition(left.columns == right.rows, "Number of matrix columns must match matrix rows")
     let leftElements = left.columnMajorStorage()
     let rightElements = right.columnMajorStorage()
-    var result = Array(repeating: 0.0, count: left.rows * right.columns)
-    switch left.blasImplementation {
-    #if canImport(Accelerate)
-    case .accelerate:
-        AccelerateOperations.dgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
-                                   leftElements, rightElements, &result)
-    #endif
-    case .openBLAS:
-        OpenBLASOperations.dgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
-                                 leftElements, rightElements, &result)
+    let result = Array<Double>(unsafeUninitializedCapacity: left.rows * right.columns) { result, initializedCount in
+        switch left.blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate:
+            AccelerateOperations.dgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
+                                       leftElements, rightElements, result)
+        #endif
+        case .openBLAS:
+            OpenBLASOperations.dgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
+                                     leftElements, rightElements, result)
+        }
+        initializedCount = left.rows * right.columns
     }
     return MatrixDenseBLAS<Double>(rows: left.rows, columns: right.columns, values: result,
                                    blasImplementation: left.blasImplementation)
@@ -607,16 +609,18 @@ private func floatMatrixProduct(_ left: MatrixDenseBLAS<Float>, _ right: MatrixD
     precondition(left.columns == right.rows, "Number of matrix columns must match matrix rows")
     let leftElements = left.columnMajorStorage()
     let rightElements = right.columnMajorStorage()
-    var result = Array(repeating: Float.zero, count: left.rows * right.columns)
-    switch left.blasImplementation {
-    #if canImport(Accelerate)
-    case .accelerate:
-        AccelerateOperations.sgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
-                                   leftElements, rightElements, &result)
-    #endif
-    case .openBLAS:
-        OpenBLASOperations.sgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
-                                 leftElements, rightElements, &result)
+    let result = Array<Float>(unsafeUninitializedCapacity: left.rows * right.columns) { result, initializedCount in
+        switch left.blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate:
+            AccelerateOperations.sgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
+                                       leftElements, rightElements, result)
+        #endif
+        case .openBLAS:
+            OpenBLASOperations.sgemm(Int32(left.rows), Int32(right.columns), Int32(left.columns),
+                                     leftElements, rightElements, result)
+        }
+        initializedCount = left.rows * right.columns
     }
     return MatrixDenseBLAS<Float>(rows: left.rows, columns: right.columns, values: result,
                                   blasImplementation: left.blasImplementation)
