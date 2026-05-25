@@ -42,28 +42,30 @@ struct LazyTensor<S: PluScalar> {
 
     func materializedElements() -> [S] {
         var elements: [S] = []
-        elements.reserveCapacity(shape.reduce(1, *))
-        for index in indexCombinations(for: shape) { elements.append(value(index)) }
+        let count = shape.reduce(1, *)
+        elements.reserveCapacity(count)
+        var index = Array(repeating: 0, count: shape.count)
+        for _ in 0..<count {
+            elements.append(value(index))
+            Self.increment(&index, shape: shape)
+        }
         return elements
     }
 
     func assign(to destination: inout TensorFlatView<S>) {
         precondition(destination.shape == shape, "Assigned slice shape \(shape) must match destination slice shape")
-        for index in indexCombinations(for: shape) {
+        var index = Array(repeating: 0, count: shape.count)
+        for _ in 0..<shape.reduce(1, *) {
             destination.storage.elements[destination.storageIndex(forUncheckedIndex: index)] = value(index)
+            Self.increment(&index, shape: shape)
         }
     }
 
-    private func indexCombinations(for shape: [Int]) -> [[Int]] {
-        if shape.isEmpty { return [[]] }
-        if shape.contains(0) { return [] }
-        return (0..<shape.reduce(1, *)).map { flatIndex in
-            var remaining = flatIndex
-            return shape.map { dimension in
-                let index = remaining % dimension
-                remaining /= dimension
-                return index
-            }
+    private static func increment(_ index: inout [Int], shape: [Int]) {
+        for dimension in 0..<shape.count {
+            index[dimension] += 1
+            if index[dimension] < shape[dimension] { return }
+            index[dimension] = 0
         }
     }
 }
