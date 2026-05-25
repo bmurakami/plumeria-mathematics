@@ -27,6 +27,31 @@ private func tensor(_ values: [[[Double]]]) -> TensorDenseBLAS<Double> {
     #expect(tensor.elements == [1.0, -1.0, 2.0, 0.0, 3.0, -3.0])
 }
 
+@Test func TensorDenseBLAS_sliceArithmeticStaysLazy() {
+    let tensor = TensorDenseBLAS<Double>(shape: [2, 4, 2], elements: [
+        1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0,
+        9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0
+    ])
+    let result = tensor[all, range(0..<2), all] + 2.0 * tensor[all, range(2..<4), all]
+
+    #expect(result.lazy != nil)
+    #expect(result.elements == [11.0, 14.0, 17.0, 20.0, 35.0, 38.0, 41.0, 44.0])
+}
+
+@Test func TensorDenseBLAS_assignsLazySliceArithmetic() {
+    let source = TensorDenseBLAS<Double>(shape: [2, 4, 2], elements: [
+        1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0,
+        9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0
+    ])
+    var destination = TensorDenseBLAS<Double>(shape: [2, 3, 2], initialValue: 0.0)
+    destination[all, range(1..<3), all] = source[all, range(0..<2), all] + 2.0 * source[all, range(2..<4), all]
+
+    #expect(destination.elements == [
+        0.0, 0.0, 11.0, 14.0, 17.0, 20.0,
+        0.0, 0.0, 35.0, 38.0, 41.0, 44.0
+    ])
+}
+
 @Test func TensorDenseBLAS_mixedScalarArithmetic() {
     let realScalar = TensorDenseBLAS<Double>(shape: [], elements: [2.0])
     let realRank3 = TensorDenseBLAS<Double>(shape: [2, 2, 2], elements: [1.0, 0.0, -1.0, 2.0, 3.0, -2.0, 0.0, 1.0])
