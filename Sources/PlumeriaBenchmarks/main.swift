@@ -600,6 +600,8 @@ func benchmarkAccelerateVsOpenBLAS() -> Double {
     let complexVector = VectorDenseBLAS(vectorComplexValues(count: 384))
     let lapackRows = invertibleMatrixRows(size: 160)
     let largeLAPACKRows = invertibleMatrixRows(size: 256)
+    let solveRows = invertibleMatrixRows(size: 256)
+    let solveB = vectorValues(count: 256)
     let eigenRows = matrixRows(rows: 96, columns: 96)
     let largeEigenRows = matrixRows(rows: 160, columns: 160)
     var accelerateMatrix = MatrixDenseBLAS(generatedRows)
@@ -630,6 +632,9 @@ func benchmarkAccelerateVsOpenBLAS() -> Double {
     var openBLASLAPACK = MatrixDenseBLAS(lapackRows)
     var accelerateLargeLAPACK = MatrixDenseBLAS(largeLAPACKRows)
     var openBLASLargeLAPACK = MatrixDenseBLAS(largeLAPACKRows)
+    var accelerateSolve = MatrixDenseBLAS(solveRows)
+    var openBLASSolve = MatrixDenseBLAS(solveRows)
+    let solveVector = VectorDenseBLAS(solveB)
     var accelerateEigen = MatrixDenseBLAS(eigenRows)
     var openBLASEigen = MatrixDenseBLAS(eigenRows)
     var accelerateLargeEigen = MatrixDenseBLAS(largeEigenRows)
@@ -648,6 +653,7 @@ func benchmarkAccelerateVsOpenBLAS() -> Double {
     accelerateComplexMatrix.blasImplementation = .accelerate
     accelerateLAPACK.blasImplementation = .accelerate
     accelerateLargeLAPACK.blasImplementation = .accelerate
+    accelerateSolve.blasImplementation = .accelerate
     accelerateEigen.blasImplementation = .accelerate
     accelerateLargeEigen.blasImplementation = .accelerate
     openBLASMatrix.blasImplementation = .openBLAS
@@ -664,6 +670,7 @@ func benchmarkAccelerateVsOpenBLAS() -> Double {
     openBLASComplexMatrix.blasImplementation = .openBLAS
     openBLASLAPACK.blasImplementation = .openBLAS
     openBLASLargeLAPACK.blasImplementation = .openBLAS
+    openBLASSolve.blasImplementation = .openBLAS
     openBLASEigen.blasImplementation = .openBLAS
     openBLASLargeEigen.blasImplementation = .openBLAS
     var checksum = 0.0
@@ -746,6 +753,13 @@ func benchmarkAccelerateVsOpenBLAS() -> Double {
     }, openBLAS: {
         let result = openBLASLargeLAPACK.inverse()
         return result[0, 0] + result[result.rows - 1, result.columns - 1]
+    })
+    checksum += compareImplementationBenchmark("linear solve", "256x256", samples: 2, accelerate: {
+        let result = solveLinearDenseBLAS(accelerateSolve, solveVector, blasImplementation: .accelerate)
+        return result[0] + result[result.size - 1]
+    }, openBLAS: {
+        let result = solveLinearDenseBLAS(openBLASSolve, solveVector, blasImplementation: .openBLAS)
+        return result[0] + result[result.size - 1]
     })
     checksum += compareImplementationBenchmark("eigen", "96x96", accelerate: {
         let result = accelerateEigen.eigen()
