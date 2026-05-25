@@ -98,6 +98,13 @@ enum TensorImplementation: CaseIterable, CustomStringConvertible {
         case .blas: verifySliceAssignment(TensorDenseBLAS<Double>.self)
         }
     }
+
+    func checkExtractsLowerTensors() {
+        switch self {
+        case .reference: verifyReferenceLowerTensorExtraction()
+        case .blas: verifyBLASLowerTensorExtraction()
+        }
+    }
 }
 
 @Test(arguments: TensorImplementation.allCases)
@@ -151,6 +158,11 @@ func TensorDense_permute(implementation: TensorImplementation) {
 @Test(arguments: TensorImplementation.allCases)
 func TensorDense_sliceAssignment(implementation: TensorImplementation) {
     implementation.checkSliceAssignment()
+}
+
+@Test(arguments: TensorImplementation.allCases)
+func TensorDense_extractsLowerTensors(implementation: TensorImplementation) {
+    implementation.checkExtractsLowerTensors()
 }
 
 @Test func TensorNotation_reportsInvalidMultiplyNotation() {
@@ -276,6 +288,26 @@ private func verifyRankZeroTensors<T: TensorDenseTestImplementation>(_ type: T.T
     #expect(tensor[[]] == 7.0)
     tensor[[]] = -2.0
     #expect(tensor[[]] == -2.0)
+}
+
+private func verifyReferenceLowerTensorExtraction() {
+    let scalar = TensorDenseReference<Double>(shape: [], elements: [3.0]).asScalar()
+    let vector = TensorDenseReference<Double>(shape: [3], elements: [1.0, -2.0, 3.0]).asVector()
+    let matrix = TensorDenseReference<Double>(shape: [2, 2], elements: [1.0, -2.0, 3.0, 0.0]).asMatrix()
+
+    #expect(scalar == 3.0)
+    #expect(vector.toArray(round: false) == [1.0, -2.0, 3.0])
+    #expect(matrix.toArray(round: false) == [[1.0, 3.0], [-2.0, 0.0]])
+}
+
+private func verifyBLASLowerTensorExtraction() {
+    let scalar = TensorDenseBLAS<Double>(shape: [], elements: [3.0]).asScalar()
+    let vector = TensorDenseBLAS<Double>(shape: [3], elements: [1.0, -2.0, 3.0]).asVector()
+    let matrix = TensorDenseBLAS<Double>(shape: [2, 2], elements: [1.0, -2.0, 3.0, 0.0]).asMatrix()
+
+    #expect(scalar == 3.0)
+    #expect(vector.toArray(round: false) == [1.0, -2.0, 3.0])
+    #expect(matrix.toArray(round: false) == [[1.0, 3.0], [-2.0, 0.0]])
 }
 
 private func verifyElementwiseArithmetic<T: TensorDenseTestImplementation>(_ type: T.Type) {
