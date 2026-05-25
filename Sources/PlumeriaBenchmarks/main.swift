@@ -367,6 +367,51 @@ func benchmarkMatrices() -> Double {
     return checksum
 }
 
+func benchmarkLinearSolvers() -> Double {
+    print("Linear Solver")
+    let smallRows = invertibleMatrixRows(size: 16)
+    let mediumRows = invertibleMatrixRows(size: 64)
+    let largeRows = invertibleMatrixRows(size: 256)
+    let smallB = vectorValues(count: 16)
+    let mediumB = vectorValues(count: 64)
+    let largeB = vectorValues(count: 256)
+    let referenceSmallA = MatrixDenseReference(smallRows)
+    let referenceMediumA = MatrixDenseReference(mediumRows)
+    let referenceLargeA = MatrixDenseReference(largeRows)
+    let blasSmallA = MatrixDenseBLAS(smallRows)
+    let blasMediumA = MatrixDenseBLAS(mediumRows)
+    let blasLargeA = MatrixDenseBLAS(largeRows)
+    let smallReferenceB = VectorDenseReference(smallB)
+    let mediumReferenceB = VectorDenseReference(mediumB)
+    let largeReferenceB = VectorDenseReference(largeB)
+    let smallBLASB = VectorDenseBLAS(smallB)
+    let mediumBLASB = VectorDenseBLAS(mediumB)
+    let largeBLASB = VectorDenseBLAS(largeB)
+    var checksum = 0.0
+    checksum += compareBenchmark("solve", "16x16", reference: {
+        let result = solveLinearDenseReference(referenceSmallA, smallReferenceB)
+        return result[0] + result[result.size - 1]
+    }, blas: {
+        let result = solveLinearDenseBLAS(blasSmallA, smallBLASB)
+        return result[0] + result[result.size - 1]
+    })
+    checksum += compareBenchmark("solve", "64x64", samples: 3, reference: {
+        let result = solveLinearDenseReference(referenceMediumA, mediumReferenceB)
+        return result[0] + result[result.size - 1]
+    }, blas: {
+        let result = solveLinearDenseBLAS(blasMediumA, mediumBLASB)
+        return result[0] + result[result.size - 1]
+    })
+    checksum += compareBenchmark("solve", "256x256", samples: 3, reference: {
+        let result = solveLinearDenseReference(referenceLargeA, largeReferenceB)
+        return result[0] + result[result.size - 1]
+    }, blas: {
+        let result = solveLinearDenseBLAS(blasLargeA, largeBLASB)
+        return result[0] + result[result.size - 1]
+    })
+    return checksum
+}
+
 func benchmarkTensors() -> Double {
     print("Tensor")
     var referenceAdd = TensorDenseReference<Double>(shape: [40, 40, 10], initialValue: 0.0)
@@ -731,5 +776,5 @@ print("Swift: \(swiftVersion)")
 print("Platform: \(platform)")
 print("")
 let blackHole = benchmarkVectors() + benchmarkMatrices() + benchmarkTensors()
-    + benchmarkFloatScalars() + benchmarkComplexFloatScalars() + benchmarkAccelerateVsOpenBLAS()
+    + benchmarkLinearSolvers() + benchmarkFloatScalars() + benchmarkComplexFloatScalars() + benchmarkAccelerateVsOpenBLAS()
 writeBenchmarkResultToNullDevice(blackHole)
