@@ -18,8 +18,16 @@ import Tensors
     #expect(v_actual.isApproximatelyEqual(to: v_expected))
 }
 
-func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixType: MatrixType.Type)
-        where MatrixType.S == Double {
+@Test func solveLinearDenseReference_exampleUsage() throws {
+    let A = MatrixDenseReference([[2.0, -1, 1], [1, 2, -1], [1, 1, -4]])
+    let b = VectorDenseReference([3.0, 2, -9])
+    let actual = solveLinearDenseReference(A, b)
+    let expected = VectorDenseReference([1.0, 2, 3])
+
+    #expect(actual.isApproximatelyEqual(to: expected))
+}
+
+func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixType: MatrixType.Type) where MatrixType.S == Double {
     let sizes = [2, 3, 10]
     for n in sizes {
         let A: MatrixType = makeMatrix(size: n)
@@ -31,8 +39,23 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
 }
 
 @Test func solveLinearDense_correctness_smallMatrices_reference() {
-    srand48(42)
-    solveLinearDense_correctness_smallMatrices(matrixType: MatrixDenseReference<Double>.self)
+    let A2 = MatrixDenseReference([[2.0, 1.0], [1.0, -1.0]])
+    let b2 = VectorDenseReference([4.0, -1.0])
+    let x2 = VectorDenseReference([1.0, 2.0])
+    let A3 = MatrixDenseReference([[2.0, -1, 1], [1, 2, -1], [1, 1, -4]])
+    let b3 = VectorDenseReference([3.0, 2, -9])
+    let x3 = VectorDenseReference([1.0, 2, 3])
+
+    #expect(solveLinearDenseReference(A2, b2).isApproximatelyEqual(to: x2))
+    #expect(solveLinearDenseReference(A3, b3).isApproximatelyEqual(to: x3))
+}
+
+@Test func solveLinearDenseReference_pivotsRows() {
+    let A = MatrixDenseReference([[0.0, 2.0], [1.0, 1.0]])
+    let b = VectorDenseReference([-2.0, 2.0])
+    let expected = VectorDenseReference([3.0, -1.0])
+
+    #expect(solveLinearDenseReference(A, b).isApproximatelyEqual(to: expected))
 }
 
 @Test func solveLinearDense_correctness_smallMatrices_BLAS() {
@@ -55,8 +78,17 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
     #endif
 }
 
-func solveLinearDense_correctness_largeMatrices<MatrixType: PluMatrix>(matrixType: MatrixType.Type)
-        where MatrixType.S == Double {
+@Test func solveLinearDenseReference_complex() {
+    let A = MatrixDenseReference<ComplexDouble>([[ComplexDouble(1.0, 0.0), ComplexDouble(0.0, 1.0)],
+                                                 [ComplexDouble(2.0, -1.0), ComplexDouble(1.0, 1.0)]])
+    let b = VectorDenseReference<ComplexDouble>([ComplexDouble(2.0, 3.0), ComplexDouble(6.0, 2.0)])
+    let expected = VectorDenseReference<ComplexDouble>([ComplexDouble(1.0, 1.0), ComplexDouble(2.0, -1.0)])
+    let actual = solveLinearDenseReference(A, b)
+
+    #expect(actual.isApproximatelyEqual(to: expected, relativeTolerance: 1e-12))
+}
+
+func solveLinearDenseBLAS_correctness_largeMatrices() {
     let sizes = [100, 500]
     for n in sizes {
         let A: MatrixDenseBLAS<Double> = makeMatrix(size: n)
@@ -67,14 +99,9 @@ func solveLinearDense_correctness_largeMatrices<MatrixType: PluMatrix>(matrixTyp
     }
 }
 
-@Test func solveLinearDense_correctness_largeMatrices_reference() {
-    srand48(42)
-    solveLinearDense_correctness_largeMatrices(matrixType: MatrixDenseReference<Double>.self)
-}
-
 @Test func solveLinearDense_correctness_largeMatrices_BLAS() {
     srand48(42)
-    solveLinearDense_correctness_largeMatrices(matrixType: MatrixDenseBLAS<Double>.self)
+    solveLinearDenseBLAS_correctness_largeMatrices()
 }
 
 func randomNumber() -> Double {
