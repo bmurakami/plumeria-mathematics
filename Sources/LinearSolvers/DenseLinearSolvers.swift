@@ -2,11 +2,24 @@
 import AccelerateWrapper
 #endif
 import OpenBLASWrapper
+import Numerics
 import Tensors
 
 public typealias DenseLinearSolver<M: PluMatrix, V: PluVector> = (M, V) -> V where M.S == V.S
 
 public func solveLinearDense<M: PluMatrix, V: PluVector>(_ A: M, _ b: V, blasImplementation: BLAS = .default) -> V {
+    solveLinearDenseBLAS(A, b, blasImplementation: blasImplementation)
+}
+
+public func solveLinearDense(
+    _ A: MatrixDenseBLAS<Double>, _ b: VectorDenseBLAS<Double>, blasImplementation: BLAS = .default
+) -> VectorDenseBLAS<Double> {
+    solveLinearDenseBLAS(A, b, blasImplementation: blasImplementation)
+}
+
+public func solveLinearDense(
+    _ A: MatrixDenseBLAS<ComplexDouble>, _ b: VectorDenseBLAS<ComplexDouble>, blasImplementation: BLAS = .default
+) -> VectorDenseBLAS<ComplexDouble> {
     solveLinearDenseBLAS(A, b, blasImplementation: blasImplementation)
 }
 
@@ -85,6 +98,52 @@ public func solveLinearDenseBLAS<M: PluMatrix, V: PluVector>(_ A: M, _ b: V, bla
     }
 
     return V(x)
+}
+
+public func solveLinearDenseBLAS(
+    _ A: MatrixDenseBLAS<Double>, _ b: VectorDenseBLAS<Double>, blasImplementation: BLAS = .default
+) -> VectorDenseBLAS<Double> {
+    precondition(A.rows == A.columns, "A must be square")
+    precondition(A.columns == b.size, "Number of columns in A must equal size of b")
+    var matrix = A.flatten()
+    var rhs = b.elements
+    let info = solveDoubleLinearSystem(Int32(b.size), &matrix, &rhs, blasImplementation: blasImplementation)
+    precondition(info == 0, "LAPACK linear solve failed with info \(info)")
+    return VectorDenseBLAS(rhs)
+}
+
+public func solveLinearDenseBLAS(
+    _ A: MatrixDenseBLAS<ComplexDouble>, _ b: VectorDenseBLAS<ComplexDouble>, blasImplementation: BLAS = .default
+) -> VectorDenseBLAS<ComplexDouble> {
+    precondition(A.rows == A.columns, "A must be square")
+    precondition(A.columns == b.size, "Number of columns in A must equal size of b")
+    var matrix = BLASComplexStorage.interleaved(A.flatten())
+    var rhs = BLASComplexStorage.interleaved(b.elements)
+    let info = solveComplexDoubleLinearSystem(Int32(b.size), &matrix, &rhs, blasImplementation: blasImplementation)
+    precondition(info == 0, "LAPACK linear solve failed with info \(info)")
+    return VectorDenseBLAS(BLASComplexStorage.complexValues(rhs))
+}
+
+private func solveDoubleLinearSystem(
+    _ n: Int32, _ matrix: inout [Double], _ rhs: inout [Double], blasImplementation: BLAS
+) -> Int32 {
+    switch blasImplementation {
+    #if canImport(Accelerate)
+    case .accelerate: AccelerateOperations.dgesv(n, &matrix, &rhs)
+    #endif
+    case .openBLAS: OpenBLASOperations.dgesv(n, &matrix, &rhs)
+    }
+}
+
+private func solveComplexDoubleLinearSystem(
+    _ n: Int32, _ matrix: inout [Double], _ rhs: inout [Double], blasImplementation: BLAS
+) -> Int32 {
+    switch blasImplementation {
+    #if canImport(Accelerate)
+    case .accelerate: AccelerateOperations.zgesv(n, &matrix, &rhs)
+    #endif
+    case .openBLAS: OpenBLASOperations.zgesv(n, &matrix, &rhs)
+    }
 }
 
 private func rowWithLargestPivot<S: PluScalar>(_ matrix: [[S]], column: Int) -> Int {
