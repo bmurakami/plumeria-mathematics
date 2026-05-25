@@ -5,10 +5,19 @@ import Numerics
 import OpenBLASWrapper
 
 public struct VectorDenseBLAS<S: PluScalar>: TensorArithmeticBLAS {
-    public var elements: [S]
+    var view: TensorFlatView<S>
+    public var elements: [S] {
+        get { view.contiguousElements ?? view.elements }
+        set { view = TensorFlatView(shape: [newValue.count], elements: newValue) }
+    }
 
     public init(_ values: [S]) {
-        self.elements = values
+        self.view = TensorFlatView(shape: [values.count], elements: values)
+    }
+
+    init(view: TensorFlatView<S>) {
+        precondition(view.rank == 1, "VectorDenseBLAS requires rank 1")
+        self.view = view
     }
 }
 
@@ -18,8 +27,8 @@ extension VectorDenseBLAS: PluVector {
     public var size: Int { elements.count }
 
     public subscript(i: Int) -> S {
-        get { elements[i] }
-        set { elements[i] = newValue }
+        get { view[[i]] }
+        set { view[[i]] = newValue }
     }
 
     public subscript(_ indices: [Int]) -> S {
@@ -91,6 +100,16 @@ extension VectorDenseBLAS: PluVector {
 }
 
 extension VectorDenseBLAS {
+    public subscript(range: Range<Int>) -> VectorDenseBLAS<S> {
+        get { VectorDenseBLAS(view: view.slice(SliceRange(range))) }
+        set { view.assign(newValue.view, to: [SliceRange(range)]) }
+    }
+
+    public subscript(index: TensorSliceIndex) -> VectorDenseBLAS<S> {
+        get { VectorDenseBLAS(view: view.slice(index.sliceRange(dimensionSize: size))) }
+        set { view.assign(newValue.view, to: [index]) }
+    }
+
     public static func + (lhs: VectorDenseBLAS<S>, rhs: VectorDenseBLAS<S>) -> VectorDenseBLAS<S> {
         precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
         if S.self == Double.self {
