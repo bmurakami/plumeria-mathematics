@@ -137,6 +137,19 @@ def benchmark_matrices(samples):
     print_result("inverse", "96x96", measure(3, 1, lambda: ends_2d(np.linalg.inv(det))))
 
 
+def benchmark_linear_solvers(samples):
+    print("Linear Solver")
+    small = invertible_matrix_values(16)
+    medium = invertible_matrix_values(64)
+    large = invertible_matrix_values(256)
+    small_b = vector_values(16)
+    medium_b = vector_values(64)
+    large_b = vector_values(256)
+    print_result("solve", "16x16", measure(samples, 1, lambda: ends_1d(np.linalg.solve(small, small_b))))
+    print_result("solve", "64x64", measure(3, 1, lambda: ends_1d(np.linalg.solve(medium, medium_b))))
+    print_result("solve", "256x256", measure(3, 1, lambda: ends_1d(np.linalg.solve(large, large_b))))
+
+
 def benchmark_tensors(samples):
     print("Tensor")
     add = tensor_values((40, 40, 10))
@@ -233,6 +246,7 @@ def main():
     print("")
     benchmark_vectors(args.samples)
     benchmark_matrices(args.samples)
+    benchmark_linear_solvers(args.samples)
     benchmark_tensors(args.samples)
     benchmark_float_scalars(args.samples)
     benchmark_complex_float_scalars(args.samples)
