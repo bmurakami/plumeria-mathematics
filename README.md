@@ -85,15 +85,14 @@ Slices can be read, combined, and assigned:
 
 ```swift
 let interior = range(1..<299)
+let alpha = 0.25
+let center = u[1, interior, interior]
+let left = u[1, range(0..<298), interior]
+let right = u[1, range(2..<300), interior]
+let down = u[1, interior, range(0..<298)]
+let up = u[1, interior, range(2..<300)]
 
-u[0, interior, interior] =
-    alpha[interior, interior] * (
-        u[1, range(0..<298), interior] +
-        u[1, range(2..<300), interior] +
-        u[1, interior, range(0..<298)] +
-        u[1, interior, range(2..<300)] -
-        4 * u[1, interior, interior]
-    )
+u[0, interior, interior] = alpha * (left + right + down + up - 4 * center)
 ```
 
 Complex values use Swift Numerics under the hood:
