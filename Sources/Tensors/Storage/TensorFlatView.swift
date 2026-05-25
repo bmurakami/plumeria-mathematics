@@ -22,7 +22,9 @@ extension TensorFlatView: TensorView {
     public var count: Int { shape.reduce(1, *) }
     public var elements: [Scalar] { flattenedElements() }
     public var isContiguous: Bool { strides == Self.columnMajorStrides(for: shape) }
-    public var contiguousElements: [Scalar]? { isContiguous && offset == 0 ? storage.elements : nil }
+    public var contiguousElements: [Scalar]? {
+        isContiguous && offset == 0 && storage.elements.count == count ? storage.elements : nil
+    }
 
     public init(shape: [Int]) {
         precondition(shape.allSatisfy { $0 >= 0 }, "Tensor shape dimensions must be non-negative")

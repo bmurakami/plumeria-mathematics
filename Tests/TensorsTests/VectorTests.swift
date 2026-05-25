@@ -134,6 +134,22 @@ func VectorDense_sliceAssignment(implementation: VectorImplementation) { impleme
     #expect(slice.toArray() == [20.0, 3.0])
 }
 
+@Test func VectorDense_BLAS_sliceArithmeticStaysLazy() {
+    let vector = VectorDenseBLAS<Double>([1.0, 2.0, 3.0, 4.0, 5.0])
+    let result = vector[0..<2] + 2.0 * vector[2..<4]
+
+    #expect(result.lazy != nil)
+    #expect(result.toArray() == [7.0, 10.0])
+}
+
+@Test func VectorDense_BLAS_assignsLazySliceArithmetic() {
+    let source = VectorDenseBLAS<Double>([1.0, 2.0, 3.0, 4.0, 5.0])
+    var destination = VectorDenseBLAS<Double>([0.0, 0.0, 0.0, 0.0])
+    destination[1..<3] = source[0..<2] + 2.0 * source[2..<4]
+
+    #expect(destination.toArray() == [0.0, 7.0, 10.0, 0.0])
+}
+
 private func verifyDoubleInit<V: PluVector>(_ type: V.Type) where V.S == Double {
     let v = V(a)
     #expect(v.size == a.count)
