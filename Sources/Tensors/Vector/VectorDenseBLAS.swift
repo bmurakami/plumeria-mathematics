@@ -5,10 +5,30 @@ import Numerics
 import OpenBLASWrapper
 
 public struct VectorDenseBLAS<S: PluScalar>: TensorArithmeticBLAS {
-    public var elements: [S]
+    var view: TensorFlatView<S>
+    var lazy: LazyTensor<S>?
+    public var elements: [S] {
+        get { lazy?.materializedElements() ?? view.contiguousElements ?? view.elements }
+        set {
+            view = TensorFlatView(shape: [newValue.count], elements: newValue)
+            lazy = nil
+        }
+    }
 
     public init(_ values: [S]) {
-        self.elements = values
+        self.view = TensorFlatView(shape: [values.count], elements: values)
+        self.lazy = nil
+    }
+
+    init(view: TensorFlatView<S>, lazy: LazyTensor<S>? = nil) {
+        precondition(view.rank == 1, "VectorDenseBLAS requires rank 1")
+        self.view = view
+        self.lazy = lazy
+    }
+
+    init(size: Int, lazy: LazyTensor<S>) {
+        self.view = TensorFlatView(shape: [size])
+        self.lazy = lazy
     }
 }
 
@@ -18,8 +38,11 @@ extension VectorDenseBLAS: PluVector {
     public var size: Int { elements.count }
 
     public subscript(i: Int) -> S {
-        get { elements[i] }
-        set { elements[i] = newValue }
+        get { lazy?.value([i]) ?? view[[i]] }
+        set {
+            materialize()
+            view[[i]] = newValue
+        }
     }
 
     public subscript(_ indices: [Int]) -> S {
@@ -91,6 +114,41 @@ extension VectorDenseBLAS: PluVector {
 }
 
 extension VectorDenseBLAS {
+    public subscript(range: Range<Int>) -> VectorDenseBLAS<S> {
+        get { VectorDenseBLAS(view: materializedView().slice(SliceRange(range))) }
+        set { assign(newValue, to: [TensorSliceIndex.range(range)]) }
+    }
+
+    public subscript(index: TensorSliceIndex) -> VectorDenseBLAS<S> {
+        get { VectorDenseBLAS(view: materializedView().slice(index.sliceRange(dimensionSize: size))) }
+        set { assign(newValue, to: [index]) }
+    }
+
+    private func materializedView() -> TensorFlatView<S> {
+        if let lazy { return TensorFlatView(shape: shape, elements: lazy.materializedElements()) }
+        return view
+    }
+
+    private mutating func materialize() {
+        guard let lazy else { return }
+        view = TensorFlatView(shape: shape, elements: lazy.materializedElements())
+        self.lazy = nil
+    }
+
+    private mutating func assign(_ replacement: VectorDenseBLAS<S>, to indices: [TensorSliceIndex]) {
+        materialize()
+        if let lazy = replacement.lazy {
+            view.assign(lazy, to: indices)
+        } else {
+            view.assign(replacement.view, to: indices)
+        }
+    }
+
+    fileprivate var lazyTensor: LazyTensor<S> { lazy ?? .view(view) }
+    fileprivate var isWholeContiguousView: Bool {
+        lazy == nil && view.offset == 0 && view.isContiguous && view.storage.elements.count == size
+    }
+
     public static func + (lhs: VectorDenseBLAS<S>, rhs: VectorDenseBLAS<S>) -> VectorDenseBLAS<S> {
         precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
         if S.self == Double.self {
@@ -102,14 +160,12 @@ extension VectorDenseBLAS {
                 as! VectorDenseBLAS<S>
         }
         if S.self == ComplexDouble.self {
-            return VectorDenseBLAS<ComplexDouble>(BLASComplexStorage.sum(lhs.elements as! [ComplexDouble],
-                                                                        rhs.elements as! [ComplexDouble]))
-                as! VectorDenseBLAS<S>
+            return complexDoubleVectorSum(lhs as! VectorDenseBLAS<ComplexDouble>,
+                                          rhs as! VectorDenseBLAS<ComplexDouble>) as! VectorDenseBLAS<S>
         }
         if S.self == ComplexFloat.self {
-            return VectorDenseBLAS<ComplexFloat>(BLASComplexStorage.sum(lhs.elements as! [ComplexFloat],
-                                                                      rhs.elements as! [ComplexFloat]))
-                as! VectorDenseBLAS<S>
+            return complexFloatVectorSum(lhs as! VectorDenseBLAS<ComplexFloat>,
+                                         rhs as! VectorDenseBLAS<ComplexFloat>) as! VectorDenseBLAS<S>
         }
         fatalError("Unsupported scalar type")
     }
@@ -124,9 +180,15 @@ extension VectorDenseBLAS {
             return floatVectorDifference(lhs as! VectorDenseBLAS<Float>, rhs as! VectorDenseBLAS<Float>)
                 as! VectorDenseBLAS<S>
         }
-        var result = lhs
-        for index in 0..<lhs.elements.count { result.elements[index] = lhs.elements[index] - rhs.elements[index] }
-        return result
+        if S.self == ComplexDouble.self {
+            return complexDoubleVectorDifference(lhs as! VectorDenseBLAS<ComplexDouble>,
+                                                 rhs as! VectorDenseBLAS<ComplexDouble>) as! VectorDenseBLAS<S>
+        }
+        if S.self == ComplexFloat.self {
+            return complexFloatVectorDifference(lhs as! VectorDenseBLAS<ComplexFloat>,
+                                                rhs as! VectorDenseBLAS<ComplexFloat>) as! VectorDenseBLAS<S>
+        }
+        fatalError("Unsupported scalar type")
     }
 
     public static prefix func - (operand: VectorDenseBLAS<S>) -> VectorDenseBLAS<S> {
@@ -142,13 +204,11 @@ extension VectorDenseBLAS {
             return floatVectorScale(vector as! VectorDenseBLAS<Float>, by: scalar as! Float) as! VectorDenseBLAS<S>
         }
         if S.self == ComplexDouble.self {
-            return VectorDenseBLAS<ComplexDouble>(complexDoubleScale(vector.elements as! [ComplexDouble],
-                                                                          by: scalar as! ComplexDouble))
+            return complexDoubleVectorScale(vector as! VectorDenseBLAS<ComplexDouble>, by: scalar as! ComplexDouble)
                 as! VectorDenseBLAS<S>
         }
         if S.self == ComplexFloat.self {
-            return VectorDenseBLAS<ComplexFloat>(complexFloatScale(vector.elements as! [ComplexFloat],
-                                                                        by: scalar as! ComplexFloat))
+            return complexFloatVectorScale(vector as! VectorDenseBLAS<ComplexFloat>, by: scalar as! ComplexFloat)
                 as! VectorDenseBLAS<S>
         }
         fatalError("Unsupported scalar type")
@@ -162,6 +222,10 @@ extension VectorDenseBLAS {
         let one: S = 1
         return vector * (one / scalar)
     }
+
+    public static func == (lhs: VectorDenseBLAS<S>, rhs: VectorDenseBLAS<S>) -> Bool {
+        lhs.shape == rhs.shape && lhs.elements == rhs.elements
+    }
 }
 
 public func + (lhs: VectorDenseBLAS<Double>, rhs: VectorDenseBLAS<Double>) -> VectorDenseBLAS<Double> {
@@ -174,14 +238,12 @@ public func + (lhs: VectorDenseBLAS<Float>, rhs: VectorDenseBLAS<Float>) -> Vect
 
 public func + (lhs: VectorDenseBLAS<ComplexDouble>, rhs: VectorDenseBLAS<ComplexDouble>)
     -> VectorDenseBLAS<ComplexDouble> {
-    precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
-    return VectorDenseBLAS<ComplexDouble>(BLASComplexStorage.sum(lhs.elements, rhs.elements))
+    complexDoubleVectorSum(lhs, rhs)
 }
 
 public func + (lhs: VectorDenseBLAS<ComplexFloat>, rhs: VectorDenseBLAS<ComplexFloat>)
     -> VectorDenseBLAS<ComplexFloat> {
-    precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
-    return VectorDenseBLAS<ComplexFloat>(BLASComplexStorage.sum(lhs.elements, rhs.elements))
+    complexFloatVectorSum(lhs, rhs)
 }
 
 public func - (lhs: VectorDenseBLAS<Double>, rhs: VectorDenseBLAS<Double>) -> VectorDenseBLAS<Double> {
@@ -194,14 +256,12 @@ public func - (lhs: VectorDenseBLAS<Float>, rhs: VectorDenseBLAS<Float>) -> Vect
 
 public func - (lhs: VectorDenseBLAS<ComplexDouble>, rhs: VectorDenseBLAS<ComplexDouble>)
     -> VectorDenseBLAS<ComplexDouble> {
-    precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
-    return VectorDenseBLAS<ComplexDouble>(BLASComplexStorage.difference(lhs.elements, rhs.elements))
+    complexDoubleVectorDifference(lhs, rhs)
 }
 
 public func - (lhs: VectorDenseBLAS<ComplexFloat>, rhs: VectorDenseBLAS<ComplexFloat>)
     -> VectorDenseBLAS<ComplexFloat> {
-    precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
-    return VectorDenseBLAS<ComplexFloat>(BLASComplexStorage.difference(lhs.elements, rhs.elements))
+    complexFloatVectorDifference(lhs, rhs)
 }
 
 public prefix func - (operand: VectorDenseBLAS<Double>) -> VectorDenseBLAS<Double> {
@@ -246,7 +306,7 @@ public func / (vector: VectorDenseBLAS<Float>, scalar: Float) -> VectorDenseBLAS
 
 public func * (vector: VectorDenseBLAS<ComplexDouble>, scalar: ComplexDouble)
     -> VectorDenseBLAS<ComplexDouble> {
-    VectorDenseBLAS<ComplexDouble>(complexDoubleScale(vector.elements, by: scalar))
+    complexDoubleVectorScale(vector, by: scalar)
 }
 
 public func * (scalar: ComplexDouble, vector: VectorDenseBLAS<ComplexDouble>)
@@ -260,7 +320,7 @@ public func / (vector: VectorDenseBLAS<ComplexDouble>, scalar: ComplexDouble)
 }
 
 public func * (vector: VectorDenseBLAS<ComplexFloat>, scalar: ComplexFloat) -> VectorDenseBLAS<ComplexFloat> {
-    VectorDenseBLAS<ComplexFloat>(complexFloatScale(vector.elements, by: scalar))
+    complexFloatVectorScale(vector, by: scalar)
 }
 
 public func * (scalar: ComplexFloat, vector: VectorDenseBLAS<ComplexFloat>) -> VectorDenseBLAS<ComplexFloat> {
@@ -275,6 +335,9 @@ private func doubleVectorSum(
     _ left: VectorDenseBLAS<Double>, _ right: VectorDenseBLAS<Double>
 ) -> VectorDenseBLAS<Double> {
     precondition(left.shape == right.shape, "Tensors must have the same shape")
+    if !left.isWholeContiguousView || !right.isWholeContiguousView {
+        return VectorDenseBLAS<Double>(size: left.size, lazy: left.lazyTensor.adding(right.lazyTensor))
+    }
     return VectorDenseBLAS<Double>(doubleSum(left.elements, right.elements))
 }
 
@@ -282,7 +345,30 @@ private func floatVectorSum(
     _ left: VectorDenseBLAS<Float>, _ right: VectorDenseBLAS<Float>
 ) -> VectorDenseBLAS<Float> {
     precondition(left.shape == right.shape, "Tensors must have the same shape")
+    if !left.isWholeContiguousView || !right.isWholeContiguousView {
+        return VectorDenseBLAS<Float>(size: left.size, lazy: left.lazyTensor.adding(right.lazyTensor))
+    }
     return VectorDenseBLAS<Float>(floatSum(left.elements, right.elements))
+}
+
+private func complexDoubleVectorSum(
+    _ left: VectorDenseBLAS<ComplexDouble>, _ right: VectorDenseBLAS<ComplexDouble>
+) -> VectorDenseBLAS<ComplexDouble> {
+    precondition(left.shape == right.shape, "Tensors must have the same shape")
+    if !left.isWholeContiguousView || !right.isWholeContiguousView {
+        return VectorDenseBLAS<ComplexDouble>(size: left.size, lazy: left.lazyTensor.adding(right.lazyTensor))
+    }
+    return VectorDenseBLAS<ComplexDouble>(BLASComplexStorage.sum(left.elements, right.elements))
+}
+
+private func complexFloatVectorSum(
+    _ left: VectorDenseBLAS<ComplexFloat>, _ right: VectorDenseBLAS<ComplexFloat>
+) -> VectorDenseBLAS<ComplexFloat> {
+    precondition(left.shape == right.shape, "Tensors must have the same shape")
+    if !left.isWholeContiguousView || !right.isWholeContiguousView {
+        return VectorDenseBLAS<ComplexFloat>(size: left.size, lazy: left.lazyTensor.adding(right.lazyTensor))
+    }
+    return VectorDenseBLAS<ComplexFloat>(BLASComplexStorage.sum(left.elements, right.elements))
 }
 
 private func doubleVectorDifference(
@@ -290,6 +376,9 @@ private func doubleVectorDifference(
     _ right: VectorDenseBLAS<Double>
 ) -> VectorDenseBLAS<Double> {
     precondition(left.shape == right.shape, "Tensors must have the same shape")
+    if !left.isWholeContiguousView || !right.isWholeContiguousView {
+        return VectorDenseBLAS<Double>(size: left.size, lazy: left.lazyTensor.subtracting(right.lazyTensor))
+    }
     return VectorDenseBLAS<Double>(doubleDifference(left.elements, right.elements))
 }
 
@@ -298,15 +387,62 @@ private func floatVectorDifference(
     _ right: VectorDenseBLAS<Float>
 ) -> VectorDenseBLAS<Float> {
     precondition(left.shape == right.shape, "Tensors must have the same shape")
+    if !left.isWholeContiguousView || !right.isWholeContiguousView {
+        return VectorDenseBLAS<Float>(size: left.size, lazy: left.lazyTensor.subtracting(right.lazyTensor))
+    }
     return VectorDenseBLAS<Float>(floatDifference(left.elements, right.elements))
 }
 
+private func complexDoubleVectorDifference(
+    _ left: VectorDenseBLAS<ComplexDouble>, _ right: VectorDenseBLAS<ComplexDouble>
+) -> VectorDenseBLAS<ComplexDouble> {
+    precondition(left.shape == right.shape, "Tensors must have the same shape")
+    if !left.isWholeContiguousView || !right.isWholeContiguousView {
+        return VectorDenseBLAS<ComplexDouble>(size: left.size, lazy: left.lazyTensor.subtracting(right.lazyTensor))
+    }
+    return VectorDenseBLAS<ComplexDouble>(BLASComplexStorage.difference(left.elements, right.elements))
+}
+
+private func complexFloatVectorDifference(
+    _ left: VectorDenseBLAS<ComplexFloat>, _ right: VectorDenseBLAS<ComplexFloat>
+) -> VectorDenseBLAS<ComplexFloat> {
+    precondition(left.shape == right.shape, "Tensors must have the same shape")
+    if !left.isWholeContiguousView || !right.isWholeContiguousView {
+        return VectorDenseBLAS<ComplexFloat>(size: left.size, lazy: left.lazyTensor.subtracting(right.lazyTensor))
+    }
+    return VectorDenseBLAS<ComplexFloat>(BLASComplexStorage.difference(left.elements, right.elements))
+}
+
 private func doubleVectorScale(_ vector: VectorDenseBLAS<Double>, by scalar: Double) -> VectorDenseBLAS<Double> {
-    VectorDenseBLAS<Double>(doubleScale(vector.elements, by: scalar))
+    if !vector.isWholeContiguousView {
+        return VectorDenseBLAS<Double>(size: vector.size, lazy: vector.lazyTensor.scaled(by: scalar))
+    }
+    return VectorDenseBLAS<Double>(doubleScale(vector.elements, by: scalar))
 }
 
 private func floatVectorScale(_ vector: VectorDenseBLAS<Float>, by scalar: Float) -> VectorDenseBLAS<Float> {
-    VectorDenseBLAS<Float>(floatScale(vector.elements, by: scalar))
+    if !vector.isWholeContiguousView {
+        return VectorDenseBLAS<Float>(size: vector.size, lazy: vector.lazyTensor.scaled(by: scalar))
+    }
+    return VectorDenseBLAS<Float>(floatScale(vector.elements, by: scalar))
+}
+
+private func complexDoubleVectorScale(
+    _ vector: VectorDenseBLAS<ComplexDouble>, by scalar: ComplexDouble
+) -> VectorDenseBLAS<ComplexDouble> {
+    if !vector.isWholeContiguousView {
+        return VectorDenseBLAS<ComplexDouble>(size: vector.size, lazy: vector.lazyTensor.scaled(by: scalar))
+    }
+    return VectorDenseBLAS<ComplexDouble>(complexDoubleScale(vector.elements, by: scalar))
+}
+
+private func complexFloatVectorScale(
+    _ vector: VectorDenseBLAS<ComplexFloat>, by scalar: ComplexFloat
+) -> VectorDenseBLAS<ComplexFloat> {
+    if !vector.isWholeContiguousView {
+        return VectorDenseBLAS<ComplexFloat>(size: vector.size, lazy: vector.lazyTensor.scaled(by: scalar))
+    }
+    return VectorDenseBLAS<ComplexFloat>(complexFloatScale(vector.elements, by: scalar))
 }
 
 private func doubleMagnitude(_ vector: VectorDenseBLAS<Double>) -> Double {

@@ -22,7 +22,9 @@ extension TensorFlatView: TensorView {
     public var count: Int { shape.reduce(1, *) }
     public var elements: [Scalar] { flattenedElements() }
     public var isContiguous: Bool { strides == Self.columnMajorStrides(for: shape) }
-    public var contiguousElements: [Scalar]? { isContiguous && offset == 0 ? storage.elements : nil }
+    public var contiguousElements: [Scalar]? {
+        isContiguous && offset == 0 && storage.elements.count == count ? storage.elements : nil
+    }
 
     public init(shape: [Int]) {
         precondition(shape.allSatisfy { $0 >= 0 }, "Tensor shape dimensions must be non-negative")
@@ -148,8 +150,25 @@ extension TensorFlatView {
         }
     }
 
+    mutating func assign(_ lazy: LazyTensor<Scalar>, to indices: [TensorSliceIndex]) {
+        var destination = slice(indices)
+        let error = sliceAssignmentShapeError(destination: destination.shape, replacement: lazy.shape)
+        if let error { preconditionFailure(error) }
+        ensureUniqueStorage()
+        destination.storage = storage
+        lazy.assign(to: &destination)
+    }
+
     func value(index0: Int, index1: Int) -> Scalar {
         storage.elements[offset + index0 * strides[0] + index1 * strides[1]]
+    }
+
+    func storageIndex(forUncheckedIndex index: [Int]) -> Int {
+        var linearIndex = offset
+        for dimension in 0..<rank {
+            linearIndex += index[dimension] * strides[dimension]
+        }
+        return linearIndex
     }
 
     mutating func setValue(_ value: Scalar, index0: Int, index1: Int) {
@@ -198,7 +217,7 @@ extension TensorFlatView {
         elements.reserveCapacity(count)
         var index = Array(repeating: 0, count: rank)
         for _ in 0..<count {
-            elements.append(storage.elements[linearIndex(forUncheckedIndex: index)])
+            elements.append(storage.elements[storageIndex(forUncheckedIndex: index)])
             Self.increment(&index, shape: shape)
         }
         return elements
@@ -216,8 +235,8 @@ extension TensorFlatView {
         }
         var index = Array(repeating: 0, count: destination.rank)
         for _ in 0..<destination.count {
-            let element = replacement.storage.elements[replacement.linearIndex(forUncheckedIndex: index)]
-            storage[destination.linearIndex(forUncheckedIndex: index)] = element
+            let element = replacement.storage.elements[replacement.storageIndex(forUncheckedIndex: index)]
+            storage[destination.storageIndex(forUncheckedIndex: index)] = element
             Self.increment(&index, shape: destination.shape)
         }
     }
@@ -254,14 +273,6 @@ extension TensorFlatView {
                 }
             }
         }
-    }
-
-    private func linearIndex(forUncheckedIndex index: [Int]) -> Int {
-        var linearIndex = offset
-        for dimension in 0..<rank {
-            linearIndex += index[dimension] * strides[dimension]
-        }
-        return linearIndex
     }
 
     private static func increment(_ index: inout [Int], shape: [Int]) {
