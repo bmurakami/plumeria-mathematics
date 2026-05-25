@@ -5,6 +5,7 @@
 __pycache__/
 .github/
 dist/
+Package.resolved
 CLAUDE.md
 AGENTS.md
 ARCHITECTURE.md
