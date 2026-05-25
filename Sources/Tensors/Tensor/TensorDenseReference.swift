@@ -35,6 +35,21 @@ extension TensorDenseReference: TensorStructure {
 extension TensorDenseReference {
     public func flatten() -> [S] { elements }
 
+    public func asScalar() -> S {
+        precondition(rank == 0, "Scalar extraction requires rank 0")
+        return self[[]]
+    }
+
+    public func asVector() -> VectorDenseReference<S> {
+        precondition(rank == 1, "Vector extraction requires rank 1")
+        return VectorDenseReference(elements)
+    }
+
+    public func asMatrix() -> MatrixDenseReference<S> {
+        precondition(rank == 2, "Matrix extraction requires rank 2")
+        return MatrixDenseReference(rows: shape[0], columns: shape[1], values: elements)
+    }
+
     public subscript(_ indices: [Int]) -> S {
         get {
             precondition(indices.count == rank, "Tensor index rank must match tensor rank")
