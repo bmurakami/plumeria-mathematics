@@ -18,8 +18,20 @@ public func solveLinearDense(
 }
 
 public func solveLinearDense(
+    _ A: MatrixDenseBLAS<Float>, _ b: VectorDenseBLAS<Float>, blasImplementation: BLAS = .default
+) -> VectorDenseBLAS<Float> {
+    solveLinearDenseBLAS(A, b, blasImplementation: blasImplementation)
+}
+
+public func solveLinearDense(
     _ A: MatrixDenseBLAS<ComplexDouble>, _ b: VectorDenseBLAS<ComplexDouble>, blasImplementation: BLAS = .default
 ) -> VectorDenseBLAS<ComplexDouble> {
+    solveLinearDenseBLAS(A, b, blasImplementation: blasImplementation)
+}
+
+public func solveLinearDense(
+    _ A: MatrixDenseBLAS<ComplexFloat>, _ b: VectorDenseBLAS<ComplexFloat>, blasImplementation: BLAS = .default
+) -> VectorDenseBLAS<ComplexFloat> {
     solveLinearDenseBLAS(A, b, blasImplementation: blasImplementation)
 }
 
@@ -64,6 +76,20 @@ public func solveLinearDenseBLAS<M: PluMatrix, V: PluVector>(_ A: M, _ b: V, bla
     var x: [V.S]
 
     switch V.S.self {
+    case is Float.Type:
+        var AArray = A.flatten() as! [Float]
+        var bArray = b.toArray() as! [Float]
+
+        switch blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate:
+            let _ = AccelerateOperations.sgesv(Int32(n), &AArray, &bArray)
+            x = bArray as! [V.S]
+        #endif
+        case .openBLAS:
+            let _ = OpenBLASOperations.sgesv(Int32(n), &AArray, &bArray)
+            x = bArray as! [V.S]
+        }
     case is Double.Type:
         var AArray = A.flatten() as! [Double]
         var bArray = b.toArray() as! [Double]
@@ -93,6 +119,21 @@ public func solveLinearDenseBLAS<M: PluMatrix, V: PluVector>(_ A: M, _ b: V, bla
             x = BLASComplexStorage.complexValues(bArray) as! [V.S]
         }
 
+    case is ComplexFloat.Type:
+        var AArray = BLASComplexStorage.interleaved(A.flatten() as! [ComplexFloat])
+        var bArray = BLASComplexStorage.interleaved(b.toArray() as! [ComplexFloat])
+
+        switch blasImplementation {
+        #if canImport(Accelerate)
+        case .accelerate:
+            let _ = AccelerateOperations.cgesv(Int32(n), &AArray, &bArray)
+            x = BLASComplexStorage.complexValues(bArray) as! [V.S]
+        #endif
+        case .openBLAS:
+            let _ = OpenBLASOperations.cgesv(Int32(n), &AArray, &bArray)
+            x = BLASComplexStorage.complexValues(bArray) as! [V.S]
+        }
+
     default:
         fatalError("Unsupported scalar type")
     }
@@ -113,6 +154,18 @@ public func solveLinearDenseBLAS(
 }
 
 public func solveLinearDenseBLAS(
+    _ A: MatrixDenseBLAS<Float>, _ b: VectorDenseBLAS<Float>, blasImplementation: BLAS = .default
+) -> VectorDenseBLAS<Float> {
+    precondition(A.rows == A.columns, "A must be square")
+    precondition(A.columns == b.size, "Number of columns in A must equal size of b")
+    var matrix = A.flatten()
+    var rhs = b.elements
+    let info = solveFloatLinearSystem(Int32(b.size), &matrix, &rhs, blasImplementation: blasImplementation)
+    precondition(info == 0, "LAPACK linear solve failed with info \(info)")
+    return VectorDenseBLAS(rhs)
+}
+
+public func solveLinearDenseBLAS(
     _ A: MatrixDenseBLAS<ComplexDouble>, _ b: VectorDenseBLAS<ComplexDouble>, blasImplementation: BLAS = .default
 ) -> VectorDenseBLAS<ComplexDouble> {
     precondition(A.rows == A.columns, "A must be square")
@@ -124,6 +177,29 @@ public func solveLinearDenseBLAS(
     return VectorDenseBLAS(BLASComplexStorage.complexValues(rhs))
 }
 
+public func solveLinearDenseBLAS(
+    _ A: MatrixDenseBLAS<ComplexFloat>, _ b: VectorDenseBLAS<ComplexFloat>, blasImplementation: BLAS = .default
+) -> VectorDenseBLAS<ComplexFloat> {
+    precondition(A.rows == A.columns, "A must be square")
+    precondition(A.columns == b.size, "Number of columns in A must equal size of b")
+    var matrix = BLASComplexStorage.interleaved(A.flatten())
+    var rhs = BLASComplexStorage.interleaved(b.elements)
+    let info = solveComplexFloatLinearSystem(Int32(b.size), &matrix, &rhs, blasImplementation: blasImplementation)
+    precondition(info == 0, "LAPACK linear solve failed with info \(info)")
+    return VectorDenseBLAS(BLASComplexStorage.complexValues(rhs))
+}
+
+private func solveFloatLinearSystem(
+    _ n: Int32, _ matrix: inout [Float], _ rhs: inout [Float], blasImplementation: BLAS
+) -> Int32 {
+    switch blasImplementation {
+    #if canImport(Accelerate)
+    case .accelerate: AccelerateOperations.sgesv(n, &matrix, &rhs)
+    #endif
+    case .openBLAS: OpenBLASOperations.sgesv(n, &matrix, &rhs)
+    }
+}
+
 private func solveDoubleLinearSystem(
     _ n: Int32, _ matrix: inout [Double], _ rhs: inout [Double], blasImplementation: BLAS
 ) -> Int32 {
@@ -132,6 +208,17 @@ private func solveDoubleLinearSystem(
     case .accelerate: AccelerateOperations.dgesv(n, &matrix, &rhs)
     #endif
     case .openBLAS: OpenBLASOperations.dgesv(n, &matrix, &rhs)
+    }
+}
+
+private func solveComplexFloatLinearSystem(
+    _ n: Int32, _ matrix: inout [Float], _ rhs: inout [Float], blasImplementation: BLAS
+) -> Int32 {
+    switch blasImplementation {
+    #if canImport(Accelerate)
+    case .accelerate: AccelerateOperations.cgesv(n, &matrix, &rhs)
+    #endif
+    case .openBLAS: OpenBLASOperations.cgesv(n, &matrix, &rhs)
     }
 }
 

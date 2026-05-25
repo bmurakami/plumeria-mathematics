@@ -495,6 +495,17 @@ public enum OpenBLASOperations {
         return info
     }
 
+    public static func sgesv(_ n: Int32, _ a: inout [Float], _ b: inout [Float]) -> Int32 {
+        var nMutable = n
+        var nrhs = Int32(1)
+        var lda = n
+        var ipiv = Array<Int32>(repeating: 0, count: Int(n))
+        var ldb = n
+        var info = Int32(0)
+        COpenBLAS.sgesv_(&nMutable, &nrhs, &a, &lda, &ipiv, &b, &ldb, &info)
+        return info
+    }
+
     public static func dgesv(_ n: Int32, _ a: UnsafeMutablePointer<Double>, _ b: UnsafeMutablePointer<Double>)
         -> Int32 {
         var nMutable = n
@@ -528,6 +539,25 @@ public enum OpenBLASOperations {
         _ = a.withUnsafeMutableBufferPointer { a in
             b.withUnsafeMutableBufferPointer { b in
                 COpenBLAS.zgesv_(
+                    &nMutable, &nrhs,
+                    OpaquePointer(UnsafeMutableRawPointer(a.baseAddress!)), &lda, &ipiv,
+                    OpaquePointer(UnsafeMutableRawPointer(b.baseAddress!)), &ldb, &info
+                )
+            }
+        }
+        return info
+    }
+
+    public static func cgesv(_ n: Int32, _ a: inout [Float], _ b: inout [Float]) -> Int32 {
+        var nMutable = n
+        var nrhs = Int32(1)
+        var lda = n
+        var ipiv = Array<Int32>(repeating: 0, count: Int(n))
+        var ldb = n
+        var info = Int32(0)
+        _ = a.withUnsafeMutableBufferPointer { a in
+            b.withUnsafeMutableBufferPointer { b in
+                COpenBLAS.cgesv_(
                     &nMutable, &nrhs,
                     OpaquePointer(UnsafeMutableRawPointer(a.baseAddress!)), &lda, &ipiv,
                     OpaquePointer(UnsafeMutableRawPointer(b.baseAddress!)), &ldb, &info

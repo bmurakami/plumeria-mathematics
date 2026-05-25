@@ -63,6 +63,20 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
     solveLinearDense_correctness_smallMatrices(matrixType: MatrixDenseBLAS<Double>.self)
 }
 
+@Test func solveLinearDense_floatBLAS() {
+    let A = MatrixDenseBLAS<Float>([[2.0, -1.0, 1.0], [1.0, 2.0, -1.0], [1.0, 1.0, -4.0]])
+    let b = VectorDenseBLAS<Float>([3.0, 2.0, -9.0])
+    let expected = VectorDenseBLAS<Float>([1.0, 2.0, 3.0])
+    let actual = solveLinearDense(A, b)
+
+    #expect(actual.isApproximatelyEqual(to: expected, relativeTolerance: 1e-5))
+
+    #if canImport(Accelerate)
+    let accelerate = solveLinearDense(A, b, blasImplementation: .accelerate)
+    #expect(accelerate.isApproximatelyEqual(to: expected, relativeTolerance: 1e-5))
+    #endif
+}
+
 @Test func solveLinearDense_complexBLAS() {
     let A = MatrixDenseBLAS<ComplexDouble>([[ComplexDouble(1.0, 0.0), ComplexDouble(0.0, 1.0)],
                                       [ComplexDouble(2.0, -1.0), ComplexDouble(1.0, 1.0)]])
@@ -75,6 +89,21 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
     #if canImport(Accelerate)
     let accelerate = solveLinearDense(A, b, blasImplementation: .accelerate)
     #expect(accelerate.isApproximatelyEqual(to: expected, relativeTolerance: 1e-12))
+    #endif
+}
+
+@Test func solveLinearDense_complexFloatBLAS() {
+    let A = MatrixDenseBLAS<ComplexFloat>([[ComplexFloat(1.0, 0.0), ComplexFloat(0.0, 1.0)],
+                                           [ComplexFloat(2.0, -1.0), ComplexFloat(1.0, 1.0)]])
+    let b = VectorDenseBLAS<ComplexFloat>([ComplexFloat(2.0, 3.0), ComplexFloat(6.0, 2.0)])
+    let expected = VectorDenseBLAS<ComplexFloat>([ComplexFloat(1.0, 1.0), ComplexFloat(2.0, -1.0)])
+    let actual = solveLinearDense(A, b)
+
+    #expect(actual.isApproximatelyEqual(to: expected, relativeTolerance: 1e-5))
+
+    #if canImport(Accelerate)
+    let accelerate = solveLinearDense(A, b, blasImplementation: .accelerate)
+    #expect(accelerate.isApproximatelyEqual(to: expected, relativeTolerance: 1e-5))
     #endif
 }
 
