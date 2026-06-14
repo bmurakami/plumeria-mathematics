@@ -41,14 +41,14 @@ extension TensorArithmeticReference {
         return result
     }
 
-    public func isApproximatelyEqual(
+    public func isClose(
         to other: Self,
         relativeTolerance: S.Magnitude = S.Magnitude.ulpOfOne.squareRoot(),
         norm: (Self) -> S.Magnitude = { _ in .zero }
     ) -> Bool {
         guard shape == other.shape else { return false }
         for index in Self.indexCombinations(for: shape) {
-            if !self[index].isApproximatelyEqual(to: other[index], relativeTolerance: relativeTolerance) {
+            if !self[index].isClose(to: other[index], relativeTolerance: relativeTolerance) {
                 return false
             }
         }

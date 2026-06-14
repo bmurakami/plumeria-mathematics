@@ -86,11 +86,11 @@ public func solveLinearDenseBLAS<M: PluMatrix, V: PluVector>(_ A: M, _ b: V, bla
         #if canImport(Accelerate)
         case .accelerate:
             let _ = AccelerateOperations.zgesv(Int32(n), &AArray, &bArray)
-            x = BLASComplexStorage.complexValues(bArray) as! [V.S]
+            x = BLASComplexStorage.toComplex(bArray) as! [V.S]
         #endif
         case .openBLAS:
             let _ = OpenBLASOperations.zgesv(Int32(n), &AArray, &bArray)
-            x = BLASComplexStorage.complexValues(bArray) as! [V.S]
+            x = BLASComplexStorage.toComplex(bArray) as! [V.S]
         }
 
     default:
@@ -121,7 +121,7 @@ public func solveLinearDenseBLAS(
     var rhs = BLASComplexStorage.interleaved(b.elements)
     let info = solveComplexDoubleLinearSystem(Int32(b.size), &matrix, &rhs, blasImplementation: blasImplementation)
     precondition(info == 0, "LAPACK linear solve failed with info \(info)")
-    return VectorDenseBLAS(BLASComplexStorage.complexValues(rhs))
+    return VectorDenseBLAS(BLASComplexStorage.toComplex(rhs))
 }
 
 private func solveDoubleLinearSystem(

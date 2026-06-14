@@ -73,9 +73,11 @@ extension PluScalar {
     public func isClose(
         to other: Self,
         relativeTolerance: Magnitude = Magnitude.ulpOfOne.squareRoot(),
-        norm: (Self) -> Magnitude = { _ in .zero }
+        norm _: (Self) -> Magnitude = { _ in .zero }
     ) -> Bool {
-        isApproximatelyEqual(to: other, relativeTolerance: relativeTolerance)
+        let difference = (self - other).magnitude
+        if difference == .zero { return true }
+        return difference <= relativeTolerance * max(magnitude, other.magnitude)
     }
 
     public func round() -> Self {

@@ -297,7 +297,7 @@ extension MatrixDenseBLAS {
             case .openBLAS:
                 OpenBLASOperations.zgemv(Int32(rows), Int32(columns), &A, &x, &y)
             }
-            return V(BLASComplexStorage.complexValues(y) as! [S])
+            return V(BLASComplexStorage.toComplex(y) as! [S])
         case is ComplexFloat.Type:
             var A = BLASComplexStorage.interleaved(flatten() as! [ComplexFloat])
             var x = BLASComplexStorage.interleaved(v.toArray(round: false) as! [ComplexFloat])
@@ -310,7 +310,7 @@ extension MatrixDenseBLAS {
             case .openBLAS:
                 OpenBLASOperations.cgemv(Int32(rows), Int32(columns), &A, &x, &y)
             }
-            return V(BLASComplexStorage.complexValues(y) as! [S])
+            return V(BLASComplexStorage.toComplex(y) as! [S])
         default:
             fatalError("Unsupported scalar type")
         }
@@ -357,7 +357,7 @@ extension MatrixDenseBLAS {
             case .openBLAS:
                 OpenBLASOperations.zgemm(Int32(rows), Int32(m.columns), Int32(columns), &A, &B, &C)
             }
-            return MatrixDenseBLAS(rows: rows, columns: m.columns, values: BLASComplexStorage.complexValues(C) as! [S])
+            return MatrixDenseBLAS(rows: rows, columns: m.columns, values: BLASComplexStorage.toComplex(C) as! [S])
         case is ComplexFloat.Type:
             var A = BLASComplexStorage.interleaved(flatten() as! [ComplexFloat])
             var B = BLASComplexStorage.interleaved(m.flatten() as! [ComplexFloat])
@@ -370,7 +370,7 @@ extension MatrixDenseBLAS {
             case .openBLAS:
                 OpenBLASOperations.cgemm(Int32(rows), Int32(m.columns), Int32(columns), &A, &B, &C)
             }
-            let values = BLASComplexStorage.complexValues(C) as! [S]
+            let values = BLASComplexStorage.toComplex(C) as! [S]
             return MatrixDenseBLAS(rows: rows, columns: m.columns, values: values)
         default:
             fatalError("Unsupported scalar type")
@@ -1056,7 +1056,7 @@ extension MatrixDenseBLAS {
         let factorization = complexDoubleFactorization()
         precondition(factorization.info >= 0, "LAPACK determinant failed with info \(factorization.info)")
         if factorization.info > 0 { return .zero }
-        let matrix = BLASComplexStorage.complexValues(factorization.matrix) as [ComplexDouble]
+        let matrix = BLASComplexStorage.toComplex(factorization.matrix) as [ComplexDouble]
         return luDeterminant(from: matrix, pivots: factorization.pivots, one: ComplexDouble(1.0, 0.0))
     }
 
@@ -1064,7 +1064,7 @@ extension MatrixDenseBLAS {
         let factorization = complexFloatFactorization()
         precondition(factorization.info >= 0, "LAPACK determinant failed with info \(factorization.info)")
         if factorization.info > 0 { return .zero }
-        let matrix = BLASComplexStorage.complexValues(factorization.matrix) as [ComplexFloat]
+        let matrix = BLASComplexStorage.toComplex(factorization.matrix) as [ComplexFloat]
         return luDeterminant(from: matrix, pivots: factorization.pivots, one: ComplexFloat(1.0, 0.0))
     }
 
@@ -1106,7 +1106,7 @@ extension MatrixDenseBLAS {
         let info = complexDoubleGetri(Int32(rows), &factorization.matrix, factorization.pivots)
         precondition(info == 0, "LAPACK inverse failed with info \(info)")
         return MatrixDenseBLAS<ComplexDouble>(rows: rows, columns: columns,
-                                              values: BLASComplexStorage.complexValues(factorization.matrix))
+                                              values: BLASComplexStorage.toComplex(factorization.matrix))
     }
 
     private func complexFloatInverse() -> MatrixDenseBLAS<ComplexFloat> {
@@ -1115,7 +1115,7 @@ extension MatrixDenseBLAS {
         let info = complexFloatGetri(Int32(rows), &factorization.matrix, factorization.pivots)
         precondition(info == 0, "LAPACK inverse failed with info \(info)")
         return MatrixDenseBLAS<ComplexFloat>(rows: rows, columns: columns,
-                                             values: BLASComplexStorage.complexValues(factorization.matrix))
+                                             values: BLASComplexStorage.toComplex(factorization.matrix))
     }
 
     private func doubleGetrf(_ n: Int32, _ matrix: inout [Double]) -> (pivots: [Int32], info: Int32) {

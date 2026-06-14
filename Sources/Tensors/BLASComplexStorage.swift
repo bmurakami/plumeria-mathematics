@@ -104,7 +104,7 @@ public enum BLASComplexStorage {
         return interleaved
     }
 
-    public static func complexValues<RealType: Real>(_ values: [RealType]) -> [Numerics.Complex<RealType>] {
+    public static func toComplex<RealType: Real>(_ values: [RealType]) -> [Numerics.Complex<RealType>] {
         var complex = Array(repeating: Numerics.Complex<RealType>.zero, count: values.count / 2)
         for index in 0..<complex.count { complex[index] = Numerics.Complex(values[2 * index], values[2 * index + 1]) }
         return complex

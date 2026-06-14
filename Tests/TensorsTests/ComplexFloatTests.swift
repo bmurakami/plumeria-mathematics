@@ -8,7 +8,7 @@ import Testing
     #expect(value.round(precision: 2) == ComplexFloat(1.23, -2.35))
     #expect(ComplexFloat.i == ComplexFloat(0.0, 1.0))
     #expect(ComplexFloat(1.0, 2.0).star == ComplexFloat(1.0, -2.0))
-    #expect(ComplexFloat(3.0, 4.0).mod.isApproximatelyEqual(to: 5.0, relativeTolerance: 1e-6))
+    #expect(ComplexFloat(3.0, 4.0).mod.isClose(to: 5.0, relativeTolerance: 1e-6))
     #expect((Float(2.0) + ComplexFloat(1.0, -3.0)) == ComplexFloat(3.0, -3.0))
 }
 
@@ -36,7 +36,7 @@ private func checkComplexFloatVector<V: PluVector>(_ type: V.Type) where V.S == 
     let u = V([ComplexFloat(3.0, 4.0), ComplexFloat(0.0, 12.0)])
     let v = V([ComplexFloat(1.0, -1.0), ComplexFloat(2.0, 0.0)])
 
-    #expect(u.magnitude().isApproximatelyEqual(to: 13.0, relativeTolerance: 1e-6))
+    #expect(u.magnitude().isClose(to: 13.0, relativeTolerance: 1e-6))
     #expect((u + v).toArray() == [ComplexFloat(4.0, 3.0), ComplexFloat(2.0, 12.0)])
     #expect((u * ComplexFloat(0.0, 1.0)).toArray() == [ComplexFloat(-4.0, 3.0), ComplexFloat(-12.0, 0.0)])
     #expect((u / ComplexFloat(2.0, 0.0)).toArray() == [ComplexFloat(1.5, 2.0), ComplexFloat(0.0, 6.0)])
