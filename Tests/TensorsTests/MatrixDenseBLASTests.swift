@@ -49,6 +49,30 @@ import Testing
     #expect(result.toArray() == [[10.0, 10.0], [10.0, 10.0]])
 }
 
+@Test func MatrixDense_BLAS_lazyDuplicateTermsCancelOnMaterialization() {
+    let a = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+    let b = MatrixDenseBLAS<Double>([[9.0, 8.0, 7.0], [6.0, 5.0, 4.0], [3.0, 2.0, 1.0]])
+    let aSlice = a[1..<3, 1..<3]
+    let bSlice = b[1..<3, 1..<3]
+    let result = aSlice + bSlice - bSlice
+
+    #expect(result.lazy != nil)
+    if let lazy = result.lazy {
+        #expect(LazyMatrix<Double>.normalized(lazy.terms).count == 1)
+    }
+    #expect(result.toArray() == aSlice.toArray())
+}
+
+@Test func MatrixDense_BLAS_lazyDuplicateTermsCancelOnSliceAssignment() {
+    let a = MatrixDenseBLAS<Double>([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+    let b = MatrixDenseBLAS<Double>([[9.0, 8.0, 7.0], [6.0, 5.0, 4.0], [3.0, 2.0, 1.0]])
+    var destination = MatrixDenseBLAS<Double>(rows: 3, columns: 3)
+
+    destination[1..<3, 1..<3] = a[1..<3, 1..<3] + b[1..<3, 1..<3] - b[1..<3, 1..<3]
+
+    #expect(destination.toArray() == [[0.0, 0.0, 0.0], [0.0, 5.0, 6.0], [0.0, 8.0, 9.0]])
+}
+
 @Test func MatrixDense_BLAS_shapeBasedAccess() {
     var m = MatrixDenseBLAS<Double>(shape: [2, 3], elements: [1.0, 4.0, 2.0, 5.0, 3.0, 6.0])
 

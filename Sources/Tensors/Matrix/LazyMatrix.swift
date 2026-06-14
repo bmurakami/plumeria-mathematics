@@ -36,21 +36,58 @@ struct LazyMatrix<S: PluScalar> {
     }
 
     func materializedElements(rows: Int, columns: Int) -> [S] {
+        let terms = Self.normalized(terms)
         var elements = Array(repeating: S.zero, count: rows * columns)
         for column in 0..<columns {
             let resultColumn = column * rows
-            for row in 0..<rows { elements[resultColumn + row] = value(row: row, column: column) }
+            for row in 0..<rows { elements[resultColumn + row] = value(row: row, column: column, terms: terms) }
         }
         return elements
     }
 
     func assign(to destination: inout TensorFlatView<S>) {
+        assign(terms: Self.normalized(terms), to: &destination)
+    }
+
+    private func assign(terms: [Term], to destination: inout TensorFlatView<S>) {
         for column in 0..<destination.shape[1] {
             let destinationColumn = destination.offset + column * destination.strides[1]
             for row in 0..<destination.shape[0] {
-                destination.storage[destinationColumn + row * destination.strides[0]] = value(row: row, column: column)
+                var result = S.zero
+                for term in terms {
+                    let index = term.view.offset + row * term.view.strides[0] + column * term.view.strides[1]
+                    result += term.coefficient * term.view.storage.elements[index]
+                }
+                destination.storage[destinationColumn + row * destination.strides[0]] = result
             }
         }
+    }
+
+    static func normalized(_ terms: [Term]) -> [Term] {
+        var normalized: [Term] = []
+        for term in terms {
+            if term.coefficient == S.zero { continue }
+            if let index = normalized.firstIndex(where: { $0.view.sameStorageRegion(as: term.view) }) {
+                let coefficient = normalized[index].coefficient + term.coefficient
+                if coefficient == S.zero {
+                    normalized.remove(at: index)
+                } else {
+                    normalized[index] = Term(coefficient: coefficient, view: normalized[index].view)
+                }
+            } else {
+                normalized.append(term)
+            }
+        }
+        return normalized
+    }
+
+    private func value(row: Int, column: Int, terms: [Term]) -> S {
+        var result = S.zero
+        for term in terms {
+            let index = term.view.offset + row * term.view.strides[0] + column * term.view.strides[1]
+            result += term.coefficient * term.view.storage.elements[index]
+        }
+        return result
     }
 }
 
@@ -60,6 +97,15 @@ extension LazyMatrix where S == Double {
             assignSevenTerms(to: &destination)
             return
         }
+        let terms = Self.normalized(terms)
+        if destination.strides[0] == 1 && terms.allSatisfy({ $0.view.strides[0] == 1 }) {
+            assignRowContiguousTerms(terms, to: &destination)
+            return
+        }
+        assignGenericTerms(terms, to: &destination)
+    }
+
+    private func assignGenericTerms(_ terms: [Term], to destination: inout TensorFlatView<Double>) {
         let termData = terms.map {
             (
                 coefficient: $0.coefficient, elements: $0.view.storage.elements, offset: $0.view.offset,
@@ -75,6 +121,56 @@ extension LazyMatrix where S == Double {
                     result += term.coefficient * term.elements[index]
                 }
                 destination.storage.elements[destinationColumn + row * destination.strides[0]] = result
+            }
+        }
+    }
+
+    private func assignRowContiguousTerms(_ terms: [Term], to destination: inout TensorFlatView<Double>) {
+        if terms.allSatisfy({ $0.view.storage !== destination.storage }) {
+            assignDistinctRowContiguousTerms(terms, to: &destination)
+            return
+        }
+        let termData = terms.map {
+            (
+                coefficient: $0.coefficient, elements: $0.view.storage.elements, offset: $0.view.offset,
+                columnStride: $0.view.strides[1]
+            )
+        }
+        for column in 0..<destination.shape[1] {
+            var d = destination.offset + column * destination.strides[1]
+            var indices = termData.map { $0.offset + column * $0.columnStride }
+            for _ in 0..<destination.shape[0] {
+                var result = 0.0
+                for termIndex in termData.indices {
+                    result += termData[termIndex].coefficient * termData[termIndex].elements[indices[termIndex]]
+                    indices[termIndex] += 1
+                }
+                destination.storage.elements[d] = result
+                d += 1
+            }
+        }
+    }
+
+    private func assignDistinctRowContiguousTerms(_ terms: [Term], to destination: inout TensorFlatView<Double>) {
+        let termData = terms.map {
+            (
+                coefficient: $0.coefficient, elements: $0.view.storage.elements, offset: $0.view.offset,
+                columnStride: $0.view.strides[1]
+            )
+        }
+        destination.storage.elements.withUnsafeMutableBufferPointer { destinationElements in
+            for column in 0..<destination.shape[1] {
+                var d = destination.offset + column * destination.strides[1]
+                var indices = termData.map { $0.offset + column * $0.columnStride }
+                for _ in 0..<destination.shape[0] {
+                    var result = 0.0
+                    for termIndex in termData.indices {
+                        result += termData[termIndex].coefficient * termData[termIndex].elements[indices[termIndex]]
+                        indices[termIndex] += 1
+                    }
+                    destinationElements[d] = result
+                    d += 1
+                }
             }
         }
     }
