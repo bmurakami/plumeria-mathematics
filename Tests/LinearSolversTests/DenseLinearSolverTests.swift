@@ -69,11 +69,11 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
     let expected = VectorDenseBLAS<Float>([1.0, 2.0, 3.0])
     let actual = solveLinearDense(A, b)
 
-    #expect(actual.isApproximatelyEqual(to: expected, relativeTolerance: 1e-5))
+    #expect(actual.isClose(to: expected, relativeTolerance: 1e-5))
 
     #if canImport(Accelerate)
     let accelerate = solveLinearDense(A, b, blasImplementation: .accelerate)
-    #expect(accelerate.isApproximatelyEqual(to: expected, relativeTolerance: 1e-5))
+    #expect(accelerate.isClose(to: expected, relativeTolerance: 1e-5))
     #endif
 }
 
@@ -99,11 +99,11 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
     let expected = VectorDenseBLAS<ComplexFloat>([ComplexFloat(1.0, 1.0), ComplexFloat(2.0, -1.0)])
     let actual = solveLinearDense(A, b)
 
-    #expect(actual.isApproximatelyEqual(to: expected, relativeTolerance: 1e-5))
+    #expect(actual.isClose(to: expected, relativeTolerance: 1e-5))
 
     #if canImport(Accelerate)
     let accelerate = solveLinearDense(A, b, blasImplementation: .accelerate)
-    #expect(accelerate.isApproximatelyEqual(to: expected, relativeTolerance: 1e-5))
+    #expect(accelerate.isClose(to: expected, relativeTolerance: 1e-5))
     #endif
 }
 
