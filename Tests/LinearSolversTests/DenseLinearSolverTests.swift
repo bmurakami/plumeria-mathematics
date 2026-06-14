@@ -15,7 +15,7 @@ import Tensors
     let v_actual = solveLinearDense(A, b)
     let v_expected = VectorDenseReference([1.0, 2, 3])
 
-    #expect(v_actual.isApproximatelyEqual(to: v_expected))
+    #expect(v_actual.isClose(to: v_expected))
 }
 
 @Test func solveLinearDenseReference_exampleUsage() throws {
@@ -24,7 +24,7 @@ import Tensors
     let actual = solveLinearDenseReference(A, b)
     let expected = VectorDenseReference([1.0, 2, 3])
 
-    #expect(actual.isApproximatelyEqual(to: expected))
+    #expect(actual.isClose(to: expected))
 }
 
 func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixType: MatrixType.Type) where MatrixType.S == Double {
@@ -34,7 +34,7 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
         let b = makeVector(size: n)
         let v = solveLinearDense(A, b)
 
-        #expect((A * v).isApproximatelyEqual(to: b, relativeTolerance: 1e-12))
+        #expect((A * v).isClose(to: b, relativeTolerance: 1e-12))
     }
 }
 
@@ -46,8 +46,8 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
     let b3 = VectorDenseReference([3.0, 2, -9])
     let x3 = VectorDenseReference([1.0, 2, 3])
 
-    #expect(solveLinearDenseReference(A2, b2).isApproximatelyEqual(to: x2))
-    #expect(solveLinearDenseReference(A3, b3).isApproximatelyEqual(to: x3))
+    #expect(solveLinearDenseReference(A2, b2).isClose(to: x2))
+    #expect(solveLinearDenseReference(A3, b3).isClose(to: x3))
 }
 
 @Test func solveLinearDenseReference_pivotsRows() {
@@ -55,7 +55,7 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
     let b = VectorDenseReference([-2.0, 2.0])
     let expected = VectorDenseReference([3.0, -1.0])
 
-    #expect(solveLinearDenseReference(A, b).isApproximatelyEqual(to: expected))
+    #expect(solveLinearDenseReference(A, b).isClose(to: expected))
 }
 
 @Test func solveLinearDense_correctness_smallMatrices_BLAS() {
@@ -84,11 +84,11 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
     let expected = VectorDenseReference<ComplexDouble>([ComplexDouble(1.0, 1.0), ComplexDouble(2.0, -1.0)])
     let actual = solveLinearDense(A, b)
 
-    #expect(actual.isApproximatelyEqual(to: expected, relativeTolerance: 1e-12))
+    #expect(actual.isClose(to: expected, relativeTolerance: 1e-12))
 
     #if canImport(Accelerate)
     let accelerate = solveLinearDense(A, b, blasImplementation: .accelerate)
-    #expect(accelerate.isApproximatelyEqual(to: expected, relativeTolerance: 1e-12))
+    #expect(accelerate.isClose(to: expected, relativeTolerance: 1e-12))
     #endif
 }
 
@@ -114,7 +114,7 @@ func solveLinearDense_correctness_smallMatrices<MatrixType: PluMatrix>(matrixTyp
     let expected = VectorDenseReference<ComplexDouble>([ComplexDouble(1.0, 1.0), ComplexDouble(2.0, -1.0)])
     let actual = solveLinearDenseReference(A, b)
 
-    #expect(actual.isApproximatelyEqual(to: expected, relativeTolerance: 1e-12))
+    #expect(actual.isClose(to: expected, relativeTolerance: 1e-12))
 }
 
 func solveLinearDenseBLAS_correctness_largeMatrices() {
@@ -124,7 +124,7 @@ func solveLinearDenseBLAS_correctness_largeMatrices() {
         let b = makeVector(size: n)
         let v = solveLinearDense(A, b)
 
-        #expect((A * v).isApproximatelyEqual(to: b, relativeTolerance: 1e-8))
+        #expect((A * v).isClose(to: b, relativeTolerance: 1e-8))
     }
 }
 

@@ -16,9 +16,9 @@ import Testing
     #expect(-a == ComplexDouble(-1.2, 2.3))
     #expect(a+b == ComplexDouble(4.6, 3.3))
     #expect(a+b == b+a)
-    #expect((a-b).isApproximatelyEqual(to: ComplexDouble(-2.2, -7.9)))
-    #expect((a*b).isApproximatelyEqual(to: ComplexDouble(16.96, -1.1)))
-    #expect((a/b).isApproximatelyEqual(to: ComplexDouble(-0.20503261882572227, -0.3387698042870456)))
+    #expect((a-b).isClose(to: ComplexDouble(-2.2, -7.9)))
+    #expect((a*b).isClose(to: ComplexDouble(16.96, -1.1)))
+    #expect((a/b).isClose(to: ComplexDouble(-0.20503261882572227, -0.3387698042870456)))
 }
 
 @Test func Complex_mixedRealArithmetic() {
@@ -30,8 +30,8 @@ import Testing
     #expect(z - 5.0 == ComplexDouble(-2.0, -2.0))
     #expect(5.0 * z == ComplexDouble(15.0, -10.0))
     #expect(z * 5.0 == ComplexDouble(15.0, -10.0))
-    #expect((5.0 / z).isApproximatelyEqual(to: ComplexDouble(15.0/13.0, 10.0/13.0)))
-    #expect((z / 5.0).isApproximatelyEqual(to: ComplexDouble(0.6, -0.4)))
+    #expect((5.0 / z).isClose(to: ComplexDouble(15.0/13.0, 10.0/13.0)))
+    #expect((z / 5.0).isClose(to: ComplexDouble(0.6, -0.4)))
 }
 
 @Test func Complex_plumeriaScalarProperties() {
@@ -40,7 +40,7 @@ import Testing
     #expect(ComplexDouble.i == ComplexDouble(0.0, 1.0))
     #expect(z.star == ComplexDouble(3.0, -4.0))
     #expect(z.mod == 5.0)
-    #expect(z.arg.isApproximatelyEqual(to: 0.9272952180016122, relativeTolerance: 1e-15))
+    #expect(z.arg.isClose(to: 0.9272952180016122, relativeTolerance: 1e-15))
 }
 
 @Test func Complex_imaginaryUnitSupportsLocalMathNotation() {

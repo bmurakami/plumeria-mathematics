@@ -11,8 +11,8 @@ extension MatrixArithmetic where Self: PluMatrix {
     public var tr: S {
         precondition(rows == columns, "Trace requires a square matrix")
         var sum = S.zero
-        for index in 0..<rows {
-            sum += self[index, index]
+        for i in 0..<rows {
+            sum += self[i, i]
         }
         return sum
     }

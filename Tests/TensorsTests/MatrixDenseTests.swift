@@ -89,10 +89,10 @@ enum MatrixImplementation: CaseIterable, CustomStringConvertible {
         }
     }
 
-    func checkApproximatelyEqual() {
+    func checkClose() {
         switch self {
-        case .reference: verifyApproximatelyEqual(MatrixDenseReference<Double>.self)
-        case .blas: verifyApproximatelyEqual(MatrixDenseBLAS<Double>.self)
+        case .reference: verifyClose(MatrixDenseReference<Double>.self)
+        case .blas: verifyClose(MatrixDenseBLAS<Double>.self)
         }
     }
 
@@ -167,8 +167,8 @@ func MatrixDense_tensorStructure(implementation: MatrixImplementation) {
 }
 
 @Test(arguments: MatrixImplementation.allCases)
-func MatrixDense_approximatelyEqual(implementation: MatrixImplementation) {
-    implementation.checkApproximatelyEqual()
+func MatrixDense_close(implementation: MatrixImplementation) {
+    implementation.checkClose()
 }
 
 @Test(arguments: MatrixImplementation.allCases)
@@ -207,9 +207,9 @@ private func verifyInitializerWithRowsAndColumns<M: PluMatrix>(_ type: M.Type) w
     var matrix = M(rows: 2, columns: 3, initialValue: .zero)
     #expect(matrix.rows == 2)
     #expect(matrix.columns == 3)
-    for row in 0..<matrix.rows {
-        for column in 0..<matrix.columns {
-            #expect(matrix[row, column] == 0)
+    for i in 0..<matrix.rows {
+        for j in 0..<matrix.columns {
+            #expect(matrix[i, j] == 0)
         }
     }
     matrix[1, 2] = 3.14
@@ -264,9 +264,9 @@ private func verifyComplexMatrixMultiplication<M: PluMatrix>(_ type: M.Type) whe
 private func verifyTranspose<M: PluMatrix>(_ type: M.Type) where M.S == Double {
     let matrix = M([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
     let transposed = matrix.transpose()
-    for row in 0..<transposed.rows {
-        for column in 0..<transposed.columns {
-            #expect(transposed[row, column] == matrix[column, row])
+    for i in 0..<transposed.rows {
+        for j in 0..<transposed.columns {
+            #expect(transposed[i, j] == matrix[j, i])
         }
     }
 }
@@ -289,12 +289,12 @@ private func verifyTensorStructure<M: PluMatrix>(_ type: M.Type) where M.S == Do
     #expect(matrix.rank == 2)
 }
 
-private func verifyApproximatelyEqual<M: PluMatrix>(_ type: M.Type) where M.S == Double {
+private func verifyClose<M: PluMatrix>(_ type: M.Type) where M.S == Double {
     let a = M([[1.0, 2.0], [3.0, 4.0]])
     let b = M([[1.0, 2.0], [3.0, 4.0 + 1e-14]])
     let c = M([[1.0, 2.0], [3.0, 5.0]])
-    #expect(a.isApproximatelyEqual(to: b, relativeTolerance: 1e-12, norm: { _ in 0.0 }))
-    #expect(!a.isApproximatelyEqual(to: c, relativeTolerance: 1e-12, norm: { _ in 0.0 }))
+    #expect(a.isClose(to: b, relativeTolerance: 1e-12))
+    #expect(!a.isClose(to: c, relativeTolerance: 1e-12))
 }
 
 private func verifyArithmetic<M: PluMatrix>(_ type: M.Type) where M.S == Double {

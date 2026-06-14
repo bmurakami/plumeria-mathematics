@@ -24,7 +24,7 @@ extension MatrixFlatView: MatrixView {
     public init(_ values: [[Scalar]]) {
         let rows = values.count
         let columns = values[0].count
-        let elements = (0..<columns).flatMap { column in (0..<rows).map { row in values[row][column] } }
+        let elements = (0..<columns).flatMap { j in (0..<rows).map { i in values[i][j] } }
         self.init(view: TensorFlatView(shape: [rows, columns], elements: elements))
     }
 
@@ -44,9 +44,9 @@ extension MatrixFlatView: MatrixView {
         }
     }
 
-    public subscript(row: Int, column: Int) -> Scalar {
-        get { view[[row, column]] }
-        set { view[[row, column]] = newValue }
+    public subscript(i: Int, j: Int) -> Scalar {
+        get { view[[i, j]] }
+        set { view[[i, j]] = newValue }
     }
 }
 
@@ -70,20 +70,20 @@ extension MatrixFlatView {
         )
     }
 
-    public subscript(row: Int, columns: Range<Int>) -> VectorFlatView<Scalar> {
-        slice(row: row, columns: SliceRange(columns))
+    public subscript(i: Int, columns: Range<Int>) -> VectorFlatView<Scalar> {
+        slice(row: i, columns: SliceRange(columns))
     }
 
-    public subscript(row: Int, columns: TensorSliceIndex) -> VectorFlatView<Scalar> {
-        slice(row: row, columns: columns.sliceRange(dimensionSize: self.columns))
+    public subscript(i: Int, columns: TensorSliceIndex) -> VectorFlatView<Scalar> {
+        slice(row: i, columns: columns.sliceRange(dimensionSize: self.columns))
     }
 
-    public subscript(rows: Range<Int>, column: Int) -> VectorFlatView<Scalar> {
-        slice(rows: SliceRange(rows), column: column)
+    public subscript(rows: Range<Int>, j: Int) -> VectorFlatView<Scalar> {
+        slice(rows: SliceRange(rows), column: j)
     }
 
-    public subscript(rows: TensorSliceIndex, column: Int) -> VectorFlatView<Scalar> {
-        slice(rows: rows.sliceRange(dimensionSize: self.rows), column: column)
+    public subscript(rows: TensorSliceIndex, j: Int) -> VectorFlatView<Scalar> {
+        slice(rows: rows.sliceRange(dimensionSize: self.rows), column: j)
     }
 
     public func slice(rows: SliceRange, columns: SliceRange) -> MatrixFlatView<Scalar> {
@@ -119,7 +119,7 @@ extension MatrixFlatView {
     }
 
     public func toArray() -> [[Scalar]] {
-        (0..<rows).map { row in (0..<columns).map { column in self[row, column] } }
+        (0..<rows).map { i in (0..<columns).map { j in self[i, j] } }
     }
 }
 
@@ -132,10 +132,10 @@ extension MatrixFlatView {
 extension MatrixFlatView {
     private func flattenedFromView(columnMajorOrder: Bool) -> [Scalar] {
         var elements = Array(repeating: Scalar.zero, count: rows * columns)
-        for row in 0..<rows {
-            for column in 0..<columns {
-                let index = columnMajorOrder ? row + rows * column : column + columns * row
-                elements[index] = self[row, column]
+        for i in 0..<rows {
+            for j in 0..<columns {
+                let k = columnMajorOrder ? i + rows * j : j + columns * i
+                elements[k] = self[i, j]
             }
         }
         return elements

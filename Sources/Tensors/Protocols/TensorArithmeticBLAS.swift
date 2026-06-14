@@ -32,14 +32,14 @@ extension TensorArithmeticBLAS {
         return tensor * (one / scalar)
     }
 
-    public func isApproximatelyEqual(
+    public func isClose(
         to other: Self,
         relativeTolerance: S.Magnitude = S.Magnitude.ulpOfOne.squareRoot(),
         norm: (Self) -> S.Magnitude = { _ in .zero }
     ) -> Bool {
         guard shape == other.shape else { return false }
         for (left, right) in zip(elements, other.elements) {
-            if !left.isApproximatelyEqual(to: right, relativeTolerance: relativeTolerance) { return false }
+            if !left.isClose(to: right, relativeTolerance: relativeTolerance) { return false }
         }
         return true
     }
@@ -79,12 +79,12 @@ extension TensorArithmeticBLAS {
             var result = BLASComplexStorage.interleaved(values as! [ComplexDouble])
             var alpha = BLASComplexStorage.interleaved([scalar as! ComplexDouble])
             BLAS.zscal(Int32(values.count), &alpha, &result)
-            return BLASComplexStorage.complexValues(result) as! [S]
+            return BLASComplexStorage.toComplex(result) as! [S]
         case is ComplexFloat.Type:
             var result = BLASComplexStorage.interleaved(values as! [ComplexFloat])
             var alpha = BLASComplexStorage.interleaved([scalar as! ComplexFloat])
             BLAS.cscal(Int32(values.count), &alpha, &result)
-            return BLASComplexStorage.complexValues(result) as! [S]
+            return BLASComplexStorage.toComplex(result) as! [S]
         default:
             fatalError("Unsupported scalar type")
         }

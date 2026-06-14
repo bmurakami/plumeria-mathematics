@@ -46,11 +46,11 @@ extension PluMatrix {
             let rowRange = rows.sliceRange(dimensionSize: self.rows)
             let columnRange = columns.sliceRange(dimensionSize: self.columns)
             var result = Self(rows: rowRange.length, columns: columnRange.length, initialValue: .zero)
-            for row in 0..<rowRange.length {
-                for column in 0..<columnRange.length {
-                    let sourceRow = rowRange.start + row * rowRange.step
-                    let sourceColumn = columnRange.start + column * columnRange.step
-                    result[row, column] = self[sourceRow, sourceColumn]
+            for i in 0..<rowRange.length {
+                for j in 0..<columnRange.length {
+                    let sourceI = rowRange.start + i * rowRange.step
+                    let sourceJ = columnRange.start + j * columnRange.step
+                    result[i, j] = self[sourceI, sourceJ]
                 }
             }
             return result
@@ -63,11 +63,11 @@ extension PluMatrix {
             if let error {
                 preconditionFailure(error)
             }
-            for row in 0..<rowRange.length {
-                for column in 0..<columnRange.length {
-                    let destinationRow = rowRange.start + row * rowRange.step
-                    let destinationColumn = columnRange.start + column * columnRange.step
-                    self[destinationRow, destinationColumn] = newValue[row, column]
+            for i in 0..<rowRange.length {
+                for j in 0..<columnRange.length {
+                    let destinationI = rowRange.start + i * rowRange.step
+                    let destinationJ = columnRange.start + j * columnRange.step
+                    self[destinationI, destinationJ] = newValue[i, j]
                 }
             }
         }

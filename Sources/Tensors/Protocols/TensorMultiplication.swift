@@ -53,8 +53,8 @@ extension TensorMultiplication {
         for freeIndex in Self.indexCombinations(for: freeShape) {
             for contractIndex in Self.indexCombinations(for: contractShape) {
                 var tensorIndex = Array(repeating: 0, count: rank)
-                for (position, index) in freeIndices.enumerated() { tensorIndex[index] = freeIndex[position] }
-                for (position, index) in contractIndices.enumerated() { tensorIndex[index] = contractIndex[position] }
+                for (position, i) in freeIndices.enumerated() { tensorIndex[i] = freeIndex[position] }
+                for (position, i) in contractIndices.enumerated() { tensorIndex[i] = contractIndex[position] }
                 matrix[
                     Self.linearIndex(freeIndex, shape: freeShape),
                     Self.linearIndex(contractIndex, shape: contractShape)
@@ -82,8 +82,8 @@ extension TensorMultiplication {
         for contractIndex in Self.indexCombinations(for: contractShape) {
             for freeIndex in Self.indexCombinations(for: freeShape) {
                 var tensorIndex = Array(repeating: 0, count: rank)
-                for (position, index) in contractIndices.enumerated() { tensorIndex[index] = contractIndex[position] }
-                for (position, index) in freeIndices.enumerated() { tensorIndex[index] = freeIndex[position] }
+                for (position, i) in contractIndices.enumerated() { tensorIndex[i] = contractIndex[position] }
+                for (position, i) in freeIndices.enumerated() { tensorIndex[i] = freeIndex[position] }
                 matrix[
                     Self.linearIndex(contractIndex, shape: contractShape),
                     Self.linearIndex(freeIndex, shape: freeShape)
@@ -115,9 +115,9 @@ extension TensorMultiplication {
         return (0..<countElements(for: shape)).map { flatIndex in
             var remaining = flatIndex
             return shape.map { dimension in
-                let index = remaining % dimension
+                let i = remaining % dimension
                 remaining /= dimension
-                return index
+                return i
             }
         }
     }
@@ -125,8 +125,8 @@ extension TensorMultiplication {
     private static func linearIndex(_ indices: [Int], shape: [Int]) -> Int {
         var stride = 1
         var flatIndex = 0
-        for (index, dimension) in zip(indices, shape) {
-            flatIndex += index * stride
+        for (i, dimension) in zip(indices, shape) {
+            flatIndex += i * stride
             stride *= dimension
         }
         return flatIndex

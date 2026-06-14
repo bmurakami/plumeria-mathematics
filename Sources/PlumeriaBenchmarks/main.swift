@@ -185,11 +185,11 @@ func vectorComplexFloatValues(count: Int) -> [ComplexFloat] {
 func matrixRows(rows: Int, columns: Int) -> [[Double]] {
     var values: [[Double]] = []
     values.reserveCapacity(rows)
-    for row in 0..<rows {
+    for i in 0..<rows {
         var rowValues: [Double] = []
         rowValues.reserveCapacity(columns)
-        for column in 0..<columns {
-            rowValues.append(Double(((row * 31 + column * 17) % 101) - 50) / 11.0)
+        for j in 0..<columns {
+            rowValues.append(Double(((i * 31 + j * 17) % 101) - 50) / 11.0)
         }
         values.append(rowValues)
     }
@@ -197,10 +197,10 @@ func matrixRows(rows: Int, columns: Int) -> [[Double]] {
 }
 
 func invertibleMatrixRows(size: Int) -> [[Double]] {
-    (0..<size).map { row in
-        (0..<size).map { column in
-            let value = Double(((row * 31 + column * 17) % 101) - 50) / 11.0
-            return row == column ? value + Double(size) : value
+    (0..<size).map { i in
+        (0..<size).map { j in
+            let value = Double(((i * 31 + j * 17) % 101) - 50) / 11.0
+            return i == j ? value + Double(size) : value
         }
     }
 }
@@ -210,40 +210,40 @@ func matrixFloatRows(rows: Int, columns: Int) -> [[Float]] {
 }
 
 func matrixComplexRows(rows: Int, columns: Int) -> [[ComplexDouble]] {
-    matrixRows(rows: rows, columns: columns).map { row in row.map { ComplexDouble($0, -$0 / 3.0) } }
+    matrixRows(rows: rows, columns: columns).map { $0.map { ComplexDouble($0, -$0 / 3.0) } }
 }
 
 func matrixComplexFloatRows(rows: Int, columns: Int) -> [[ComplexFloat]] {
-    matrixRows(rows: rows, columns: columns).map { row in row.map { ComplexFloat(Float($0), Float(-$0 / 3.0)) } }
+    matrixRows(rows: rows, columns: columns).map { $0.map { ComplexFloat(Float($0), Float(-$0 / 3.0)) } }
 }
 
 func fillTensor<T: TensorMultiplication>(_ tensor: inout T) where T.S == Double {
-    for index in indexCombinations(for: tensor.shape) {
-        let weighted = index.enumerated().reduce(0) { $0 + ($1.offset + 1) * ($1.element + 1) }
-        tensor[index] = Double((weighted % 29) - 14) / 5.0
+    for i in indexCombinations(for: tensor.shape) {
+        let weighted = i.enumerated().reduce(0) { $0 + ($1.offset + 1) * ($1.element + 1) }
+        tensor[i] = Double((weighted % 29) - 14) / 5.0
     }
 }
 
 func fillFloatTensor<T: TensorMultiplication>(_ tensor: inout T) where T.S == Float {
-    for index in indexCombinations(for: tensor.shape) {
-        let weighted = index.enumerated().reduce(0) { $0 + ($1.offset + 1) * ($1.element + 1) }
-        tensor[index] = Float((weighted % 29) - 14) / 5.0
+    for i in indexCombinations(for: tensor.shape) {
+        let weighted = i.enumerated().reduce(0) { $0 + ($1.offset + 1) * ($1.element + 1) }
+        tensor[i] = Float((weighted % 29) - 14) / 5.0
     }
 }
 
 func fillComplexTensor<T: TensorMultiplication>(_ tensor: inout T) where T.S == ComplexDouble {
-    for index in indexCombinations(for: tensor.shape) {
-        let weighted = index.enumerated().reduce(0) { $0 + ($1.offset + 1) * ($1.element + 1) }
+    for i in indexCombinations(for: tensor.shape) {
+        let weighted = i.enumerated().reduce(0) { $0 + ($1.offset + 1) * ($1.element + 1) }
         let value = Double((weighted % 29) - 14) / 5.0
-        tensor[index] = ComplexDouble(value, -value / 2.0)
+        tensor[i] = ComplexDouble(value, -value / 2.0)
     }
 }
 
 func fillComplexFloatTensor<T: TensorMultiplication>(_ tensor: inout T) where T.S == ComplexFloat {
-    for index in indexCombinations(for: tensor.shape) {
-        let weighted = index.enumerated().reduce(0) { $0 + ($1.offset + 1) * ($1.element + 1) }
+    for i in indexCombinations(for: tensor.shape) {
+        let weighted = i.enumerated().reduce(0) { $0 + ($1.offset + 1) * ($1.element + 1) }
         let value = Float((weighted % 29) - 14) / 5.0
-        tensor[index] = ComplexFloat(value, -value / 2.0)
+        tensor[i] = ComplexFloat(value, -value / 2.0)
     }
 }
 
@@ -253,9 +253,9 @@ func indexCombinations(for shape: [Int]) -> [[Int]] {
     return (0..<shape.reduce(1, *)).map { flatIndex in
         var remaining = flatIndex
         return shape.map { dimension in
-            let index = remaining % dimension
+            let i = remaining % dimension
             remaining /= dimension
-            return index
+            return i
         }
     }
 }
