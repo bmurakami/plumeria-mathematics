@@ -41,24 +41,24 @@ import Testing
     let matrix = MatrixFlatView<Double>([[1.0, 2.0, 3.0, 4.0],
                                          [5.0, 6.0, 7.0, 8.0],
                                          [9.0, 10.0, 11.0, 12.0]])
-    let row: VectorFlatView<Double> = matrix.slice(row: 1, columns: SliceRange(0..<4, step: 2))
+    let r: VectorFlatView<Double> = matrix.slice(row: 1, columns: SliceRange(0..<4, step: 2))
 
-    #expect(row.view.storage === matrix.view.storage)
-    #expect(row.shape == [2])
-    #expect(row.elements == [5.0, 7.0])
-    #expect(!row.isContiguous)
+    #expect(r.view.storage === matrix.view.storage)
+    #expect(r.shape == [2])
+    #expect(r.elements == [5.0, 7.0])
+    #expect(!r.isContiguous)
 }
 
 @Test func MatrixFlatView_slicesColumnToVectorFlatView() {
     let matrix = MatrixFlatView<Double>([[1.0, 2.0, 3.0],
                                          [4.0, 5.0, 6.0],
                                          [7.0, 8.0, 9.0]])
-    let column: VectorFlatView<Double> = matrix.slice(rows: SliceRange(0..<3), column: 1)
+    let c: VectorFlatView<Double> = matrix.slice(rows: SliceRange(0..<3), column: 1)
 
-    #expect(column.view.storage === matrix.view.storage)
-    #expect(column.shape == [3])
-    #expect(column.elements == [2.0, 5.0, 8.0])
-    #expect(column.isContiguous)
+    #expect(c.view.storage === matrix.view.storage)
+    #expect(c.shape == [3])
+    #expect(c.elements == [2.0, 5.0, 8.0])
+    #expect(c.isContiguous)
 }
 
 @Test func MatrixFlatView_mutatingSliceCopiesOnWrite() {
@@ -87,18 +87,18 @@ import Testing
     let matrix = MatrixFlatView<Double>([[1.0, 2.0, 3.0, 4.0],
                                          [5.0, 6.0, 7.0, 8.0],
                                          [9.0, 10.0, 11.0, 12.0]])
-    let row: VectorFlatView<Double> = matrix[1, step(0..<4, by: 2)]
+    let r: VectorFlatView<Double> = matrix[1, step(0..<4, by: 2)]
 
-    #expect(row.elements == [5.0, 7.0])
+    #expect(r.elements == [5.0, 7.0])
 }
 
 @Test func MatrixFlatView_subscriptSlicesColumnToVector() {
     let matrix = MatrixFlatView<Double>([[1.0, 2.0, 3.0],
                                          [4.0, 5.0, 6.0],
                                          [7.0, 8.0, 9.0]])
-    let column: VectorFlatView<Double> = matrix[all, 1]
+    let c: VectorFlatView<Double> = matrix[all, 1]
 
-    #expect(column.elements == [2.0, 5.0, 8.0])
+    #expect(c.elements == [2.0, 5.0, 8.0])
 }
 
 @Test func MatrixFlatView_subscriptSlicesWithAllAndStep() {

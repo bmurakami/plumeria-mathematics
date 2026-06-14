@@ -1,5 +1,5 @@
 public protocol VectorView: TensorView {
     var size: Int { get }
 
-    subscript(index: Int) -> Scalar { get set }
+    subscript(i: Int) -> Scalar { get set }
 }

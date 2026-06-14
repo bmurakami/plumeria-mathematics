@@ -48,8 +48,8 @@ extension MatrixDenseBLAS: PluMatrix {
     }
 
     public subscript(i: Int, j: Int) -> S {
-        get { value(row: i, column: j) }
-        set { setValue(newValue, row: i, column: j) }
+        get { value(i: i, j: j) }
+        set { setValue(newValue, i: i, j: j) }
     }
 
     public subscript(_ indices: [Int]) -> S {
@@ -57,13 +57,13 @@ extension MatrixDenseBLAS: PluMatrix {
             precondition(indices.count == 2, "MatrixDenseBLAS index rank must be 2")
             precondition(indices[0] >= 0 && indices[0] < rows, "Matrix row index out of bounds")
             precondition(indices[1] >= 0 && indices[1] < columns, "Matrix column index out of bounds")
-            return value(row: indices[0], column: indices[1])
+            return value(i: indices[0], j: indices[1])
         }
         set {
             precondition(indices.count == 2, "MatrixDenseBLAS index rank must be 2")
             precondition(indices[0] >= 0 && indices[0] < rows, "Matrix row index out of bounds")
             precondition(indices[1] >= 0 && indices[1] < columns, "Matrix column index out of bounds")
-            setValue(newValue, row: indices[0], column: indices[1])
+            setValue(newValue, i: indices[0], j: indices[1])
         }
     }
 
@@ -77,8 +77,8 @@ extension MatrixDenseBLAS: PluMatrix {
     public init(_ values: [[S]]) {
         let rows = values.count
         let columns = values[0].count
-        let elements = (0..<columns).flatMap { column in
-            (0..<rows).map { row in values[row][column] }
+        let elements = (0..<columns).flatMap { j in
+            (0..<rows).map { i in values[i][j] }
         }
         self.view = TensorFlatView(shape: [rows, columns], elements: elements)
         self.lazy = nil
@@ -114,9 +114,9 @@ extension MatrixDenseBLAS: PluMatrix {
     }
 
     public func toArray(round: Bool = false) -> [[S]] {
-        (0..<rows).map { row in
-            (0..<columns).map { column in
-                let value = value(row: row, column: column)
+        (0..<rows).map { i in
+            (0..<columns).map { j in
+                let value = value(i: i, j: j)
                 return round ? value.round() : value
             }
         }
@@ -174,24 +174,24 @@ extension MatrixDenseBLAS {
         }
     }
 
-    public subscript(row: Int, columns: Range<Int>) -> VectorFlatView<S> {
-        get { slice(row: row, columns: SliceRange(columns)) }
-        set { view.assign(newValue.view, to: [.index(row), TensorSliceIndex.range(columns)]) }
+    public subscript(i: Int, columns: Range<Int>) -> VectorFlatView<S> {
+        get { slice(row: i, columns: SliceRange(columns)) }
+        set { view.assign(newValue.view, to: [.index(i), TensorSliceIndex.range(columns)]) }
     }
 
-    public subscript(row: Int, columns: TensorSliceIndex) -> VectorFlatView<S> {
-        get { slice(row: row, columns: columns.sliceRange(dimensionSize: self.columns)) }
-        set { view.assign(newValue.view, to: [.index(row), columns]) }
+    public subscript(i: Int, columns: TensorSliceIndex) -> VectorFlatView<S> {
+        get { slice(row: i, columns: columns.sliceRange(dimensionSize: self.columns)) }
+        set { view.assign(newValue.view, to: [.index(i), columns]) }
     }
 
-    public subscript(rows: Range<Int>, column: Int) -> VectorFlatView<S> {
-        get { slice(rows: SliceRange(rows), column: column) }
-        set { view.assign(newValue.view, to: [TensorSliceIndex.range(rows), .index(column)]) }
+    public subscript(rows: Range<Int>, j: Int) -> VectorFlatView<S> {
+        get { slice(rows: SliceRange(rows), column: j) }
+        set { view.assign(newValue.view, to: [TensorSliceIndex.range(rows), .index(j)]) }
     }
 
-    public subscript(rows: TensorSliceIndex, column: Int) -> VectorFlatView<S> {
-        get { slice(rows: rows.sliceRange(dimensionSize: self.rows), column: column) }
-        set { view.assign(newValue.view, to: [rows, .index(column)]) }
+    public subscript(rows: TensorSliceIndex, j: Int) -> VectorFlatView<S> {
+        get { slice(rows: rows.sliceRange(dimensionSize: self.rows), column: j) }
+        set { view.assign(newValue.view, to: [rows, .index(j)]) }
     }
 }
 
@@ -415,9 +415,9 @@ extension MatrixDenseBLAS {
 
     public func transpose() -> MatrixDenseBLAS<S> {
         var transposed = MatrixDenseBLAS(rows: columns, columns: rows)
-        for row in 0..<rows {
-            for column in 0..<columns {
-                transposed.setValue(value(row: row, column: column), row: column, column: row)
+        for i in 0..<rows {
+            for j in 0..<columns {
+                transposed.setValue(value(i: i, j: j), i: j, j: i)
             }
         }
         return transposed
@@ -876,7 +876,7 @@ private func doubleSum(_ left: [Double], _ right: [Double]) -> [Double] {
     Array<Double>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
         left.withUnsafeBufferPointer { left in
             right.withUnsafeBufferPointer { right in
-                for index in 0..<left.count { result[index] = left[index] + right[index] }
+                for i in 0..<left.count { result[i] = left[i] + right[i] }
             }
         }
         initializedCount = left.count
@@ -887,7 +887,7 @@ private func floatSum(_ left: [Float], _ right: [Float]) -> [Float] {
     Array<Float>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
         left.withUnsafeBufferPointer { left in
             right.withUnsafeBufferPointer { right in
-                for index in 0..<left.count { result[index] = left[index] + right[index] }
+                for i in 0..<left.count { result[i] = left[i] + right[i] }
             }
         }
         initializedCount = left.count
@@ -898,7 +898,7 @@ private func doubleDifference(_ left: [Double], _ right: [Double]) -> [Double] {
     Array<Double>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
         left.withUnsafeBufferPointer { left in
             right.withUnsafeBufferPointer { right in
-                for index in 0..<left.count { result[index] = left[index] - right[index] }
+                for i in 0..<left.count { result[i] = left[i] - right[i] }
             }
         }
         initializedCount = left.count
@@ -909,7 +909,7 @@ private func floatDifference(_ left: [Float], _ right: [Float]) -> [Float] {
     Array<Float>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
         left.withUnsafeBufferPointer { left in
             right.withUnsafeBufferPointer { right in
-                for index in 0..<left.count { result[index] = left[index] - right[index] }
+                for i in 0..<left.count { result[i] = left[i] - right[i] }
             }
         }
         initializedCount = left.count
@@ -919,7 +919,7 @@ private func floatDifference(_ left: [Float], _ right: [Float]) -> [Float] {
 private func doubleScale(_ values: [Double], by scalar: Double) -> [Double] {
     Array<Double>(unsafeUninitializedCapacity: values.count) { result, initializedCount in
         values.withUnsafeBufferPointer { values in
-            for index in 0..<values.count { result[index] = values[index] * scalar }
+            for i in 0..<values.count { result[i] = values[i] * scalar }
         }
         initializedCount = values.count
     }
@@ -928,21 +928,21 @@ private func doubleScale(_ values: [Double], by scalar: Double) -> [Double] {
 private func floatScale(_ values: [Float], by scalar: Float) -> [Float] {
     Array<Float>(unsafeUninitializedCapacity: values.count) { result, initializedCount in
         values.withUnsafeBufferPointer { values in
-            for index in 0..<values.count { result[index] = values[index] * scalar }
+            for i in 0..<values.count { result[i] = values[i] * scalar }
         }
         initializedCount = values.count
     }
 }
 
 extension MatrixDenseBLAS {
-    private func value(row: Int, column: Int) -> S {
-        if let lazy { return lazy.value(row: row, column: column) }
-        return view.value(index0: row, index1: column)
+    private func value(i: Int, j: Int) -> S {
+        if let lazy { return lazy.value(i: i, j: j) }
+        return view.value(index0: i, index1: j)
     }
 
-    private mutating func setValue(_ value: S, row: Int, column: Int) {
+    private mutating func setValue(_ value: S, i: Int, j: Int) {
         materializeInPlace()
-        view.setValue(value, index0: row, index1: column)
+        view.setValue(value, index0: i, index1: j)
     }
 
     private mutating func assign(_ replacement: MatrixDenseBLAS<S>, to ranges: [SliceRange]) {
@@ -957,19 +957,19 @@ extension MatrixDenseBLAS {
     private func flattenedFromView(columnMajorOrder: Bool) -> [S] {
         var elements = Array(repeating: S.zero, count: rows * columns)
         if columnMajorOrder {
-            for column in 0..<columns {
-                for row in 0..<rows {
-                    let index = row + rows * column
-                    let storageIndex = view.offset + row * view.strides[0] + column * view.strides[1]
-                    elements[index] = view.storage.elements[storageIndex]
+            for j in 0..<columns {
+                for i in 0..<rows {
+                    let k = i + rows * j
+                    let storageIndex = view.offset + i * view.strides[0] + j * view.strides[1]
+                    elements[k] = view.storage.elements[storageIndex]
                 }
             }
         } else {
-            for row in 0..<rows {
-                for column in 0..<columns {
-                    let index = column + columns * row
-                    let storageIndex = view.offset + row * view.strides[0] + column * view.strides[1]
-                    elements[index] = view.storage.elements[storageIndex]
+            for i in 0..<rows {
+                for j in 0..<columns {
+                    let k = j + columns * i
+                    let storageIndex = view.offset + i * view.strides[0] + j * view.strides[1]
+                    elements[k] = view.storage.elements[storageIndex]
                 }
             }
         }
@@ -978,8 +978,8 @@ extension MatrixDenseBLAS {
 
     private func rowMajorElements(fromColumnMajorElements elements: [S]) -> [S] {
         var rowMajorElements = Array(repeating: S.zero, count: rows * columns)
-        for row in 0..<rows {
-            for column in 0..<columns { rowMajorElements[column + columns * row] = elements[row + rows * column] }
+        for i in 0..<rows {
+            for j in 0..<columns { rowMajorElements[j + columns * i] = elements[i + rows * j] }
         }
         return rowMajorElements
     }
@@ -1070,16 +1070,16 @@ extension MatrixDenseBLAS {
 
     private func luDeterminant<T: PluScalar>(from matrix: [T], pivots: [Int32], one: T) -> T {
         var result = one
-        for index in 0..<rows {
-            if pivots[index] != Int32(index + 1) { result = -result }
-            result *= matrix[index + rows * index]
+        for i in 0..<rows {
+            if pivots[i] != Int32(i + 1) { result = -result }
+            result *= matrix[i + rows * i]
         }
         return result
     }
 
     private func doubleIdentityElements() -> [Double] {
         var identity = Array(repeating: 0.0, count: rows * columns)
-        for index in 0..<rows { identity[index + rows * index] = 1.0 }
+        for i in 0..<rows { identity[i + rows * i] = 1.0 }
         return identity
     }
 
@@ -1231,21 +1231,21 @@ extension MatrixDenseBLAS: MatrixEigen where S == Double {
         real: [Double], imaginary: [Double], vectors: [Double]
     ) -> MatrixDenseBLAS<ComplexDouble> {
         var result = MatrixDenseBLAS<ComplexDouble>(rows: rows, columns: columns, initialValue: .zero)
-        var column = 0
-        while column < columns {
-            if imaginary[column] == 0.0 {
-                for row in 0..<rows {
-                    result[row, column] = ComplexDouble(vectors[row + rows * column], 0.0)
+        var j = 0
+        while j < columns {
+            if imaginary[j] == 0.0 {
+                for i in 0..<rows {
+                    result[i, j] = ComplexDouble(vectors[i + rows * j], 0.0)
                 }
-                column += 1
+                j += 1
             } else {
-                for row in 0..<rows {
-                    let realPart = vectors[row + rows * column]
-                    let imaginaryPart = vectors[row + rows * (column + 1)]
-                    result[row, column] = ComplexDouble(realPart, imaginaryPart)
-                    result[row, column + 1] = ComplexDouble(realPart, -imaginaryPart)
+                for i in 0..<rows {
+                    let realPart = vectors[i + rows * j]
+                    let imaginaryPart = vectors[i + rows * (j + 1)]
+                    result[i, j] = ComplexDouble(realPart, imaginaryPart)
+                    result[i, j + 1] = ComplexDouble(realPart, -imaginaryPart)
                 }
-                column += 2
+                j += 2
             }
         }
         return result

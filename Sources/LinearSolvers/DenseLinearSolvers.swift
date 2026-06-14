@@ -31,28 +31,28 @@ public func solveLinearDenseReference<M: PluMatrix, V: PluVector>(_ A: M, _ b: V
     var matrix = A.toArray()
     var rhs = b.toArray()
     for pivot in 0..<n {
-        let pivotRow = rowWithLargestPivot(matrix, column: pivot)
+        let pivotRow = rowWithLargestPivot(matrix, j: pivot)
         precondition(matrix[pivotRow][pivot].magnitude > .zero, "A must be non-singular")
         if pivotRow != pivot {
             matrix.swapAt(pivot, pivotRow)
             rhs.swapAt(pivot, pivotRow)
         }
-        for row in (pivot + 1)..<n {
-            let factor = matrix[row][pivot] / matrix[pivot][pivot]
-            matrix[row][pivot] = .zero
-            for column in (pivot + 1)..<n {
-                matrix[row][column] -= factor * matrix[pivot][column]
+        for i in (pivot + 1)..<n {
+            let factor = matrix[i][pivot] / matrix[pivot][pivot]
+            matrix[i][pivot] = .zero
+            for j in (pivot + 1)..<n {
+                matrix[i][j] -= factor * matrix[pivot][j]
             }
-            rhs[row] -= factor * rhs[pivot]
+            rhs[i] -= factor * rhs[pivot]
         }
     }
     var x = Array(repeating: V.S.zero, count: n)
-    for row in stride(from: n - 1, through: 0, by: -1) {
-        var value = rhs[row]
-        for column in (row + 1)..<n {
-            value -= matrix[row][column] * x[column]
+    for i in stride(from: n - 1, through: 0, by: -1) {
+        var value = rhs[i]
+        for j in (i + 1)..<n {
+            value -= matrix[i][j] * x[j]
         }
-        x[row] = value / matrix[row][row]
+        x[i] = value / matrix[i][i]
     }
     return V(x)
 }
@@ -146,15 +146,15 @@ private func solveComplexDoubleLinearSystem(
     }
 }
 
-private func rowWithLargestPivot<S: PluScalar>(_ matrix: [[S]], column: Int) -> Int {
-    var row = column
-    var pivot = matrix[column][column].magnitude
-    for candidate in (column + 1)..<matrix.count {
-        let magnitude = matrix[candidate][column].magnitude
+private func rowWithLargestPivot<S: PluScalar>(_ matrix: [[S]], j: Int) -> Int {
+    var i = j
+    var pivot = matrix[j][j].magnitude
+    for candidate in (j + 1)..<matrix.count {
+        let magnitude = matrix[candidate][j].magnitude
         if magnitude > pivot {
-            row = candidate
+            i = candidate
             pivot = magnitude
         }
     }
-    return row
+    return i
 }

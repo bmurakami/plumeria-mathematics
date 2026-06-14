@@ -40,17 +40,17 @@ extension VectorFlatView: VectorView {
         }
     }
 
-    public subscript(index: Int) -> Scalar {
-        get { view[[index]] }
-        set { view[[index]] = newValue }
+    public subscript(i: Int) -> Scalar {
+        get { view[[i]] }
+        set { view[[i]] = newValue }
     }
 
     public subscript(range: Range<Int>) -> VectorFlatView<Scalar> {
         slice(SliceRange(range))
     }
 
-    public subscript(index: TensorSliceIndex) -> VectorFlatView<Scalar> {
-        slice(index.sliceRange(dimensionSize: size))
+    public subscript(i: TensorSliceIndex) -> VectorFlatView<Scalar> {
+        slice(i.sliceRange(dimensionSize: size))
     }
 
     public func slice(_ range: SliceRange) -> VectorFlatView<Scalar> {

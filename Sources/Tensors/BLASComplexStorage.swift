@@ -46,7 +46,7 @@ public enum BLASComplexStorage {
                     let rawResult = UnsafeMutableRawBufferPointer(result)
                     let left = left.bindMemory(to: Double.self), right = right.bindMemory(to: Double.self)
                     let result = rawResult.bindMemory(to: Double.self)
-                    for index in 0..<result.count { result[index] = left[index] + right[index] }
+                    for i in 0..<result.count { result[i] = left[i] + right[i] }
                 }
             }
             initializedCount = left.count
@@ -60,7 +60,7 @@ public enum BLASComplexStorage {
                     let rawResult = UnsafeMutableRawBufferPointer(result)
                     let left = left.bindMemory(to: Float.self), right = right.bindMemory(to: Float.self)
                     let result = rawResult.bindMemory(to: Float.self)
-                    for index in 0..<result.count { result[index] = left[index] + right[index] }
+                    for i in 0..<result.count { result[i] = left[i] + right[i] }
                 }
             }
             initializedCount = left.count
@@ -74,7 +74,7 @@ public enum BLASComplexStorage {
                     let rawResult = UnsafeMutableRawBufferPointer(result)
                     let left = left.bindMemory(to: Double.self), right = right.bindMemory(to: Double.self)
                     let result = rawResult.bindMemory(to: Double.self)
-                    for index in 0..<result.count { result[index] = left[index] - right[index] }
+                    for i in 0..<result.count { result[i] = left[i] - right[i] }
                 }
             }
             initializedCount = left.count
@@ -88,7 +88,7 @@ public enum BLASComplexStorage {
                     let rawResult = UnsafeMutableRawBufferPointer(result)
                     let left = left.bindMemory(to: Float.self), right = right.bindMemory(to: Float.self)
                     let result = rawResult.bindMemory(to: Float.self)
-                    for index in 0..<result.count { result[index] = left[index] - right[index] }
+                    for i in 0..<result.count { result[i] = left[i] - right[i] }
                 }
             }
             initializedCount = left.count
@@ -97,16 +97,16 @@ public enum BLASComplexStorage {
 
     public static func interleaved<RealType: Real>(_ values: [Numerics.Complex<RealType>]) -> [RealType] {
         var interleaved = Array(repeating: RealType.zero, count: values.count * 2)
-        for index in 0..<values.count {
-            interleaved[2 * index] = values[index].real
-            interleaved[2 * index + 1] = values[index].imaginary
+        for i in 0..<values.count {
+            interleaved[2 * i] = values[i].real
+            interleaved[2 * i + 1] = values[i].imaginary
         }
         return interleaved
     }
 
     public static func toComplex<RealType: Real>(_ values: [RealType]) -> [Numerics.Complex<RealType>] {
         var complex = Array(repeating: Numerics.Complex<RealType>.zero, count: values.count / 2)
-        for index in 0..<complex.count { complex[index] = Numerics.Complex(values[2 * index], values[2 * index + 1]) }
+        for i in 0..<complex.count { complex[i] = Numerics.Complex(values[2 * i], values[2 * i + 1]) }
         return complex
     }
 

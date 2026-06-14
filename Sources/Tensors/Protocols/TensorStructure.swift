@@ -21,9 +21,9 @@ public enum TensorNestedArray<S: PluScalar>: Equatable {
         switch (self, indices.first) {
         case (.scalar(let value), nil):
             return value
-        case (.array(let subtensor), .some(let index)):
-            precondition(index >= 0 && index < subtensor.count, "Tensor index out of bounds")
-            return subtensor[index][Array(indices.dropFirst())]
+        case (.array(let subtensor), .some(let i)):
+            precondition(i >= 0 && i < subtensor.count, "Tensor index out of bounds")
+            return subtensor[i][Array(indices.dropFirst())]
         default:
             preconditionFailure("Tensor index rank must match tensor rank")
         }
@@ -40,9 +40,9 @@ public enum TensorNestedArray<S: PluScalar>: Equatable {
         return (0..<shape.reduce(1, *)).map { flatIndex in
             var remaining = flatIndex
             return shape.map { dimension in
-                let index = remaining % dimension
+                let i = remaining % dimension
                 remaining /= dimension
-                return index
+                return i
             }
         }
     }

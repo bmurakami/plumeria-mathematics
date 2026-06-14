@@ -207,9 +207,9 @@ private func verifyInitializerWithRowsAndColumns<M: PluMatrix>(_ type: M.Type) w
     var matrix = M(rows: 2, columns: 3, initialValue: .zero)
     #expect(matrix.rows == 2)
     #expect(matrix.columns == 3)
-    for row in 0..<matrix.rows {
-        for column in 0..<matrix.columns {
-            #expect(matrix[row, column] == 0)
+    for i in 0..<matrix.rows {
+        for j in 0..<matrix.columns {
+            #expect(matrix[i, j] == 0)
         }
     }
     matrix[1, 2] = 3.14
@@ -264,9 +264,9 @@ private func verifyComplexMatrixMultiplication<M: PluMatrix>(_ type: M.Type) whe
 private func verifyTranspose<M: PluMatrix>(_ type: M.Type) where M.S == Double {
     let matrix = M([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
     let transposed = matrix.transpose()
-    for row in 0..<transposed.rows {
-        for column in 0..<transposed.columns {
-            #expect(transposed[row, column] == matrix[column, row])
+    for i in 0..<transposed.rows {
+        for j in 0..<transposed.columns {
+            #expect(transposed[i, j] == matrix[j, i])
         }
     }
 }
