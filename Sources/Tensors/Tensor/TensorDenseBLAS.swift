@@ -174,13 +174,13 @@ extension TensorDenseBLAS {
         var rightFreeIndices: [Int] = []
         var leftFreeShape: [Int] = []
         var rightFreeShape: [Int] = []
-        for index in 0..<rank where !leftContracted[index] {
-            leftFreeIndices.append(index)
-            leftFreeShape.append(shape[index])
+        for i in 0..<rank where !leftContracted[i] {
+            leftFreeIndices.append(i)
+            leftFreeShape.append(shape[i])
         }
-        for index in 0..<other.rank where !rightContracted[index] {
-            rightFreeIndices.append(index)
-            rightFreeShape.append(other.shape[index])
+        for i in 0..<other.rank where !rightContracted[i] {
+            rightFreeIndices.append(i)
+            rightFreeShape.append(other.shape[i])
         }
         return TensorDenseContractionPlan(
             leftFreeIndices: leftFreeIndices,
@@ -635,8 +635,8 @@ extension TensorDenseBLAS {
         for freeIndex in indexCombinations(for: freeShape) {
             for contractIndex in indexCombinations(for: contractShape) {
                 var tensorIndex = Array(repeating: 0, count: rank)
-                for (position, index) in freeIndices.enumerated() { tensorIndex[index] = freeIndex[position] }
-                for (position, index) in contractIndices.enumerated() { tensorIndex[index] = contractIndex[position] }
+                for (position, i) in freeIndices.enumerated() { tensorIndex[i] = freeIndex[position] }
+                for (position, i) in contractIndices.enumerated() { tensorIndex[i] = contractIndex[position] }
                 matrix[linearIndex(freeIndex, shape: freeShape), linearIndex(contractIndex, shape: contractShape)] =
                     self[tensorIndex]
             }
@@ -655,8 +655,8 @@ extension TensorDenseBLAS {
         for contractIndex in indexCombinations(for: contractShape) {
             for freeIndex in indexCombinations(for: freeShape) {
                 var tensorIndex = Array(repeating: 0, count: rank)
-                for (position, index) in contractIndices.enumerated() { tensorIndex[index] = contractIndex[position] }
-                for (position, index) in freeIndices.enumerated() { tensorIndex[index] = freeIndex[position] }
+                for (position, i) in contractIndices.enumerated() { tensorIndex[i] = contractIndex[position] }
+                for (position, i) in freeIndices.enumerated() { tensorIndex[i] = freeIndex[position] }
                 matrix[linearIndex(contractIndex, shape: contractShape), linearIndex(freeIndex, shape: freeShape)] =
                     self[tensorIndex]
             }
@@ -670,9 +670,9 @@ extension TensorDenseBLAS {
         return (0..<countElements(for: shape)).map { flatIndex in
             var remaining = flatIndex
             return shape.map { dimension in
-                let index = remaining % dimension
+                let i = remaining % dimension
                 remaining /= dimension
-                return index
+                return i
             }
         }
     }
@@ -680,8 +680,8 @@ extension TensorDenseBLAS {
     private func linearIndex(_ indices: [Int], shape: [Int]) -> Int {
         var stride = 1
         var flatIndex = 0
-        for (index, dimension) in zip(indices, shape) {
-            flatIndex += index * stride
+        for (i, dimension) in zip(indices, shape) {
+            flatIndex += i * stride
             stride *= dimension
         }
         return flatIndex
@@ -691,12 +691,12 @@ extension TensorDenseBLAS {
 
     private func areStorageOrdered(_ first: [Int], _ second: [Int], rank: Int) -> Bool {
         var expected = 0
-        for index in first {
-            if index != expected { return false }
+        for i in first {
+            if i != expected { return false }
             expected += 1
         }
-        for index in second {
-            if index != expected { return false }
+        for i in second {
+            if i != expected { return false }
             expected += 1
         }
         return expected == rank
@@ -713,7 +713,7 @@ private func doubleSum(_ left: [Double], _ right: [Double]) -> [Double] {
     Array<Double>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
         left.withUnsafeBufferPointer { left in
             right.withUnsafeBufferPointer { right in
-                for index in 0..<left.count { result[index] = left[index] + right[index] }
+                for i in 0..<left.count { result[i] = left[i] + right[i] }
             }
         }
         initializedCount = left.count
@@ -724,7 +724,7 @@ private func floatSum(_ left: [Float], _ right: [Float]) -> [Float] {
     Array<Float>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
         left.withUnsafeBufferPointer { left in
             right.withUnsafeBufferPointer { right in
-                for index in 0..<left.count { result[index] = left[index] + right[index] }
+                for i in 0..<left.count { result[i] = left[i] + right[i] }
             }
         }
         initializedCount = left.count
@@ -735,7 +735,7 @@ private func doubleDifference(_ left: [Double], _ right: [Double]) -> [Double] {
     Array<Double>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
         left.withUnsafeBufferPointer { left in
             right.withUnsafeBufferPointer { right in
-                for index in 0..<left.count { result[index] = left[index] - right[index] }
+                for i in 0..<left.count { result[i] = left[i] - right[i] }
             }
         }
         initializedCount = left.count
@@ -746,7 +746,7 @@ private func floatDifference(_ left: [Float], _ right: [Float]) -> [Float] {
     Array<Float>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
         left.withUnsafeBufferPointer { left in
             right.withUnsafeBufferPointer { right in
-                for index in 0..<left.count { result[index] = left[index] - right[index] }
+                for i in 0..<left.count { result[i] = left[i] - right[i] }
             }
         }
         initializedCount = left.count
@@ -756,7 +756,7 @@ private func floatDifference(_ left: [Float], _ right: [Float]) -> [Float] {
 private func doubleScale(_ values: [Double], by scalar: Double) -> [Double] {
     Array<Double>(unsafeUninitializedCapacity: values.count) { result, initializedCount in
         values.withUnsafeBufferPointer { values in
-            for index in 0..<values.count { result[index] = values[index] * scalar }
+            for i in 0..<values.count { result[i] = values[i] * scalar }
         }
         initializedCount = values.count
     }
@@ -765,7 +765,7 @@ private func doubleScale(_ values: [Double], by scalar: Double) -> [Double] {
 private func floatScale(_ values: [Float], by scalar: Float) -> [Float] {
     Array<Float>(unsafeUninitializedCapacity: values.count) { result, initializedCount in
         values.withUnsafeBufferPointer { values in
-            for index in 0..<values.count { result[index] = values[index] * scalar }
+            for i in 0..<values.count { result[i] = values[i] * scalar }
         }
         initializedCount = values.count
     }
@@ -773,12 +773,12 @@ private func floatScale(_ values: [Float], by scalar: Float) -> [Float] {
 
 private func complexDoubleScale(_ values: [ComplexDouble], by scalar: ComplexDouble) -> [ComplexDouble] {
     var result = Array(repeating: ComplexDouble.zero, count: values.count)
-    for index in 0..<values.count { result[index] = values[index] * scalar }
+    for i in 0..<values.count { result[i] = values[i] * scalar }
     return result
 }
 
 private func complexFloatScale(_ values: [ComplexFloat], by scalar: ComplexFloat) -> [ComplexFloat] {
     var result = Array(repeating: ComplexFloat.zero, count: values.count)
-    for index in 0..<values.count { result[index] = values[index] * scalar }
+    for i in 0..<values.count { result[i] = values[i] * scalar }
     return result
 }

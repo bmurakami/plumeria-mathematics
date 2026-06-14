@@ -331,7 +331,7 @@ private func verifyElementwiseArithmetic<T: TensorDenseTestImplementation>(_ typ
     #expect(scaledRight[[1, 1, 0]] == -4.0)
     #expect(scaledLeft == scaledRight)
     #expect(divided[[0, 0, 1]] == -0.5)
-    #expect(sum.isApproximatelyEqual(to: sum, relativeTolerance: 1e-12, norm: { _ in 0.0 }))
+    #expect(sum.isClose(to: sum, relativeTolerance: 1e-12))
 }
 
 private func verifyIndexMultiply<T: TensorDenseTestImplementation>(_ type: T.Type) {

@@ -5,8 +5,8 @@ public final class TensorStorage<Scalar: PluScalar> {
         self.elements = elements
     }
 
-    public subscript(index: Int) -> Scalar {
-        get { elements[index] }
-        set { elements[index] = newValue }
+    public subscript(i: Int) -> Scalar {
+        get { elements[i] }
+        set { elements[i] = newValue }
     }
 }

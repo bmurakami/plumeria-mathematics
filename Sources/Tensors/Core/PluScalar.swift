@@ -70,6 +70,16 @@ public func / (left: Float, right: ComplexFloat) -> ComplexFloat { ComplexFloat(
 public func / (left: ComplexFloat, right: Float) -> ComplexFloat { left / ComplexFloat(right, 0.0) }
 
 extension PluScalar {
+    public func isClose(
+        to other: Self,
+        relativeTolerance: Magnitude = Magnitude.ulpOfOne.squareRoot(),
+        norm _: (Self) -> Magnitude = { _ in .zero }
+    ) -> Bool {
+        let difference = (self - other).magnitude
+        if difference == .zero { return true }
+        return difference <= relativeTolerance * max(magnitude, other.magnitude)
+    }
+
     public func round() -> Self {
         switch Self.self {
         case is Float.Type, is ComplexFloat.Type:

@@ -48,8 +48,8 @@ extension MatrixDenseBLAS: PluMatrix {
     }
 
     public subscript(i: Int, j: Int) -> S {
-        get { value(row: i, column: j) }
-        set { setValue(newValue, row: i, column: j) }
+        get { value(i: i, j: j) }
+        set { setValue(newValue, i: i, j: j) }
     }
 
     public subscript(_ indices: [Int]) -> S {
@@ -57,13 +57,13 @@ extension MatrixDenseBLAS: PluMatrix {
             precondition(indices.count == 2, "MatrixDenseBLAS index rank must be 2")
             precondition(indices[0] >= 0 && indices[0] < rows, "Matrix row index out of bounds")
             precondition(indices[1] >= 0 && indices[1] < columns, "Matrix column index out of bounds")
-            return value(row: indices[0], column: indices[1])
+            return value(i: indices[0], j: indices[1])
         }
         set {
             precondition(indices.count == 2, "MatrixDenseBLAS index rank must be 2")
             precondition(indices[0] >= 0 && indices[0] < rows, "Matrix row index out of bounds")
             precondition(indices[1] >= 0 && indices[1] < columns, "Matrix column index out of bounds")
-            setValue(newValue, row: indices[0], column: indices[1])
+            setValue(newValue, i: indices[0], j: indices[1])
         }
     }
 
@@ -77,9 +77,8 @@ extension MatrixDenseBLAS: PluMatrix {
     public init(_ values: [[S]]) {
         let rows = values.count
         let columns = values[0].count
-        let elements = (0..<columns).flatMap { column in
-            (0..<rows).map { row in values[row][column] }
-        }
+        let columnMajorOrdering: () -> [S] = { (0..<columns).flatMap { j in (0..<rows).map { i in values[i][j] }}}
+        let elements = columnMajorOrdering()
         self.view = TensorFlatView(shape: [rows, columns], elements: elements)
         self.lazy = nil
         self.blasImplementation = .default
@@ -114,9 +113,9 @@ extension MatrixDenseBLAS: PluMatrix {
     }
 
     public func toArray(round: Bool = false) -> [[S]] {
-        (0..<rows).map { row in
-            (0..<columns).map { column in
-                let value = value(row: row, column: column)
+        (0..<rows).map { i in
+            (0..<columns).map { j in
+                let value = value(i: i, j: j)
                 return round ? value.round() : value
             }
         }
@@ -174,24 +173,24 @@ extension MatrixDenseBLAS {
         }
     }
 
-    public subscript(row: Int, columns: Range<Int>) -> VectorFlatView<S> {
-        get { slice(row: row, columns: SliceRange(columns)) }
-        set { view.assign(newValue.view, to: [.index(row), TensorSliceIndex.range(columns)]) }
+    public subscript(i: Int, columns: Range<Int>) -> VectorFlatView<S> {
+        get { slice(row: i, columns: SliceRange(columns)) }
+        set { view.assign(newValue.view, to: [.index(i), TensorSliceIndex.range(columns)]) }
     }
 
-    public subscript(row: Int, columns: TensorSliceIndex) -> VectorFlatView<S> {
-        get { slice(row: row, columns: columns.sliceRange(dimensionSize: self.columns)) }
-        set { view.assign(newValue.view, to: [.index(row), columns]) }
+    public subscript(i: Int, columns: TensorSliceIndex) -> VectorFlatView<S> {
+        get { slice(row: i, columns: columns.sliceRange(dimensionSize: self.columns)) }
+        set { view.assign(newValue.view, to: [.index(i), columns]) }
     }
 
-    public subscript(rows: Range<Int>, column: Int) -> VectorFlatView<S> {
-        get { slice(rows: SliceRange(rows), column: column) }
-        set { view.assign(newValue.view, to: [TensorSliceIndex.range(rows), .index(column)]) }
+    public subscript(rows: Range<Int>, j: Int) -> VectorFlatView<S> {
+        get { slice(rows: SliceRange(rows), column: j) }
+        set { view.assign(newValue.view, to: [TensorSliceIndex.range(rows), .index(j)]) }
     }
 
-    public subscript(rows: TensorSliceIndex, column: Int) -> VectorFlatView<S> {
-        get { slice(rows: rows.sliceRange(dimensionSize: self.rows), column: column) }
-        set { view.assign(newValue.view, to: [rows, .index(column)]) }
+    public subscript(rows: TensorSliceIndex, j: Int) -> VectorFlatView<S> {
+        get { slice(rows: rows.sliceRange(dimensionSize: self.rows), column: j) }
+        set { view.assign(newValue.view, to: [rows, .index(j)]) }
     }
 }
 
@@ -199,11 +198,11 @@ extension MatrixDenseBLAS {
     public static func + (lhs: MatrixDenseBLAS<S>, rhs: MatrixDenseBLAS<S>) -> MatrixDenseBLAS<S> {
         precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
         if S.self == Double.self {
-            return doubleMatrixSum(lhs as! MatrixDenseBLAS<Double>, rhs as! MatrixDenseBLAS<Double>)
+            return matrixSumDouble(lhs as! MatrixDenseBLAS<Double>, rhs as! MatrixDenseBLAS<Double>)
                 as! MatrixDenseBLAS<S>
         }
         if S.self == Float.self {
-            return floatMatrixSum(lhs as! MatrixDenseBLAS<Float>, rhs as! MatrixDenseBLAS<Float>)
+            return matrixSumFloat(lhs as! MatrixDenseBLAS<Float>, rhs as! MatrixDenseBLAS<Float>)
                 as! MatrixDenseBLAS<S>
         }
         if lhs.isWholeMaterializedMatrix && rhs.isWholeMaterializedMatrix {
@@ -219,11 +218,11 @@ extension MatrixDenseBLAS {
     public static func - (lhs: MatrixDenseBLAS<S>, rhs: MatrixDenseBLAS<S>) -> MatrixDenseBLAS<S> {
         precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
         if S.self == Double.self {
-            return doubleMatrixDifference(lhs as! MatrixDenseBLAS<Double>, rhs as! MatrixDenseBLAS<Double>)
+            return matrixDifferenceDouble(lhs as! MatrixDenseBLAS<Double>, rhs as! MatrixDenseBLAS<Double>)
                 as! MatrixDenseBLAS<S>
         }
         if S.self == Float.self {
-            return floatMatrixDifference(lhs as! MatrixDenseBLAS<Float>, rhs as! MatrixDenseBLAS<Float>)
+            return matrixDifferenceFloat(lhs as! MatrixDenseBLAS<Float>, rhs as! MatrixDenseBLAS<Float>)
                 as! MatrixDenseBLAS<S>
         }
         return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
@@ -237,10 +236,10 @@ extension MatrixDenseBLAS {
 
     public static func * (matrix: MatrixDenseBLAS<S>, scalar: S) -> MatrixDenseBLAS<S> {
         if S.self == Double.self {
-            return doubleMatrixScale(matrix as! MatrixDenseBLAS<Double>, by: scalar as! Double) as! MatrixDenseBLAS<S>
+            return matrixScaleDouble(matrix as! MatrixDenseBLAS<Double>, by: scalar as! Double) as! MatrixDenseBLAS<S>
         }
         if S.self == Float.self {
-            return floatMatrixScale(matrix as! MatrixDenseBLAS<Float>, by: scalar as! Float) as! MatrixDenseBLAS<S>
+            return matrixScaleFloat(matrix as! MatrixDenseBLAS<Float>, by: scalar as! Float) as! MatrixDenseBLAS<S>
         }
         return MatrixDenseBLAS(rows: matrix.rows, columns: matrix.columns,
                                lazy: matrix.lazyMatrix.scaled(by: scalar),
@@ -297,7 +296,7 @@ extension MatrixDenseBLAS {
             case .openBLAS:
                 OpenBLASOperations.zgemv(Int32(rows), Int32(columns), &A, &x, &y)
             }
-            return V(BLASComplexStorage.complexValues(y) as! [S])
+            return V(BLASComplexStorage.toComplex(y) as! [S])
         case is ComplexFloat.Type:
             var A = BLASComplexStorage.interleaved(flatten() as! [ComplexFloat])
             var x = BLASComplexStorage.interleaved(v.toArray(round: false) as! [ComplexFloat])
@@ -310,7 +309,7 @@ extension MatrixDenseBLAS {
             case .openBLAS:
                 OpenBLASOperations.cgemv(Int32(rows), Int32(columns), &A, &x, &y)
             }
-            return V(BLASComplexStorage.complexValues(y) as! [S])
+            return V(BLASComplexStorage.toComplex(y) as! [S])
         default:
             fatalError("Unsupported scalar type")
         }
@@ -357,7 +356,7 @@ extension MatrixDenseBLAS {
             case .openBLAS:
                 OpenBLASOperations.zgemm(Int32(rows), Int32(m.columns), Int32(columns), &A, &B, &C)
             }
-            return MatrixDenseBLAS(rows: rows, columns: m.columns, values: BLASComplexStorage.complexValues(C) as! [S])
+            return MatrixDenseBLAS(rows: rows, columns: m.columns, values: BLASComplexStorage.toComplex(C) as! [S])
         case is ComplexFloat.Type:
             var A = BLASComplexStorage.interleaved(flatten() as! [ComplexFloat])
             var B = BLASComplexStorage.interleaved(m.flatten() as! [ComplexFloat])
@@ -370,7 +369,7 @@ extension MatrixDenseBLAS {
             case .openBLAS:
                 OpenBLASOperations.cgemm(Int32(rows), Int32(m.columns), Int32(columns), &A, &B, &C)
             }
-            let values = BLASComplexStorage.complexValues(C) as! [S]
+            let values = BLASComplexStorage.toComplex(C) as! [S]
             return MatrixDenseBLAS(rows: rows, columns: m.columns, values: values)
         default:
             fatalError("Unsupported scalar type")
@@ -415,9 +414,9 @@ extension MatrixDenseBLAS {
 
     public func transpose() -> MatrixDenseBLAS<S> {
         var transposed = MatrixDenseBLAS(rows: columns, columns: rows)
-        for row in 0..<rows {
-            for column in 0..<columns {
-                transposed.setValue(value(row: row, column: column), row: column, column: row)
+        for i in 0..<rows {
+            for j in 0..<columns {
+                transposed.setValue(value(i: i, j: j), i: j, j: i)
             }
         }
         return transposed
@@ -432,26 +431,26 @@ extension MatrixDenseBLAS {
 
 public func + (lhs: MatrixDenseBLAS<Double>, rhs: MatrixDenseBLAS<Double>) -> MatrixDenseBLAS<Double> {
     precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
-    return doubleMatrixSum(lhs, rhs)
+    return matrixSumDouble(lhs, rhs)
 }
 
 public func + (lhs: MatrixDenseBLAS<Float>, rhs: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
     precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
-    return floatMatrixSum(lhs, rhs)
+    return matrixSumFloat(lhs, rhs)
 }
 
 public func - (lhs: MatrixDenseBLAS<Double>, rhs: MatrixDenseBLAS<Double>) -> MatrixDenseBLAS<Double> {
     precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
-    return doubleMatrixDifference(lhs, rhs)
+    return matrixDifferenceDouble(lhs, rhs)
 }
 
 public func - (lhs: MatrixDenseBLAS<Float>, rhs: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
     precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
-    return floatMatrixDifference(lhs, rhs)
+    return matrixDifferenceFloat(lhs, rhs)
 }
 
 public func * (matrix: MatrixDenseBLAS<Double>, scalar: Double) -> MatrixDenseBLAS<Double> {
-    doubleMatrixScale(matrix, by: scalar)
+    matrixScaleDouble(matrix, by: scalar)
 }
 
 public func * (scalar: Double, matrix: MatrixDenseBLAS<Double>) -> MatrixDenseBLAS<Double> {
@@ -463,7 +462,7 @@ public func / (matrix: MatrixDenseBLAS<Double>, scalar: Double) -> MatrixDenseBL
 }
 
 public func * (matrix: MatrixDenseBLAS<Float>, scalar: Float) -> MatrixDenseBLAS<Float> {
-    floatMatrixScale(matrix, by: scalar)
+    matrixScaleFloat(matrix, by: scalar)
 }
 
 public func * (scalar: Float, matrix: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
@@ -471,11 +470,11 @@ public func * (scalar: Float, matrix: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS
 }
 
 public func * (left: MatrixDenseBLAS<Double>, right: MatrixDenseBLAS<Double>) -> MatrixDenseBLAS<Double> {
-    doubleMatrixProduct(left, right)
+    matrixProductDouble(left, right)
 }
 
 public func * (left: MatrixDenseBLAS<Float>, right: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
-    floatMatrixProduct(left, right)
+    matrixProductFloat(left, right)
 }
 
 public func * (left: MatrixDenseBLAS<ComplexDouble>, right: MatrixDenseBLAS<ComplexDouble>)
@@ -485,32 +484,32 @@ public func * (left: MatrixDenseBLAS<ComplexDouble>, right: MatrixDenseBLAS<Comp
 
 public func * (left: MatrixDenseBLAS<ComplexFloat>, right: MatrixDenseBLAS<ComplexFloat>)
     -> MatrixDenseBLAS<ComplexFloat> {
-    complexFloatMatrixProduct(left, right)
+    matrixProductComplexFloat(left, right)
 }
 
 public func * (matrix: MatrixDenseBLAS<Double>, vector: VectorDenseBLAS<Double>) -> VectorDenseBLAS<Double> {
-    doubleMatrixVectorProduct(matrix, vector)
+    vectorProductDoubleMatrix(matrix, vector)
 }
 
 public func * (matrix: MatrixDenseBLAS<Float>, vector: VectorDenseBLAS<Float>) -> VectorDenseBLAS<Float> {
-    floatMatrixVectorProduct(matrix, vector)
+    vectorProductFloatMatrix(matrix, vector)
 }
 
 public func * (matrix: MatrixDenseBLAS<ComplexDouble>, vector: VectorDenseBLAS<ComplexDouble>)
     -> VectorDenseBLAS<ComplexDouble> {
-    complexDoubleMatrixVectorProduct(matrix, vector)
+    matrixVectorProductComplexDouble(matrix, vector)
 }
 
 public func * (matrix: MatrixDenseBLAS<ComplexFloat>, vector: VectorDenseBLAS<ComplexFloat>)
     -> VectorDenseBLAS<ComplexFloat> {
-    complexFloatMatrixVectorProduct(matrix, vector)
+    vectorProductComplexFloatMatrix(matrix, vector)
 }
 
 public func / (matrix: MatrixDenseBLAS<Float>, scalar: Float) -> MatrixDenseBLAS<Float> {
     matrix * (Float(1.0) / scalar)
 }
 
-private func doubleMatrixSum(
+private func matrixSumDouble(
     _ lhs: MatrixDenseBLAS<Double>, _ rhs: MatrixDenseBLAS<Double>
 ) -> MatrixDenseBLAS<Double> {
     if lhs.isWholeMaterializedMatrix && rhs.isWholeMaterializedMatrix {
@@ -523,7 +522,7 @@ private func doubleMatrixSum(
                            blasImplementation: lhs.blasImplementation)
 }
 
-private func floatMatrixSum(_ lhs: MatrixDenseBLAS<Float>, _ rhs: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
+private func matrixSumFloat(_ lhs: MatrixDenseBLAS<Float>, _ rhs: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
     if lhs.isWholeMaterializedMatrix && rhs.isWholeMaterializedMatrix {
         return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
                                values: floatSum(lhs.view.storage.elements, rhs.view.storage.elements),
@@ -534,7 +533,7 @@ private func floatMatrixSum(_ lhs: MatrixDenseBLAS<Float>, _ rhs: MatrixDenseBLA
                            blasImplementation: lhs.blasImplementation)
 }
 
-private func doubleMatrixDifference(
+private func matrixDifferenceDouble(
     _ lhs: MatrixDenseBLAS<Double>, _ rhs: MatrixDenseBLAS<Double>
 ) -> MatrixDenseBLAS<Double> {
     if lhs.isWholeMaterializedMatrix && rhs.isWholeMaterializedMatrix {
@@ -547,7 +546,7 @@ private func doubleMatrixDifference(
                            blasImplementation: lhs.blasImplementation)
 }
 
-private func floatMatrixDifference(
+private func matrixDifferenceFloat(
     _ lhs: MatrixDenseBLAS<Float>, _ rhs: MatrixDenseBLAS<Float>
 ) -> MatrixDenseBLAS<Float> {
     if lhs.isWholeMaterializedMatrix && rhs.isWholeMaterializedMatrix {
@@ -560,7 +559,7 @@ private func floatMatrixDifference(
                            blasImplementation: lhs.blasImplementation)
 }
 
-private func doubleMatrixScale(_ matrix: MatrixDenseBLAS<Double>, by scalar: Double) -> MatrixDenseBLAS<Double> {
+private func matrixScaleDouble(_ matrix: MatrixDenseBLAS<Double>, by scalar: Double) -> MatrixDenseBLAS<Double> {
     if matrix.isWholeMaterializedMatrix {
         return MatrixDenseBLAS(rows: matrix.rows, columns: matrix.columns,
                                values: doubleScale(matrix.view.storage.elements, by: scalar),
@@ -571,7 +570,7 @@ private func doubleMatrixScale(_ matrix: MatrixDenseBLAS<Double>, by scalar: Dou
                            blasImplementation: matrix.blasImplementation)
 }
 
-private func floatMatrixScale(_ matrix: MatrixDenseBLAS<Float>, by scalar: Float) -> MatrixDenseBLAS<Float> {
+private func matrixScaleFloat(_ matrix: MatrixDenseBLAS<Float>, by scalar: Float) -> MatrixDenseBLAS<Float> {
     if matrix.isWholeMaterializedMatrix {
         return MatrixDenseBLAS(rows: matrix.rows, columns: matrix.columns,
                                values: floatScale(matrix.view.storage.elements, by: scalar),
@@ -582,7 +581,7 @@ private func floatMatrixScale(_ matrix: MatrixDenseBLAS<Float>, by scalar: Float
                            blasImplementation: matrix.blasImplementation)
 }
 
-private func doubleMatrixProduct(
+private func matrixProductDouble(
     _ left: MatrixDenseBLAS<Double>, _ right: MatrixDenseBLAS<Double>
 ) -> MatrixDenseBLAS<Double> {
     precondition(left.columns == right.rows, "Number of matrix columns must match matrix rows")
@@ -605,7 +604,7 @@ private func doubleMatrixProduct(
                                    blasImplementation: left.blasImplementation)
 }
 
-private func floatMatrixProduct(_ left: MatrixDenseBLAS<Float>, _ right: MatrixDenseBLAS<Float>)
+private func matrixProductFloat(_ left: MatrixDenseBLAS<Float>, _ right: MatrixDenseBLAS<Float>)
     -> MatrixDenseBLAS<Float> {
     precondition(left.columns == right.rows, "Number of matrix columns must match matrix rows")
     let leftElements = left.columnMajorStorage()
@@ -648,7 +647,7 @@ private func complexDoubleMatrixProduct(
                                           blasImplementation: left.blasImplementation)
 }
 
-private func complexFloatMatrixProduct(
+private func matrixProductComplexFloat(
     _ left: MatrixDenseBLAS<ComplexFloat>, _ right: MatrixDenseBLAS<ComplexFloat>
 ) -> MatrixDenseBLAS<ComplexFloat> {
     precondition(left.columns == right.rows, "Number of matrix columns must match matrix rows")
@@ -669,7 +668,7 @@ private func complexFloatMatrixProduct(
                                          blasImplementation: left.blasImplementation)
 }
 
-private func doubleMatrixVectorProduct(
+private func vectorProductDoubleMatrix(
     _ matrix: MatrixDenseBLAS<Double>, _ vector: VectorDenseBLAS<Double>
 ) -> VectorDenseBLAS<Double> {
     precondition(matrix.columns == vector.size, "Number of columns in matrix must equal size of vector")
@@ -691,7 +690,7 @@ private func doubleMatrixVectorProduct(
     return VectorDenseBLAS<Double>(result)
 }
 
-private func floatMatrixVectorProduct(
+private func vectorProductFloatMatrix(
     _ matrix: MatrixDenseBLAS<Float>, _ vector: VectorDenseBLAS<Float>
 ) -> VectorDenseBLAS<Float> {
     precondition(matrix.columns == vector.size, "Number of columns in matrix must equal size of vector")
@@ -713,7 +712,7 @@ private func floatMatrixVectorProduct(
     return VectorDenseBLAS<Float>(result)
 }
 
-private func complexDoubleMatrixVectorProduct(
+private func matrixVectorProductComplexDouble(
     _ matrix: MatrixDenseBLAS<ComplexDouble>, _ vector: VectorDenseBLAS<ComplexDouble>
 ) -> VectorDenseBLAS<ComplexDouble> {
     precondition(matrix.columns == vector.size, "Number of columns in matrix must equal size of vector")
@@ -735,7 +734,7 @@ private func complexDoubleMatrixVectorProduct(
     return VectorDenseBLAS<ComplexDouble>(result)
 }
 
-private func complexFloatMatrixVectorProduct(
+private func vectorProductComplexFloatMatrix(
     _ matrix: MatrixDenseBLAS<ComplexFloat>, _ vector: VectorDenseBLAS<ComplexFloat>
 ) -> VectorDenseBLAS<ComplexFloat> {
     precondition(matrix.columns == vector.size, "Number of columns in matrix must equal size of vector")
@@ -876,7 +875,7 @@ private func doubleSum(_ left: [Double], _ right: [Double]) -> [Double] {
     Array<Double>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
         left.withUnsafeBufferPointer { left in
             right.withUnsafeBufferPointer { right in
-                for index in 0..<left.count { result[index] = left[index] + right[index] }
+                for i in 0..<left.count { result[i] = left[i] + right[i] }
             }
         }
         initializedCount = left.count
@@ -887,7 +886,7 @@ private func floatSum(_ left: [Float], _ right: [Float]) -> [Float] {
     Array<Float>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
         left.withUnsafeBufferPointer { left in
             right.withUnsafeBufferPointer { right in
-                for index in 0..<left.count { result[index] = left[index] + right[index] }
+                for i in 0..<left.count { result[i] = left[i] + right[i] }
             }
         }
         initializedCount = left.count
@@ -898,7 +897,7 @@ private func doubleDifference(_ left: [Double], _ right: [Double]) -> [Double] {
     Array<Double>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
         left.withUnsafeBufferPointer { left in
             right.withUnsafeBufferPointer { right in
-                for index in 0..<left.count { result[index] = left[index] - right[index] }
+                for i in 0..<left.count { result[i] = left[i] - right[i] }
             }
         }
         initializedCount = left.count
@@ -909,7 +908,7 @@ private func floatDifference(_ left: [Float], _ right: [Float]) -> [Float] {
     Array<Float>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
         left.withUnsafeBufferPointer { left in
             right.withUnsafeBufferPointer { right in
-                for index in 0..<left.count { result[index] = left[index] - right[index] }
+                for i in 0..<left.count { result[i] = left[i] - right[i] }
             }
         }
         initializedCount = left.count
@@ -919,7 +918,7 @@ private func floatDifference(_ left: [Float], _ right: [Float]) -> [Float] {
 private func doubleScale(_ values: [Double], by scalar: Double) -> [Double] {
     Array<Double>(unsafeUninitializedCapacity: values.count) { result, initializedCount in
         values.withUnsafeBufferPointer { values in
-            for index in 0..<values.count { result[index] = values[index] * scalar }
+            for i in 0..<values.count { result[i] = values[i] * scalar }
         }
         initializedCount = values.count
     }
@@ -928,21 +927,21 @@ private func doubleScale(_ values: [Double], by scalar: Double) -> [Double] {
 private func floatScale(_ values: [Float], by scalar: Float) -> [Float] {
     Array<Float>(unsafeUninitializedCapacity: values.count) { result, initializedCount in
         values.withUnsafeBufferPointer { values in
-            for index in 0..<values.count { result[index] = values[index] * scalar }
+            for i in 0..<values.count { result[i] = values[i] * scalar }
         }
         initializedCount = values.count
     }
 }
 
 extension MatrixDenseBLAS {
-    private func value(row: Int, column: Int) -> S {
-        if let lazy { return lazy.value(row: row, column: column) }
-        return view.value(index0: row, index1: column)
+    private func value(i: Int, j: Int) -> S {
+        if let lazy { return lazy.value(i: i, j: j) }
+        return view.value(index0: i, index1: j)
     }
 
-    private mutating func setValue(_ value: S, row: Int, column: Int) {
+    private mutating func setValue(_ value: S, i: Int, j: Int) {
         materializeInPlace()
-        view.setValue(value, index0: row, index1: column)
+        view.setValue(value, index0: i, index1: j)
     }
 
     private mutating func assign(_ replacement: MatrixDenseBLAS<S>, to ranges: [SliceRange]) {
@@ -957,19 +956,19 @@ extension MatrixDenseBLAS {
     private func flattenedFromView(columnMajorOrder: Bool) -> [S] {
         var elements = Array(repeating: S.zero, count: rows * columns)
         if columnMajorOrder {
-            for column in 0..<columns {
-                for row in 0..<rows {
-                    let index = row + rows * column
-                    let storageIndex = view.offset + row * view.strides[0] + column * view.strides[1]
-                    elements[index] = view.storage.elements[storageIndex]
+            for j in 0..<columns {
+                for i in 0..<rows {
+                    let k = i + rows * j
+                    let storageIndex = view.offset + i * view.strides[0] + j * view.strides[1]
+                    elements[k] = view.storage.elements[storageIndex]
                 }
             }
         } else {
-            for row in 0..<rows {
-                for column in 0..<columns {
-                    let index = column + columns * row
-                    let storageIndex = view.offset + row * view.strides[0] + column * view.strides[1]
-                    elements[index] = view.storage.elements[storageIndex]
+            for i in 0..<rows {
+                for j in 0..<columns {
+                    let k = j + columns * i
+                    let storageIndex = view.offset + i * view.strides[0] + j * view.strides[1]
+                    elements[k] = view.storage.elements[storageIndex]
                 }
             }
         }
@@ -978,8 +977,8 @@ extension MatrixDenseBLAS {
 
     private func rowMajorElements(fromColumnMajorElements elements: [S]) -> [S] {
         var rowMajorElements = Array(repeating: S.zero, count: rows * columns)
-        for row in 0..<rows {
-            for column in 0..<columns { rowMajorElements[column + columns * row] = elements[row + rows * column] }
+        for i in 0..<rows {
+            for j in 0..<columns { rowMajorElements[j + columns * i] = elements[i + rows * j] }
         }
         return rowMajorElements
     }
@@ -1056,7 +1055,7 @@ extension MatrixDenseBLAS {
         let factorization = complexDoubleFactorization()
         precondition(factorization.info >= 0, "LAPACK determinant failed with info \(factorization.info)")
         if factorization.info > 0 { return .zero }
-        let matrix = BLASComplexStorage.complexValues(factorization.matrix) as [ComplexDouble]
+        let matrix = BLASComplexStorage.toComplex(factorization.matrix) as [ComplexDouble]
         return luDeterminant(from: matrix, pivots: factorization.pivots, one: ComplexDouble(1.0, 0.0))
     }
 
@@ -1064,22 +1063,22 @@ extension MatrixDenseBLAS {
         let factorization = complexFloatFactorization()
         precondition(factorization.info >= 0, "LAPACK determinant failed with info \(factorization.info)")
         if factorization.info > 0 { return .zero }
-        let matrix = BLASComplexStorage.complexValues(factorization.matrix) as [ComplexFloat]
+        let matrix = BLASComplexStorage.toComplex(factorization.matrix) as [ComplexFloat]
         return luDeterminant(from: matrix, pivots: factorization.pivots, one: ComplexFloat(1.0, 0.0))
     }
 
     private func luDeterminant<T: PluScalar>(from matrix: [T], pivots: [Int32], one: T) -> T {
         var result = one
-        for index in 0..<rows {
-            if pivots[index] != Int32(index + 1) { result = -result }
-            result *= matrix[index + rows * index]
+        for i in 0..<rows {
+            if pivots[i] != Int32(i + 1) { result = -result }
+            result *= matrix[i + rows * i]
         }
         return result
     }
 
     private func doubleIdentityElements() -> [Double] {
         var identity = Array(repeating: 0.0, count: rows * columns)
-        for index in 0..<rows { identity[index + rows * index] = 1.0 }
+        for i in 0..<rows { identity[i + rows * i] = 1.0 }
         return identity
     }
 
@@ -1106,7 +1105,7 @@ extension MatrixDenseBLAS {
         let info = complexDoubleGetri(Int32(rows), &factorization.matrix, factorization.pivots)
         precondition(info == 0, "LAPACK inverse failed with info \(info)")
         return MatrixDenseBLAS<ComplexDouble>(rows: rows, columns: columns,
-                                              values: BLASComplexStorage.complexValues(factorization.matrix))
+                                              values: BLASComplexStorage.toComplex(factorization.matrix))
     }
 
     private func complexFloatInverse() -> MatrixDenseBLAS<ComplexFloat> {
@@ -1115,7 +1114,7 @@ extension MatrixDenseBLAS {
         let info = complexFloatGetri(Int32(rows), &factorization.matrix, factorization.pivots)
         precondition(info == 0, "LAPACK inverse failed with info \(info)")
         return MatrixDenseBLAS<ComplexFloat>(rows: rows, columns: columns,
-                                             values: BLASComplexStorage.complexValues(factorization.matrix))
+                                             values: BLASComplexStorage.toComplex(factorization.matrix))
     }
 
     private func doubleGetrf(_ n: Int32, _ matrix: inout [Double]) -> (pivots: [Int32], info: Int32) {
@@ -1231,21 +1230,21 @@ extension MatrixDenseBLAS: MatrixEigen where S == Double {
         real: [Double], imaginary: [Double], vectors: [Double]
     ) -> MatrixDenseBLAS<ComplexDouble> {
         var result = MatrixDenseBLAS<ComplexDouble>(rows: rows, columns: columns, initialValue: .zero)
-        var column = 0
-        while column < columns {
-            if imaginary[column] == 0.0 {
-                for row in 0..<rows {
-                    result[row, column] = ComplexDouble(vectors[row + rows * column], 0.0)
+        var j = 0
+        while j < columns {
+            if imaginary[j] == 0.0 {
+                for i in 0..<rows {
+                    result[i, j] = ComplexDouble(vectors[i + rows * j], 0.0)
                 }
-                column += 1
+                j += 1
             } else {
-                for row in 0..<rows {
-                    let realPart = vectors[row + rows * column]
-                    let imaginaryPart = vectors[row + rows * (column + 1)]
-                    result[row, column] = ComplexDouble(realPart, imaginaryPart)
-                    result[row, column + 1] = ComplexDouble(realPart, -imaginaryPart)
+                for i in 0..<rows {
+                    let realPart = vectors[i + rows * j]
+                    let imaginaryPart = vectors[i + rows * (j + 1)]
+                    result[i, j] = ComplexDouble(realPart, imaginaryPart)
+                    result[i, j + 1] = ComplexDouble(realPart, -imaginaryPart)
                 }
-                column += 2
+                j += 2
             }
         }
         return result

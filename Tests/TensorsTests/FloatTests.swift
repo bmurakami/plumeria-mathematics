@@ -5,7 +5,7 @@ import Testing
     let value: Float = 1.23456
 
     #expect(value.round(precision: 2) == 1.23)
-    #expect((value / 2.0).isApproximatelyEqual(to: 0.61728, relativeTolerance: 1e-6))
+    #expect((value / 2.0).isClose(to: 0.61728, relativeTolerance: 1e-6))
 }
 
 @Test func Float_vectorReferenceAndBLASOperations() {
@@ -27,7 +27,7 @@ private func checkFloatVector<V: PluVector>(_ type: V.Type) where V.S == Float {
     let u = V([3.0, 4.0, 12.0])
     let v = V([2.0, -1.0, 3.0])
 
-    #expect(u.magnitude().isApproximatelyEqual(to: 13.0, relativeTolerance: 1e-6))
+    #expect(u.magnitude().isClose(to: 13.0, relativeTolerance: 1e-6))
     #expect(u.dot(v) == 38.0)
     #expect((u + v).toArray() == [5.0, 3.0, 15.0])
     #expect((u * 2.0).toArray() == [6.0, 8.0, 24.0])

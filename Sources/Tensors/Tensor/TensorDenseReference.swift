@@ -26,8 +26,8 @@ extension TensorDenseReference: TensorStructure {
         precondition(count == elements.count,
                      "Tensor shape \(shape) requires \(count) elements, but got \(elements.count)")
         self.init(shape: shape, initialValue: .zero)
-        for (index, element) in zip(Self.indexCombinations(for: shape), elements) {
-            self[index] = element
+        for (i, element) in zip(Self.indexCombinations(for: shape), elements) {
+            self[i] = element
         }
     }
 }
@@ -70,8 +70,8 @@ extension TensorDenseReference {
         get {
             let mapping = Self.sliceMapping(indices, shape: shape)
             var result = TensorDenseReference(shape: mapping.shape, initialValue: .zero)
-            for index in Self.indexCombinations(for: mapping.shape) {
-                result[index] = self[mapping.sourceIndex(index)]
+            for i in Self.indexCombinations(for: mapping.shape) {
+                result[i] = self[mapping.sourceIndex(i)]
             }
             return result
         }
@@ -81,8 +81,8 @@ extension TensorDenseReference {
             if let error {
                 preconditionFailure(error)
             }
-            for index in Self.indexCombinations(for: mapping.shape) {
-                self[mapping.sourceIndex(index)] = newValue[index]
+            for i in Self.indexCombinations(for: mapping.shape) {
+                self[mapping.sourceIndex(i)] = newValue[i]
             }
         }
     }
@@ -103,7 +103,7 @@ extension TensorDenseReference {
     }
 
     private static func value(in storage: TensorNestedArray<S>, at indices: [Int]) -> S {
-        guard let index = indices.first else {
+        guard let i = indices.first else {
             guard case .scalar(let value) = storage else {
                 preconditionFailure("Tensor index rank must match tensor rank")
             }
@@ -112,20 +112,20 @@ extension TensorDenseReference {
         guard case .array(let subtensors) = storage else {
             preconditionFailure("Tensor index rank must match tensor rank")
         }
-        precondition(index >= 0 && index < subtensors.count, "Tensor index out of bounds")
-        return value(in: subtensors[index], at: Array(indices.dropFirst()))
+        precondition(i >= 0 && i < subtensors.count, "Tensor index out of bounds")
+        return value(in: subtensors[i], at: Array(indices.dropFirst()))
     }
 
     private static func setValue(_ value: S, in storage: inout TensorNestedArray<S>, at indices: [Int]) {
-        guard let index = indices.first else {
+        guard let i = indices.first else {
             storage = .scalar(value)
             return
         }
         guard case .array(var subtensors) = storage else {
             preconditionFailure("Tensor index rank must match tensor rank")
         }
-        precondition(index >= 0 && index < subtensors.count, "Tensor index out of bounds")
-        setValue(value, in: &subtensors[index], at: Array(indices.dropFirst()))
+        precondition(i >= 0 && i < subtensors.count, "Tensor index out of bounds")
+        setValue(value, in: &subtensors[i], at: Array(indices.dropFirst()))
         storage = .array(subtensors)
     }
 
@@ -135,9 +135,9 @@ extension TensorDenseReference {
         return (0..<shape.reduce(1, *)).map { flatIndex in
             var remaining = flatIndex
             return shape.map { dimension in
-                let index = remaining % dimension
+                let i = remaining % dimension
                 remaining /= dimension
-                return index
+                return i
             }
         }
     }
@@ -149,12 +149,12 @@ extension TensorDenseReference {
         precondition(indices.count == shape.count, "Slice rank must match tensor rank")
         var resultShape: [Int] = []
         var dimensions: [(fixed: Int?, range: SliceRange?)] = []
-        for (dimension, index) in indices.enumerated() {
-            switch index {
+        for (dimension, i) in indices.enumerated() {
+            switch i {
             case .index:
-                dimensions.append((index.fixedIndex(dimensionSize: shape[dimension]), nil))
+                dimensions.append((i.fixedIndex(dimensionSize: shape[dimension]), nil))
             case .range, .step, .all:
-                let range = index.sliceRange(dimensionSize: shape[dimension])
+                let range = i.sliceRange(dimensionSize: shape[dimension])
                 let lastIndex = range.start + (range.length - 1) * range.step
                 precondition(range.start <= shape[dimension], "Slice start is out of bounds")
                 precondition(range.length == 0 || lastIndex < shape[dimension], "Slice end is out of bounds")

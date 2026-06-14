@@ -4,7 +4,7 @@ public struct TensorFlatView<Scalar: PluScalar>: Equatable {
     public var shape: [Int]
     public var strides: [Int]
 
-    public init(storage: TensorStorage<Scalar>, offset: Int, shape: [Int], strides: [Int]) {
+public init(storage: TensorStorage<Scalar>, offset: Int, shape: [Int], strides: [Int]) {
         precondition(offset >= 0, "Tensor view offset must be non-negative")
         precondition(shape.allSatisfy { $0 >= 0 }, "Tensor shape dimensions must be non-negative")
         precondition(shape.count == strides.count, "Tensor shape and strides must have the same rank")
@@ -97,12 +97,12 @@ extension TensorFlatView {
         var newShape: [Int] = []
         var newStrides: [Int] = []
 
-        for (dimension, index) in indices.enumerated() {
-            switch index {
+        for (dimension, i) in indices.enumerated() {
+            switch i {
             case .index:
-                newOffset += index.fixedIndex(dimensionSize: shape[dimension]) * strides[dimension]
+                newOffset += i.fixedIndex(dimensionSize: shape[dimension]) * strides[dimension]
             case .range, .step, .all:
-                let range = index.sliceRange(dimensionSize: shape[dimension])
+                let range = i.sliceRange(dimensionSize: shape[dimension])
                 validate(range: range, dimension: dimension)
                 newOffset += range.start * strides[dimension]
                 newShape.append(range.length)
@@ -163,10 +163,10 @@ extension TensorFlatView {
         storage.elements[offset + index0 * strides[0] + index1 * strides[1]]
     }
 
-    func storageIndex(forUncheckedIndex index: [Int]) -> Int {
+    func storageIndex(forUncheckedIndex indices: [Int]) -> Int {
         var linearIndex = offset
         for dimension in 0..<rank {
-            linearIndex += index[dimension] * strides[dimension]
+            linearIndex += indices[dimension] * strides[dimension]
         }
         return linearIndex
     }
@@ -198,8 +198,8 @@ extension TensorFlatView {
     private func linearIndex(_ indices: [Int]) -> Int {
         precondition(indices.count == rank, "Tensor index rank \(indices.count) does not match tensor rank \(rank)")
 
-        for (dimension, index) in indices.enumerated() {
-            precondition(index >= 0 && index < shape[dimension], "Tensor index out of bounds")
+        for (dimension, i) in indices.enumerated() {
+            precondition(i >= 0 && i < shape[dimension], "Tensor index out of bounds")
         }
 
         return offset + zip(indices, strides).map(*).reduce(0, +)
@@ -215,10 +215,10 @@ extension TensorFlatView {
     private func flattenedElements() -> [Scalar] {
         var elements: [Scalar] = []
         elements.reserveCapacity(count)
-        var index = Array(repeating: 0, count: rank)
+        var i = Array(repeating: 0, count: rank)
         for _ in 0..<count {
-            elements.append(storage.elements[storageIndex(forUncheckedIndex: index)])
-            Self.increment(&index, shape: shape)
+            elements.append(storage.elements[storageIndex(forUncheckedIndex: i)])
+            Self.increment(&i, shape: shape)
         }
         return elements
     }
@@ -233,11 +233,11 @@ extension TensorFlatView {
             assignRankTwo(replacement, to: destination)
             return
         }
-        var index = Array(repeating: 0, count: destination.rank)
+        var i = Array(repeating: 0, count: destination.rank)
         for _ in 0..<destination.count {
-            let element = replacement.storage.elements[replacement.storageIndex(forUncheckedIndex: index)]
-            storage[destination.storageIndex(forUncheckedIndex: index)] = element
-            Self.increment(&index, shape: destination.shape)
+            let element = replacement.storage.elements[replacement.storageIndex(forUncheckedIndex: i)]
+            storage[destination.storageIndex(forUncheckedIndex: i)] = element
+            Self.increment(&i, shape: destination.shape)
         }
     }
 
@@ -246,12 +246,12 @@ extension TensorFlatView {
             assignRankTwoColumnSegments(replacement, to: destination)
             return
         }
-        for index1 in 0..<destination.shape[1] {
-            let destinationColumn = destination.offset + index1 * destination.strides[1]
-            let replacementColumn = replacement.offset + index1 * replacement.strides[1]
-            for index0 in 0..<destination.shape[0] {
-                storage[destinationColumn + index0 * destination.strides[0]] =
-                    replacement.storage.elements[replacementColumn + index0 * replacement.strides[0]]
+        for j in 0..<destination.shape[1] {
+            let destinationColumn = destination.offset + j * destination.strides[1]
+            let replacementColumn = replacement.offset + j * replacement.strides[1]
+            for i in 0..<destination.shape[0] {
+                storage[destinationColumn + i * destination.strides[0]] =
+                    replacement.storage.elements[replacementColumn + i * replacement.strides[0]]
             }
         }
     }
@@ -260,9 +260,9 @@ extension TensorFlatView {
                                                       to destination: TensorFlatView<Scalar>) {
         storage.elements.withUnsafeMutableBufferPointer { destinationElements in
             replacement.storage.elements.withUnsafeBufferPointer { replacementElements in
-                for index1 in 0..<destination.shape[1] {
-                    let destinationColumn = destination.offset + index1 * destination.strides[1]
-                    let replacementColumn = replacement.offset + index1 * replacement.strides[1]
+                for j in 0..<destination.shape[1] {
+                    let destinationColumn = destination.offset + j * destination.strides[1]
+                    let replacementColumn = replacement.offset + j * replacement.strides[1]
                     var destinationIndex = destinationColumn
                     var replacementIndex = replacementColumn
                     for _ in 0..<destination.shape[0] {
@@ -275,11 +275,11 @@ extension TensorFlatView {
         }
     }
 
-    private static func increment(_ index: inout [Int], shape: [Int]) {
+    private static func increment(_ i: inout [Int], shape: [Int]) {
         for dimension in 0..<shape.count {
-            index[dimension] += 1
-            if index[dimension] < shape[dimension] { return }
-            index[dimension] = 0
+            i[dimension] += 1
+            if i[dimension] < shape[dimension] { return }
+            i[dimension] = 0
         }
     }
 

@@ -31,8 +31,8 @@ private struct TestTensor<S: PluScalar>: TensorMultiplication {
     private static func linearIndex(_ indices: [Int], shape: [Int]) -> Int {
         var stride = 1
         var flatIndex = 0
-        for (index, dimension) in zip(indices, shape) {
-            flatIndex += index * stride
+        for (i, dimension) in zip(indices, shape) {
+            flatIndex += i * stride
             stride *= dimension
         }
         return flatIndex

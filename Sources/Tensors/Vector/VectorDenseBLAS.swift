@@ -119,9 +119,9 @@ extension VectorDenseBLAS {
         set { assign(newValue, to: [TensorSliceIndex.range(range)]) }
     }
 
-    public subscript(index: TensorSliceIndex) -> VectorDenseBLAS<S> {
-        get { VectorDenseBLAS(view: materializedView().slice(index.sliceRange(dimensionSize: size))) }
-        set { assign(newValue, to: [index]) }
+    public subscript(i: TensorSliceIndex) -> VectorDenseBLAS<S> {
+        get { VectorDenseBLAS(view: materializedView().slice(i.sliceRange(dimensionSize: size))) }
+        set { assign(newValue, to: [i]) }
     }
 
     private func materializedView() -> TensorFlatView<S> {
@@ -489,7 +489,7 @@ private func doubleSum(_ left: [Double], _ right: [Double]) -> [Double] {
     Array<Double>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
         left.withUnsafeBufferPointer { left in
             right.withUnsafeBufferPointer { right in
-                for index in 0..<left.count { result[index] = left[index] + right[index] }
+                for i in 0..<left.count { result[i] = left[i] + right[i] }
             }
         }
         initializedCount = left.count
@@ -500,7 +500,7 @@ private func floatSum(_ left: [Float], _ right: [Float]) -> [Float] {
     Array<Float>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
         left.withUnsafeBufferPointer { left in
             right.withUnsafeBufferPointer { right in
-                for index in 0..<left.count { result[index] = left[index] + right[index] }
+                for i in 0..<left.count { result[i] = left[i] + right[i] }
             }
         }
         initializedCount = left.count
@@ -511,7 +511,7 @@ private func doubleDifference(_ left: [Double], _ right: [Double]) -> [Double] {
     Array<Double>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
         left.withUnsafeBufferPointer { left in
             right.withUnsafeBufferPointer { right in
-                for index in 0..<left.count { result[index] = left[index] - right[index] }
+                for i in 0..<left.count { result[i] = left[i] - right[i] }
             }
         }
         initializedCount = left.count
@@ -522,7 +522,7 @@ private func floatDifference(_ left: [Float], _ right: [Float]) -> [Float] {
     Array<Float>(unsafeUninitializedCapacity: left.count) { result, initializedCount in
         left.withUnsafeBufferPointer { left in
             right.withUnsafeBufferPointer { right in
-                for index in 0..<left.count { result[index] = left[index] - right[index] }
+                for i in 0..<left.count { result[i] = left[i] - right[i] }
             }
         }
         initializedCount = left.count
@@ -532,7 +532,7 @@ private func floatDifference(_ left: [Float], _ right: [Float]) -> [Float] {
 private func doubleScale(_ values: [Double], by scalar: Double) -> [Double] {
     Array<Double>(unsafeUninitializedCapacity: values.count) { result, initializedCount in
         values.withUnsafeBufferPointer { values in
-            for index in 0..<values.count { result[index] = values[index] * scalar }
+            for i in 0..<values.count { result[i] = values[i] * scalar }
         }
         initializedCount = values.count
     }
@@ -541,7 +541,7 @@ private func doubleScale(_ values: [Double], by scalar: Double) -> [Double] {
 private func floatScale(_ values: [Float], by scalar: Float) -> [Float] {
     Array<Float>(unsafeUninitializedCapacity: values.count) { result, initializedCount in
         values.withUnsafeBufferPointer { values in
-            for index in 0..<values.count { result[index] = values[index] * scalar }
+            for i in 0..<values.count { result[i] = values[i] * scalar }
         }
         initializedCount = values.count
     }
@@ -549,12 +549,12 @@ private func floatScale(_ values: [Float], by scalar: Float) -> [Float] {
 
 private func complexDoubleScale(_ values: [ComplexDouble], by scalar: ComplexDouble) -> [ComplexDouble] {
     var result = Array(repeating: ComplexDouble.zero, count: values.count)
-    for index in 0..<values.count { result[index] = values[index] * scalar }
+    for i in 0..<values.count { result[i] = values[i] * scalar }
     return result
 }
 
 private func complexFloatScale(_ values: [ComplexFloat], by scalar: ComplexFloat) -> [ComplexFloat] {
     var result = Array(repeating: ComplexFloat.zero, count: values.count)
-    for index in 0..<values.count { result[index] = values[index] * scalar }
+    for i in 0..<values.count { result[i] = values[i] * scalar }
     return result
 }

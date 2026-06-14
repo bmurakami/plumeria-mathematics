@@ -192,9 +192,9 @@ private func indexCombinations(for shape: [Int]) -> [[Int]] {
     return (0..<shape.reduce(1, *)).map { flatIndex in
         var remaining = flatIndex
         return shape.map { dimension in
-            let index = remaining % dimension
+            let i = remaining % dimension
             remaining /= dimension
-            return index
+            return i
         }
     }
 }

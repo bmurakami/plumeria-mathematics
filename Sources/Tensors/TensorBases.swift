@@ -13,9 +13,9 @@ public struct VectorBase<Implementation: PluVector>: TensorArithmeticReference {
 extension VectorBase: PluVector {
     public var size: Int { implementation.size }
 
-    public subscript(index: Int) -> Implementation.S {
-        get { implementation[index] }
-        set { implementation[index] = newValue }
+    public subscript(i: Int) -> Implementation.S {
+        get { implementation[i] }
+        set { implementation[i] = newValue }
     }
 
     public subscript(_ indices: [Int]) -> Implementation.S {

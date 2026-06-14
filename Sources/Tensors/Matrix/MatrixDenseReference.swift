@@ -39,8 +39,8 @@ extension MatrixDenseReference: PluMatrix {
 
     public init(rows: Int, columns: Int, values: [S]) {
         precondition(values.count == rows * columns, "Matrix value count must match matrix shape")
-        self.elements = (0..<rows).map { row in
-            (0..<columns).map { column in values[row + rows * column] }
+        self.elements = (0..<rows).map { i in
+            (0..<columns).map { j in values[i + rows * j] }
         }
     }
 
@@ -125,8 +125,8 @@ extension MatrixDenseReference {
 
     private static func rows(from values: TensorNestedArray<S>) -> [[S]] {
         let shape = values.shape
-        return (0..<shape[0]).map { row in
-            (0..<shape[1]).map { column in values[[row, column]] }
+        return (0..<shape[0]).map { i in
+            (0..<shape[1]).map { j in values[[i, j]] }
         }
     }
 }

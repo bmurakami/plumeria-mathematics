@@ -32,10 +32,10 @@ struct LazyTensor<S: PluScalar> {
         LazyTensor(terms: terms.map { Term(coefficient: scalar * $0.coefficient, view: $0.view) })
     }
 
-    func value(_ index: [Int]) -> S {
+    func value(_ i: [Int]) -> S {
         var result = S.zero
         for term in terms {
-            result += term.coefficient * term.view.storage.elements[term.view.storageIndex(forUncheckedIndex: index)]
+            result += term.coefficient * term.view.storage.elements[term.view.storageIndex(forUncheckedIndex: i)]
         }
         return result
     }
@@ -44,28 +44,28 @@ struct LazyTensor<S: PluScalar> {
         var elements: [S] = []
         let count = shape.reduce(1, *)
         elements.reserveCapacity(count)
-        var index = Array(repeating: 0, count: shape.count)
+        var i = Array(repeating: 0, count: shape.count)
         for _ in 0..<count {
-            elements.append(value(index))
-            Self.increment(&index, shape: shape)
+            elements.append(value(i))
+            Self.increment(&i, shape: shape)
         }
         return elements
     }
 
     func assign(to destination: inout TensorFlatView<S>) {
         precondition(destination.shape == shape, "Assigned slice shape \(shape) must match destination slice shape")
-        var index = Array(repeating: 0, count: shape.count)
+        var i = Array(repeating: 0, count: shape.count)
         for _ in 0..<shape.reduce(1, *) {
-            destination.storage.elements[destination.storageIndex(forUncheckedIndex: index)] = value(index)
-            Self.increment(&index, shape: shape)
+            destination.storage.elements[destination.storageIndex(forUncheckedIndex: i)] = value(i)
+            Self.increment(&i, shape: shape)
         }
     }
 
-    private static func increment(_ index: inout [Int], shape: [Int]) {
+    private static func increment(_ i: inout [Int], shape: [Int]) {
         for dimension in 0..<shape.count {
-            index[dimension] += 1
-            if index[dimension] < shape[dimension] { return }
-            index[dimension] = 0
+            i[dimension] += 1
+            if i[dimension] < shape[dimension] { return }
+            i[dimension] = 0
         }
     }
 }

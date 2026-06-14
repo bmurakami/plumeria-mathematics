@@ -1,6 +1,6 @@
 public protocol PluVector: PluTensor, TensorStructure where S: PluScalar {
     var size: Int { get }
-    subscript(index: Int) -> S { get set }
+    subscript(i: Int) -> S { get set }
 
     init(_ elements: [S])
 
@@ -21,9 +21,9 @@ extension PluVector {
         set { self[TensorSliceIndex.range(range)] = newValue }
     }
 
-    public subscript(index: TensorSliceIndex) -> Self {
+    public subscript(i: TensorSliceIndex) -> Self {
         get {
-            let range = index.sliceRange(dimensionSize: size)
+            let range = i.sliceRange(dimensionSize: size)
             var result = Self(Array(repeating: .zero, count: range.length))
             for position in 0..<range.length {
                 result[position] = self[range.start + position * range.step]
@@ -31,7 +31,7 @@ extension PluVector {
             return result
         }
         set {
-            let range = index.sliceRange(dimensionSize: size)
+            let range = i.sliceRange(dimensionSize: size)
             let error = sliceAssignmentShapeError(destination: [range.length], replacement: newValue.shape)
             if let error {
                 preconditionFailure(error)
@@ -47,8 +47,8 @@ extension PluVector {
     public func dot<V: PluVector>(_ other: V) -> S where V.S == S {
         precondition(size == other.size, "Vector sizes must match")
         var sum = S.zero
-        for index in 0..<size {
-            sum += self[index] * other[index]
+        for i in 0..<size {
+            sum += self[i] * other[i]
         }
         return sum
     }
