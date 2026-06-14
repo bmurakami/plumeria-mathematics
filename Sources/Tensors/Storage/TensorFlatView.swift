@@ -4,7 +4,7 @@ public struct TensorFlatView<Scalar: PluScalar>: Equatable {
     public var shape: [Int]
     public var strides: [Int]
 
-    public init(storage: TensorStorage<Scalar>, offset: Int, shape: [Int], strides: [Int]) {
+public init(storage: TensorStorage<Scalar>, offset: Int, shape: [Int], strides: [Int]) {
         precondition(offset >= 0, "Tensor view offset must be non-negative")
         precondition(shape.allSatisfy { $0 >= 0 }, "Tensor shape dimensions must be non-negative")
         precondition(shape.count == strides.count, "Tensor shape and strides must have the same rank")

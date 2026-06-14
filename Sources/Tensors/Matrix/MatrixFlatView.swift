@@ -24,7 +24,8 @@ extension MatrixFlatView: MatrixView {
     public init(_ values: [[Scalar]]) {
         let rows = values.count
         let columns = values[0].count
-        let elements = (0..<columns).flatMap { j in (0..<rows).map { i in values[i][j] } }
+        let columnMajorOrdering: () -> [S] = { (0..<columns).flatMap { j in (0..<rows).map { i in values[i][j] }}}
+        let elements = columnMajorOrdering()
         self.init(view: TensorFlatView(shape: [rows, columns], elements: elements))
     }
 

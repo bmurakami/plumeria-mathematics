@@ -77,9 +77,8 @@ extension MatrixDenseBLAS: PluMatrix {
     public init(_ values: [[S]]) {
         let rows = values.count
         let columns = values[0].count
-        let elements = (0..<columns).flatMap { j in
-            (0..<rows).map { i in values[i][j] }
-        }
+        let columnMajorOrdering: () -> [S] = { (0..<columns).flatMap { j in (0..<rows).map { i in values[i][j] }}}
+        let elements = columnMajorOrdering()
         self.view = TensorFlatView(shape: [rows, columns], elements: elements)
         self.lazy = nil
         self.blasImplementation = .default
@@ -199,11 +198,11 @@ extension MatrixDenseBLAS {
     public static func + (lhs: MatrixDenseBLAS<S>, rhs: MatrixDenseBLAS<S>) -> MatrixDenseBLAS<S> {
         precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
         if S.self == Double.self {
-            return doubleMatrixSum(lhs as! MatrixDenseBLAS<Double>, rhs as! MatrixDenseBLAS<Double>)
+            return matrixSumDouble(lhs as! MatrixDenseBLAS<Double>, rhs as! MatrixDenseBLAS<Double>)
                 as! MatrixDenseBLAS<S>
         }
         if S.self == Float.self {
-            return floatMatrixSum(lhs as! MatrixDenseBLAS<Float>, rhs as! MatrixDenseBLAS<Float>)
+            return matrixSumFloat(lhs as! MatrixDenseBLAS<Float>, rhs as! MatrixDenseBLAS<Float>)
                 as! MatrixDenseBLAS<S>
         }
         if lhs.isWholeMaterializedMatrix && rhs.isWholeMaterializedMatrix {
@@ -219,11 +218,11 @@ extension MatrixDenseBLAS {
     public static func - (lhs: MatrixDenseBLAS<S>, rhs: MatrixDenseBLAS<S>) -> MatrixDenseBLAS<S> {
         precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
         if S.self == Double.self {
-            return doubleMatrixDifference(lhs as! MatrixDenseBLAS<Double>, rhs as! MatrixDenseBLAS<Double>)
+            return matrixDifferenceDouble(lhs as! MatrixDenseBLAS<Double>, rhs as! MatrixDenseBLAS<Double>)
                 as! MatrixDenseBLAS<S>
         }
         if S.self == Float.self {
-            return floatMatrixDifference(lhs as! MatrixDenseBLAS<Float>, rhs as! MatrixDenseBLAS<Float>)
+            return matrixDifferenceFloat(lhs as! MatrixDenseBLAS<Float>, rhs as! MatrixDenseBLAS<Float>)
                 as! MatrixDenseBLAS<S>
         }
         return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
@@ -237,10 +236,10 @@ extension MatrixDenseBLAS {
 
     public static func * (matrix: MatrixDenseBLAS<S>, scalar: S) -> MatrixDenseBLAS<S> {
         if S.self == Double.self {
-            return doubleMatrixScale(matrix as! MatrixDenseBLAS<Double>, by: scalar as! Double) as! MatrixDenseBLAS<S>
+            return matrixScaleDouble(matrix as! MatrixDenseBLAS<Double>, by: scalar as! Double) as! MatrixDenseBLAS<S>
         }
         if S.self == Float.self {
-            return floatMatrixScale(matrix as! MatrixDenseBLAS<Float>, by: scalar as! Float) as! MatrixDenseBLAS<S>
+            return matrixScaleFloat(matrix as! MatrixDenseBLAS<Float>, by: scalar as! Float) as! MatrixDenseBLAS<S>
         }
         return MatrixDenseBLAS(rows: matrix.rows, columns: matrix.columns,
                                lazy: matrix.lazyMatrix.scaled(by: scalar),
@@ -432,26 +431,26 @@ extension MatrixDenseBLAS {
 
 public func + (lhs: MatrixDenseBLAS<Double>, rhs: MatrixDenseBLAS<Double>) -> MatrixDenseBLAS<Double> {
     precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
-    return doubleMatrixSum(lhs, rhs)
+    return matrixSumDouble(lhs, rhs)
 }
 
 public func + (lhs: MatrixDenseBLAS<Float>, rhs: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
     precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
-    return floatMatrixSum(lhs, rhs)
+    return matrixSumFloat(lhs, rhs)
 }
 
 public func - (lhs: MatrixDenseBLAS<Double>, rhs: MatrixDenseBLAS<Double>) -> MatrixDenseBLAS<Double> {
     precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
-    return doubleMatrixDifference(lhs, rhs)
+    return matrixDifferenceDouble(lhs, rhs)
 }
 
 public func - (lhs: MatrixDenseBLAS<Float>, rhs: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
     precondition(lhs.shape == rhs.shape, "Tensors must have the same shape")
-    return floatMatrixDifference(lhs, rhs)
+    return matrixDifferenceFloat(lhs, rhs)
 }
 
 public func * (matrix: MatrixDenseBLAS<Double>, scalar: Double) -> MatrixDenseBLAS<Double> {
-    doubleMatrixScale(matrix, by: scalar)
+    matrixScaleDouble(matrix, by: scalar)
 }
 
 public func * (scalar: Double, matrix: MatrixDenseBLAS<Double>) -> MatrixDenseBLAS<Double> {
@@ -463,7 +462,7 @@ public func / (matrix: MatrixDenseBLAS<Double>, scalar: Double) -> MatrixDenseBL
 }
 
 public func * (matrix: MatrixDenseBLAS<Float>, scalar: Float) -> MatrixDenseBLAS<Float> {
-    floatMatrixScale(matrix, by: scalar)
+    matrixScaleFloat(matrix, by: scalar)
 }
 
 public func * (scalar: Float, matrix: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
@@ -471,11 +470,11 @@ public func * (scalar: Float, matrix: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS
 }
 
 public func * (left: MatrixDenseBLAS<Double>, right: MatrixDenseBLAS<Double>) -> MatrixDenseBLAS<Double> {
-    doubleMatrixProduct(left, right)
+    matrixProductDouble(left, right)
 }
 
 public func * (left: MatrixDenseBLAS<Float>, right: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
-    floatMatrixProduct(left, right)
+    matrixProductFloat(left, right)
 }
 
 public func * (left: MatrixDenseBLAS<ComplexDouble>, right: MatrixDenseBLAS<ComplexDouble>)
@@ -485,32 +484,32 @@ public func * (left: MatrixDenseBLAS<ComplexDouble>, right: MatrixDenseBLAS<Comp
 
 public func * (left: MatrixDenseBLAS<ComplexFloat>, right: MatrixDenseBLAS<ComplexFloat>)
     -> MatrixDenseBLAS<ComplexFloat> {
-    complexFloatMatrixProduct(left, right)
+    matrixProductComplexFloat(left, right)
 }
 
 public func * (matrix: MatrixDenseBLAS<Double>, vector: VectorDenseBLAS<Double>) -> VectorDenseBLAS<Double> {
-    doubleMatrixVectorProduct(matrix, vector)
+    vectorProductDoubleMatrix(matrix, vector)
 }
 
 public func * (matrix: MatrixDenseBLAS<Float>, vector: VectorDenseBLAS<Float>) -> VectorDenseBLAS<Float> {
-    floatMatrixVectorProduct(matrix, vector)
+    vectorProductFloatMatrix(matrix, vector)
 }
 
 public func * (matrix: MatrixDenseBLAS<ComplexDouble>, vector: VectorDenseBLAS<ComplexDouble>)
     -> VectorDenseBLAS<ComplexDouble> {
-    complexDoubleMatrixVectorProduct(matrix, vector)
+    matrixVectorProductComplexDouble(matrix, vector)
 }
 
 public func * (matrix: MatrixDenseBLAS<ComplexFloat>, vector: VectorDenseBLAS<ComplexFloat>)
     -> VectorDenseBLAS<ComplexFloat> {
-    complexFloatMatrixVectorProduct(matrix, vector)
+    vectorProductComplexFloatMatrix(matrix, vector)
 }
 
 public func / (matrix: MatrixDenseBLAS<Float>, scalar: Float) -> MatrixDenseBLAS<Float> {
     matrix * (Float(1.0) / scalar)
 }
 
-private func doubleMatrixSum(
+private func matrixSumDouble(
     _ lhs: MatrixDenseBLAS<Double>, _ rhs: MatrixDenseBLAS<Double>
 ) -> MatrixDenseBLAS<Double> {
     if lhs.isWholeMaterializedMatrix && rhs.isWholeMaterializedMatrix {
@@ -523,7 +522,7 @@ private func doubleMatrixSum(
                            blasImplementation: lhs.blasImplementation)
 }
 
-private func floatMatrixSum(_ lhs: MatrixDenseBLAS<Float>, _ rhs: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
+private func matrixSumFloat(_ lhs: MatrixDenseBLAS<Float>, _ rhs: MatrixDenseBLAS<Float>) -> MatrixDenseBLAS<Float> {
     if lhs.isWholeMaterializedMatrix && rhs.isWholeMaterializedMatrix {
         return MatrixDenseBLAS(rows: lhs.rows, columns: lhs.columns,
                                values: floatSum(lhs.view.storage.elements, rhs.view.storage.elements),
@@ -534,7 +533,7 @@ private func floatMatrixSum(_ lhs: MatrixDenseBLAS<Float>, _ rhs: MatrixDenseBLA
                            blasImplementation: lhs.blasImplementation)
 }
 
-private func doubleMatrixDifference(
+private func matrixDifferenceDouble(
     _ lhs: MatrixDenseBLAS<Double>, _ rhs: MatrixDenseBLAS<Double>
 ) -> MatrixDenseBLAS<Double> {
     if lhs.isWholeMaterializedMatrix && rhs.isWholeMaterializedMatrix {
@@ -547,7 +546,7 @@ private func doubleMatrixDifference(
                            blasImplementation: lhs.blasImplementation)
 }
 
-private func floatMatrixDifference(
+private func matrixDifferenceFloat(
     _ lhs: MatrixDenseBLAS<Float>, _ rhs: MatrixDenseBLAS<Float>
 ) -> MatrixDenseBLAS<Float> {
     if lhs.isWholeMaterializedMatrix && rhs.isWholeMaterializedMatrix {
@@ -560,7 +559,7 @@ private func floatMatrixDifference(
                            blasImplementation: lhs.blasImplementation)
 }
 
-private func doubleMatrixScale(_ matrix: MatrixDenseBLAS<Double>, by scalar: Double) -> MatrixDenseBLAS<Double> {
+private func matrixScaleDouble(_ matrix: MatrixDenseBLAS<Double>, by scalar: Double) -> MatrixDenseBLAS<Double> {
     if matrix.isWholeMaterializedMatrix {
         return MatrixDenseBLAS(rows: matrix.rows, columns: matrix.columns,
                                values: doubleScale(matrix.view.storage.elements, by: scalar),
@@ -571,7 +570,7 @@ private func doubleMatrixScale(_ matrix: MatrixDenseBLAS<Double>, by scalar: Dou
                            blasImplementation: matrix.blasImplementation)
 }
 
-private func floatMatrixScale(_ matrix: MatrixDenseBLAS<Float>, by scalar: Float) -> MatrixDenseBLAS<Float> {
+private func matrixScaleFloat(_ matrix: MatrixDenseBLAS<Float>, by scalar: Float) -> MatrixDenseBLAS<Float> {
     if matrix.isWholeMaterializedMatrix {
         return MatrixDenseBLAS(rows: matrix.rows, columns: matrix.columns,
                                values: floatScale(matrix.view.storage.elements, by: scalar),
@@ -582,7 +581,7 @@ private func floatMatrixScale(_ matrix: MatrixDenseBLAS<Float>, by scalar: Float
                            blasImplementation: matrix.blasImplementation)
 }
 
-private func doubleMatrixProduct(
+private func matrixProductDouble(
     _ left: MatrixDenseBLAS<Double>, _ right: MatrixDenseBLAS<Double>
 ) -> MatrixDenseBLAS<Double> {
     precondition(left.columns == right.rows, "Number of matrix columns must match matrix rows")
@@ -605,7 +604,7 @@ private func doubleMatrixProduct(
                                    blasImplementation: left.blasImplementation)
 }
 
-private func floatMatrixProduct(_ left: MatrixDenseBLAS<Float>, _ right: MatrixDenseBLAS<Float>)
+private func matrixProductFloat(_ left: MatrixDenseBLAS<Float>, _ right: MatrixDenseBLAS<Float>)
     -> MatrixDenseBLAS<Float> {
     precondition(left.columns == right.rows, "Number of matrix columns must match matrix rows")
     let leftElements = left.columnMajorStorage()
@@ -648,7 +647,7 @@ private func complexDoubleMatrixProduct(
                                           blasImplementation: left.blasImplementation)
 }
 
-private func complexFloatMatrixProduct(
+private func matrixProductComplexFloat(
     _ left: MatrixDenseBLAS<ComplexFloat>, _ right: MatrixDenseBLAS<ComplexFloat>
 ) -> MatrixDenseBLAS<ComplexFloat> {
     precondition(left.columns == right.rows, "Number of matrix columns must match matrix rows")
@@ -669,7 +668,7 @@ private func complexFloatMatrixProduct(
                                          blasImplementation: left.blasImplementation)
 }
 
-private func doubleMatrixVectorProduct(
+private func vectorProductDoubleMatrix(
     _ matrix: MatrixDenseBLAS<Double>, _ vector: VectorDenseBLAS<Double>
 ) -> VectorDenseBLAS<Double> {
     precondition(matrix.columns == vector.size, "Number of columns in matrix must equal size of vector")
@@ -691,7 +690,7 @@ private func doubleMatrixVectorProduct(
     return VectorDenseBLAS<Double>(result)
 }
 
-private func floatMatrixVectorProduct(
+private func vectorProductFloatMatrix(
     _ matrix: MatrixDenseBLAS<Float>, _ vector: VectorDenseBLAS<Float>
 ) -> VectorDenseBLAS<Float> {
     precondition(matrix.columns == vector.size, "Number of columns in matrix must equal size of vector")
@@ -713,7 +712,7 @@ private func floatMatrixVectorProduct(
     return VectorDenseBLAS<Float>(result)
 }
 
-private func complexDoubleMatrixVectorProduct(
+private func matrixVectorProductComplexDouble(
     _ matrix: MatrixDenseBLAS<ComplexDouble>, _ vector: VectorDenseBLAS<ComplexDouble>
 ) -> VectorDenseBLAS<ComplexDouble> {
     precondition(matrix.columns == vector.size, "Number of columns in matrix must equal size of vector")
@@ -735,7 +734,7 @@ private func complexDoubleMatrixVectorProduct(
     return VectorDenseBLAS<ComplexDouble>(result)
 }
 
-private func complexFloatMatrixVectorProduct(
+private func vectorProductComplexFloatMatrix(
     _ matrix: MatrixDenseBLAS<ComplexFloat>, _ vector: VectorDenseBLAS<ComplexFloat>
 ) -> VectorDenseBLAS<ComplexFloat> {
     precondition(matrix.columns == vector.size, "Number of columns in matrix must equal size of vector")
